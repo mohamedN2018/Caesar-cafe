@@ -1,0 +1,36 @@
+# Development happens on Windows; everything runs in Linux containers.
+# Without this, CRLF endings break shebangs, the Makefile, and shell scripts
+# once they are checked out inside a container.
+
+* text=auto eol=lf
+
+# Explicitly LF — these are executed, not just read.
+*.py      text eol=lf
+*.sh      text eol=lf
+Makefile  text eol=lf
+Dockerfile text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.toml    text eol=lf
+*.json    text eol=lf
+*.ts      text eol=lf
+*.vue     text eol=lf
+*.css     text eol=lf
+*.html    text eol=lf
+*.md      text eol=lf
+
+# Binary — never touch.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+
+# Generated: keep out of diffs, but still tracked.
+frontend/src/types/api.d.ts linguist-generated=true
+backend/schema.yml          linguist-generated=true
+frontend/package-lock.json  linguist-generated=true -diff

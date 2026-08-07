@@ -1,0 +1,241 @@
+{
+  "$comment": [
+    "GOLDEN FILE — the shared contract between the Django server and the PySide6 Desktop.",
+    "Both implementations run this fixture. A one-piaster disagreement fails CI.",
+    "Every expected value here was computed by hand from the documented order of",
+    "operations in docs/02-data-model.md, NOT generated from the implementation.",
+    "Adding a case: work the arithmetic out by hand first. A case derived from the",
+    "code under test proves only that the code equals itself."
+  ],
+  "defaults": {
+    "rules": {
+      "vat_percent": "14.00",
+      "vat_enabled": true,
+      "vat_inclusive": false,
+      "service_percent": "0.00",
+      "service_enabled": false,
+      "rounding_step": "0.01"
+    },
+    "order_discount_percent": "0.00"
+  },
+  "cases": [
+    {
+      "id": "single-line-no-discount",
+      "description": "Two cappuccinos at 60. Baseline.",
+      "lines": [{"unit_price": "60.00", "quantity": "2"}],
+      "expected": {
+        "subtotal": "120.00", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "16.80", "grand_total": "136.80", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "line-discount-10pct",
+      "description": "10% off one line.",
+      "lines": [{"unit_price": "60.00", "quantity": "2", "discount_percent": "10"}],
+      "expected": {
+        "subtotal": "108.00", "discount_total": "12.00", "service_total": "0.00",
+        "tax_total": "15.12", "grand_total": "123.12", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "order-discount-10pct",
+      "description": "Order-level discount across two lines.",
+      "order_discount_percent": "10",
+      "lines": [
+        {"unit_price": "60.00", "quantity": "2"},
+        {"unit_price": "40.00", "quantity": "1"}
+      ],
+      "expected": {
+        "subtotal": "160.00", "discount_total": "16.00", "service_total": "0.00",
+        "tax_total": "20.16", "grand_total": "164.16", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "service-plus-vat",
+      "description": "Dine-in: 12% service, then 14% VAT on (net + service). Matches the POS mockup in docs/04.",
+      "rules": {"service_percent": "12.00", "service_enabled": true},
+      "lines": [
+        {"unit_price": "60.00", "quantity": "2"},
+        {"unit_price": "40.00", "quantity": "1"}
+      ],
+      "expected": {
+        "subtotal": "160.00", "discount_total": "0.00", "service_total": "19.20",
+        "tax_total": "25.09", "grand_total": "204.29", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "vat-inclusive",
+      "description": "Menu prices already contain VAT. Tax is disclosed, not added.",
+      "rules": {"vat_inclusive": true},
+      "lines": [{"unit_price": "60.00", "quantity": "2"}],
+      "expected": {
+        "subtotal": "120.00", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "14.74", "grand_total": "120.00", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "vat-inclusive-with-service",
+      "description": "Inclusive VAT plus a service charge that is itself taxable.",
+      "rules": {"vat_inclusive": true, "service_percent": "12.00", "service_enabled": true},
+      "lines": [{"unit_price": "100.00", "quantity": "1"}],
+      "expected": {
+        "subtotal": "100.00", "discount_total": "0.00", "service_total": "12.00",
+        "tax_total": "13.75", "grand_total": "112.00", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "mixed-exempt-line",
+      "description": "One taxable, one exempt. VAT applies to the taxable 60% share.",
+      "lines": [
+        {"unit_price": "60.00", "quantity": "1"},
+        {"unit_price": "40.00", "quantity": "1", "tax_exempt": true}
+      ],
+      "expected": {
+        "subtotal": "100.00", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "8.40", "grand_total": "108.40", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "mixed-exempt-with-service",
+      "description": "Apportioned VAT where service has been added to the base.",
+      "rules": {"service_percent": "12.00", "service_enabled": true},
+      "lines": [
+        {"unit_price": "60.00", "quantity": "1"},
+        {"unit_price": "40.00", "quantity": "1", "tax_exempt": true}
+      ],
+      "expected": {
+        "subtotal": "100.00", "discount_total": "0.00", "service_total": "12.00",
+        "tax_total": "9.41", "grand_total": "121.41", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "all-lines-exempt",
+      "description": "Fully exempt order pays no VAT.",
+      "lines": [{"unit_price": "100.00", "quantity": "1", "tax_exempt": true}],
+      "expected": {
+        "subtotal": "100.00", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "0.00", "grand_total": "100.00", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "full-line-discount",
+      "description": "100% off a line. Must not divide by zero when computing the taxable ratio.",
+      "lines": [{"unit_price": "60.00", "quantity": "1", "discount_percent": "100"}],
+      "expected": {
+        "subtotal": "0.00", "discount_total": "60.00", "service_total": "0.00",
+        "tax_total": "0.00", "grand_total": "0.00", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "full-order-discount",
+      "description": "100% order discount — a comp.",
+      "order_discount_percent": "100",
+      "lines": [
+        {"unit_price": "60.00", "quantity": "2"},
+        {"unit_price": "40.00", "quantity": "1"}
+      ],
+      "expected": {
+        "subtotal": "160.00", "discount_total": "160.00", "service_total": "0.00",
+        "tax_total": "0.00", "grand_total": "0.00", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "stacked-line-and-order-discount",
+      "description": "Order discount applies to the already line-discounted net, not the gross.",
+      "order_discount_percent": "10",
+      "lines": [{"unit_price": "100.00", "quantity": "1", "discount_percent": "10"}],
+      "expected": {
+        "subtotal": "90.00", "discount_total": "19.00", "service_total": "0.00",
+        "tax_total": "11.34", "grand_total": "92.34", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "odd-piasters",
+      "description": "33.33 x 3 = 99.99. Tax 13.9986 rounds up to 14.00.",
+      "lines": [{"unit_price": "33.33", "quantity": "3"}],
+      "expected": {
+        "subtotal": "99.99", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "14.00", "grand_total": "113.99", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "half-up-not-half-even",
+      "description": "0.125 must round to 0.13. Banker's rounding would give 0.12 — this case discriminates.",
+      "lines": [{"unit_price": "0.125", "quantity": "1"}],
+      "expected": {
+        "subtotal": "0.13", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "0.02", "grand_total": "0.15", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "modifiers-add-to-unit-price",
+      "description": "Extra espresso shot (+10) applies per unit, before quantity.",
+      "lines": [{"unit_price": "60.00", "quantity": "2", "modifier_deltas": ["10.00"]}],
+      "expected": {
+        "subtotal": "140.00", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "19.60", "grand_total": "159.60", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "fractional-quantity",
+      "description": "Sold by weight: 0.5 kg at 200/kg.",
+      "lines": [{"unit_price": "200.00", "quantity": "0.5"}],
+      "expected": {
+        "subtotal": "100.00", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "14.00", "grand_total": "114.00", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "vat-disabled-service-enabled",
+      "description": "A branch not registered for VAT still charges service.",
+      "rules": {"vat_enabled": false, "service_percent": "12.00", "service_enabled": true},
+      "lines": [
+        {"unit_price": "60.00", "quantity": "2"},
+        {"unit_price": "40.00", "quantity": "1"}
+      ],
+      "expected": {
+        "subtotal": "160.00", "discount_total": "0.00", "service_total": "19.20",
+        "tax_total": "0.00", "grand_total": "179.20", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "rounding-step-quarter-pound",
+      "description": "finance.rounding_step = 0.25. Raw 117.76 lands on 117.75; the -0.01 is reported.",
+      "rules": {"rounding_step": "0.25"},
+      "lines": [{"unit_price": "103.30", "quantity": "1"}],
+      "expected": {
+        "subtotal": "103.30", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "14.46", "grand_total": "117.75", "rounding_adjustment": "-0.01"
+      }
+    },
+    {
+      "id": "empty-order",
+      "description": "No lines. Everything zero, no division by zero.",
+      "lines": [],
+      "expected": {
+        "subtotal": "0.00", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "0.00", "grand_total": "0.00", "rounding_adjustment": "0.00"
+      }
+    },
+    {
+      "id": "large-order-ten-lines",
+      "description": "Ten lines of 99.99 x 3. Guards against per-line rounding drift accumulating.",
+      "lines": [
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"},
+        {"unit_price": "99.99", "quantity": "3"}
+      ],
+      "expected": {
+        "subtotal": "2999.70", "discount_total": "0.00", "service_total": "0.00",
+        "tax_total": "419.96", "grand_total": "3419.66", "rounding_adjustment": "0.00"
+      }
+    }
+  ]
+}
