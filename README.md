@@ -12,9 +12,9 @@ reconciles through an idempotent event log.
 
 ## Status
 
-**Phases 1–2 complete** — foundation, identity and authorization built and verified.
-**222 tests passing.** Next: Phase 3, licensing & device activation. See the
-[roadmap](docs/08-roadmap.md).
+**Phases 1–3 complete** (Phase 3 backend; the PySide6 desktop client is next).
+Foundation, identity, authorization, and licensing built and verified —
+**341 tests passing**, 28 endpoints. See the [roadmap](docs/08-roadmap.md).
 
 ```bash
 cp .env.example .env          # adjust API_PORT if 8000 is taken

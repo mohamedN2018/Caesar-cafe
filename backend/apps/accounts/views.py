@@ -27,6 +27,7 @@ from apps.authz.services import effective_permissions
 from apps.configuration import resolver
 from apps.configuration.resolver import ScopeContext
 from apps.core.exceptions import AppError, PermissionDeniedError
+from apps.core.serializers import DetailSerializer as SimpleResultSerializer
 
 from . import services, tokens, totp
 from .models import User
@@ -40,7 +41,6 @@ from .serializers import (
     MFASetupSerializer,
     RefreshRequestSerializer,
     SetPinSerializer,
-    SimpleResultSerializer,
     TokenPairSerializer,
     VerifyPinRequestSerializer,
 )

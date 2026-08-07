@@ -15,6 +15,18 @@ class HealthSerializer(serializers.Serializer):
     checks = HealthChecksSerializer()
 
 
+class DetailSerializer(serializers.Serializer):
+    """
+    A single human-readable result message.
+
+    Lives here rather than being redefined per app: drf-spectacular keys
+    components by class NAME, so two identically-named serializers in different
+    apps silently produce a wrong schema.
+    """
+
+    detail = serializers.CharField()
+
+
 class SystemInfoSerializer(serializers.Serializer):
     server_version = serializers.CharField()
     min_supported_client_version = serializers.CharField(

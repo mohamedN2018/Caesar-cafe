@@ -59,9 +59,18 @@ class AuthContextMiddleware:
             # keeps 401-vs-403 in one place.
             return ANONYMOUS
 
+        kind = PrincipalKind(payload.get("kind", PrincipalKind.WEB))
+        branch_id = _as_uuid(payload.get("branch"))
+        device_id = _as_uuid(payload.get("device"))
         user_id = _as_uuid(payload.get("sub"))
+
         if user_id is None:
-            return ANONYMOUS
+            # A device principal: no human, therefore no permissions. It can
+            # sync and read, but anything with financial consequence needs a
+            # person attached — see RequiresHuman.
+            if kind is not PrincipalKind.DEVICE or device_id is None:
+                return ANONYMOUS
+            return self._device_context(device_id, branch_id)
 
         user = (
             User.objects.filter(id=user_id, is_active=True)
@@ -71,15 +80,35 @@ class AuthContextMiddleware:
         if user is None:
             return ANONYMOUS
 
-        branch_id = _as_uuid(payload.get("branch"))
-        kind = PrincipalKind(payload.get("kind", PrincipalKind.WEB))
-
         return AuthContext(
             kind=kind,
             user_id=user.id,
             organization_id=user.organization_id,
             branch_id=branch_id,
-            device_id=_as_uuid(payload.get("device")),
+            device_id=device_id,
             permissions=effective_permissions(user.id, branch_id),
             is_superuser=user.is_superuser,
+        )
+
+    @staticmethod
+    def _device_context(device_id, branch_id) -> AuthContext:
+        from apps.licensing.models import Device, DeviceStatus
+
+        device = (
+            Device.objects.filter(id=device_id, status=DeviceStatus.ACTIVE)
+            .select_related("license")
+            .first()
+        )
+        if device is None:
+            # Revoked or suspended mid-session: the token stops working at once,
+            # without waiting for it to expire.
+            return ANONYMOUS
+
+        return AuthContext(
+            kind=PrincipalKind.DEVICE,
+            user_id=None,
+            organization_id=device.license.organization_id,
+            branch_id=branch_id or device.branch_id,
+            device_id=device.id,
+            permissions=frozenset(),
         )

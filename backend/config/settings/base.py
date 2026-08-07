@@ -70,6 +70,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.authz",
     "apps.configuration",
+    "apps.licensing",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -213,6 +214,14 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": "/api/v1",
     "COMPONENT_SPLIT_REQUEST": True,
     "SORT_OPERATIONS": True,
+    # Several models have a `status` field with different choice sets. Without
+    # these, generated TypeScript gets meaningless names like `Status7c0Enum`.
+    "ENUM_NAME_OVERRIDES": {
+        "LicenseStatusEnum": "apps.licensing.models.LicenseStatus.choices",
+        "DeviceStatusEnum": "apps.licensing.models.DeviceStatus.choices",
+        "LicenseTypeEnum": "apps.licensing.models.LicenseType.choices",
+        "DeviceModeEnum": "apps.licensing.models.DeviceMode.choices",
+    },
     # Every response is enveloped by the renderer, so the schema must say so —
     # otherwise the generated TypeScript types describe a payload that never
     # arrives. See apps/core/schema.py.

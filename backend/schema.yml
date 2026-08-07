@@ -34,7 +34,7 @@ paths:
                     enum:
                     - true
                   data:
-                    $ref: '#/components/schemas/SimpleResult'
+                    $ref: '#/components/schemas/Detail'
                   meta:
                     type: object
                     properties:
@@ -117,7 +117,7 @@ paths:
                     enum:
                     - true
                   data:
-                    $ref: '#/components/schemas/SimpleResult'
+                    $ref: '#/components/schemas/Detail'
                   meta:
                     type: object
                     properties:
@@ -189,7 +189,7 @@ paths:
                     enum:
                     - true
                   data:
-                    $ref: '#/components/schemas/SimpleResult'
+                    $ref: '#/components/schemas/Detail'
                   meta:
                     type: object
                     properties:
@@ -230,7 +230,7 @@ paths:
                     enum:
                     - true
                   data:
-                    $ref: '#/components/schemas/SimpleResult'
+                    $ref: '#/components/schemas/Detail'
                   meta:
                     type: object
                     properties:
@@ -346,7 +346,7 @@ paths:
                     enum:
                     - true
                   data:
-                    $ref: '#/components/schemas/SimpleResult'
+                    $ref: '#/components/schemas/Detail'
                   meta:
                     type: object
                     properties:
@@ -388,7 +388,7 @@ paths:
                     enum:
                     - true
                   data:
-                    $ref: '#/components/schemas/SimpleResult'
+                    $ref: '#/components/schemas/Detail'
                   meta:
                     type: object
                     properties:
@@ -436,6 +436,400 @@ paths:
                     - true
                   data:
                     $ref: '#/components/schemas/ApprovalToken'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/licensing/activate/:
+    post:
+      operationId: licensing_activate_create
+      description: |-
+        The activation handshake. Public by necessity — the device has no
+        credentials yet — so it is rate-limited hard (5/hour/IP).
+      summary: Activate a device against a licence key
+      tags:
+      - licensing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivationRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivationRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivationRequestRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ActivationResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/licensing/device-token/:
+    post:
+      operationId: licensing_device_token_create
+      description: Exchange the long-lived device secret for a short-lived access
+        token.
+      summary: Obtain a device access token
+      tags:
+      - licensing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeviceTokenRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DeviceTokenRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DeviceTokenRequestRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/licensing/devices/:
+    get:
+      operationId: licensing_devices_list
+      summary: List activated devices
+      tags:
+      - licensing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Device'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/licensing/devices/{id}/{action}/:
+    post:
+      operationId: licensing_devices_create
+      description: revoke · reset · suspend · resume
+      summary: Act on a device
+      parameters:
+      - in: path
+        name: action
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - licensing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Detail'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/licensing/heartbeat/:
+    post:
+      operationId: licensing_heartbeat_create
+      description: |-
+        Periodic liveness + licence status, and how a fresh offline token reaches
+        the device. A terminal that is online daily slides its grace window forward
+        without ever noticing the mechanism.
+      summary: Device heartbeat
+      tags:
+      - licensing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/HeartbeatRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/HeartbeatRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/HeartbeatRequestRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/HeartbeatResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/licensing/invoice-blocks/:
+    post:
+      operationId: licensing_invoice_blocks_create
+      description: Reserve the next disjoint invoice-number range for this device
+        (C9).
+      summary: Allocate an invoice number block
+      tags:
+      - licensing
+      responses:
+        '201':
+          description: No response body
+  /api/v1/licensing/licenses/:
+    get:
+      operationId: licensing_licenses_list
+      summary: List licences
+      tags:
+      - licensing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/License'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: licensing_licenses_create
+      summary: Issue a licence
+      tags:
+      - licensing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueLicenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueLicenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueLicenseRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/IssuedLicense'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/licensing/licenses/{id}/:
+    get:
+      operationId: licensing_licenses_retrieve
+      summary: Licence detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - licensing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/License'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/licensing/licenses/{id}/{action}/:
+    post:
+      operationId: licensing_license_action
+      description: suspend · resume · revoke · renew · regenerate-key
+      summary: Act on a licence (suspend · resume · revoke · renew · regenerate-key)
+      parameters:
+      - in: path
+        name: action
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - licensing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenewLicenseRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RenewLicenseRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RenewLicenseRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/License'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/licensing/licenses/{id}/events/:
+    get:
+      operationId: licensing_licenses_events_list
+      summary: Licence event log
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - licensing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/LicenseEvent'
                   meta:
                     type: object
                     properties:
@@ -801,6 +1195,76 @@ paths:
           description: ''
 components:
   schemas:
+    ActivationRequestRequest:
+      type: object
+      properties:
+        license_key:
+          type: string
+          minLength: 1
+          description: QSR-XXXX-XXXX-XXXX-XXXX. Case and dashes are normalized.
+        email:
+          type: string
+          format: email
+          minLength: 1
+        device_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        mode:
+          allOf:
+          - $ref: '#/components/schemas/DeviceModeEnum'
+          default: POS
+        platform:
+          type: string
+          maxLength: 64
+        app_version:
+          type: string
+          maxLength: 32
+        fingerprint:
+          type: string
+          description: Advisory telemetry. Never used for authorization.
+          maxLength: 128
+      required:
+      - device_name
+      - email
+      - license_key
+    ActivationResponse:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        device_secret:
+          type: string
+          description: Returned once. Store in the OS keychain.
+        offline_token:
+          type: string
+          description: Ed25519-signed; verified locally.
+        branch_id:
+          type: string
+          format: uuid
+        branch_name:
+          type: string
+        device_name:
+          type: string
+        mode:
+          type: string
+        license_status:
+          type: string
+        license_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - branch_id
+      - branch_name
+      - device_id
+      - device_name
+      - device_secret
+      - license_expires_at
+      - license_status
+      - mode
+      - offline_token
     ApprovalToken:
       type: object
       properties:
@@ -831,11 +1295,160 @@ components:
       required:
       - current_password
       - new_password
+    Detail:
+      type: object
+      description: |-
+        A single human-readable result message.
+
+        Lives here rather than being redefined per app: drf-spectacular keys
+        components by class NAME, so two identically-named serializers in different
+        apps silently produce a wrong schema.
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_name:
+          type: string
+          readOnly: true
+        mode:
+          allOf:
+          - $ref: '#/components/schemas/DeviceModeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DeviceStatusEnum'
+          readOnly: true
+        platform:
+          type: string
+          readOnly: true
+        app_version:
+          type: string
+          readOnly: true
+        branch:
+          type: string
+          format: uuid
+          readOnly: true
+        branch_name:
+          type: string
+          readOnly: true
+        license:
+          type: string
+          format: uuid
+          readOnly: true
+        license_key:
+          type: string
+          readOnly: true
+        first_activated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_seen_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_ip:
+          type: string
+          readOnly: true
+          nullable: true
+        fingerprint_changed_count:
+          type: integer
+          readOnly: true
+        minutes_since_seen:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+      required:
+      - app_version
+      - branch
+      - branch_name
+      - device_name
+      - fingerprint_changed_count
+      - first_activated_at
+      - id
+      - last_ip
+      - last_seen_at
+      - license
+      - license_key
+      - minutes_since_seen
+      - mode
+      - platform
+      - status
+    DeviceModeEnum:
+      enum:
+      - POS
+      - KDS
+      - BOTH
+      type: string
+      description: |-
+        * `POS` - POS
+        * `KDS` - KDS
+        * `BOTH` - BOTH
+    DeviceStatusEnum:
+      enum:
+      - ACTIVE
+      - SUSPENDED
+      - REVOKED
+      type: string
+      description: |-
+        * `ACTIVE` - ACTIVE
+        * `SUSPENDED` - SUSPENDED
+        * `REVOKED` - REVOKED
+    DeviceTokenRequestRequest:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        device_secret:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - device_id
+      - device_secret
+    EventEnum:
+      enum:
+      - CREATED
+      - ACTIVATED
+      - ACTIVATION_FAILED
+      - SUSPENDED
+      - RESUMED
+      - RENEWED
+      - REVOKED
+      - SEATS_CHANGED
+      - KEY_REGENERATED
+      - DEVICE_REVOKED
+      - DEVICE_RESET
+      - HEARTBEAT_DENIED
+      type: string
+      description: |-
+        * `CREATED` - CREATED
+        * `ACTIVATED` - ACTIVATED
+        * `ACTIVATION_FAILED` - ACTIVATION_FAILED
+        * `SUSPENDED` - SUSPENDED
+        * `RESUMED` - RESUMED
+        * `RENEWED` - RENEWED
+        * `REVOKED` - REVOKED
+        * `SEATS_CHANGED` - SEATS_CHANGED
+        * `KEY_REGENERATED` - KEY_REGENERATED
+        * `DEVICE_REVOKED` - DEVICE_REVOKED
+        * `DEVICE_RESET` - DEVICE_RESET
+        * `HEARTBEAT_DENIED` - HEARTBEAT_DENIED
     Health:
       type: object
       properties:
         status:
-          $ref: '#/components/schemas/StatusEnum'
+          $ref: '#/components/schemas/HealthStatusEnum'
         version:
           type: string
         checks:
@@ -851,6 +1464,349 @@ components:
           type: boolean
       required:
       - database
+    HealthStatusEnum:
+      enum:
+      - healthy
+      - degraded
+      type: string
+      description: |-
+        * `healthy` - healthy
+        * `degraded` - degraded
+    HeartbeatRequestRequest:
+      type: object
+      properties:
+        app_version:
+          type: string
+          maxLength: 32
+        pending_operations:
+          type: integer
+          default: 0
+    HeartbeatResponse:
+      type: object
+      properties:
+        server_time:
+          type: string
+          format: date-time
+        license_status:
+          type: string
+        stage:
+          type: string
+        can_open_new_orders:
+          type: boolean
+        can_close_open_orders:
+          type: boolean
+        days_until_expiry:
+          type: integer
+          nullable: true
+        message_ar:
+          type: string
+        offline_token:
+          type: string
+        min_supported_client_version:
+          type: string
+        latest_version:
+          type: string
+      required:
+      - can_close_open_orders
+      - can_open_new_orders
+      - days_until_expiry
+      - latest_version
+      - license_status
+      - message_ar
+      - min_supported_client_version
+      - offline_token
+      - server_time
+      - stage
+    IssueLicenseRequest:
+      type: object
+      properties:
+        customer_email:
+          type: string
+          format: email
+          minLength: 1
+        customer_name:
+          type: string
+          maxLength: 200
+        license_type:
+          $ref: '#/components/schemas/LicenseTypeEnum'
+        max_devices:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 3
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: Omit for a LIFETIME licence.
+        branch_id:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+      required:
+      - customer_email
+      - license_type
+    IssuedLicense:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        masked_key:
+          type: string
+          readOnly: true
+        key_prefix:
+          type: string
+          readOnly: true
+          description: QSR-7X29, for display.
+        key_last4:
+          type: string
+          readOnly: true
+        customer_email:
+          type: string
+          format: email
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        license_type:
+          allOf:
+          - $ref: '#/components/schemas/LicenseTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/LicenseStatusEnum'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Null = lifetime.
+        max_devices:
+          type: integer
+          readOnly: true
+        active_device_count:
+          type: integer
+          readOnly: true
+        seats_available:
+          type: integer
+          readOnly: true
+        activation_count:
+          type: integer
+          readOnly: true
+        last_activation_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        branch:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Bound at first activation.
+        branch_name:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        license_key:
+          type: string
+          readOnly: true
+        warning_ar:
+          type: string
+          readOnly: true
+      required:
+      - activation_count
+      - active_device_count
+      - branch
+      - branch_name
+      - created_at
+      - customer_email
+      - customer_name
+      - expires_at
+      - id
+      - key_last4
+      - key_prefix
+      - last_activation_at
+      - license_key
+      - license_type
+      - masked_key
+      - max_devices
+      - notes
+      - seats_available
+      - starts_at
+      - status
+      - warning_ar
+    License:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        masked_key:
+          type: string
+          readOnly: true
+        key_prefix:
+          type: string
+          readOnly: true
+          description: QSR-7X29, for display.
+        key_last4:
+          type: string
+          readOnly: true
+        customer_email:
+          type: string
+          format: email
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        license_type:
+          allOf:
+          - $ref: '#/components/schemas/LicenseTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/LicenseStatusEnum'
+          readOnly: true
+        starts_at:
+          type: string
+          format: date-time
+          readOnly: true
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Null = lifetime.
+        max_devices:
+          type: integer
+          readOnly: true
+        active_device_count:
+          type: integer
+          readOnly: true
+        seats_available:
+          type: integer
+          readOnly: true
+        activation_count:
+          type: integer
+          readOnly: true
+        last_activation_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        branch:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+          description: Bound at first activation.
+        branch_name:
+          type: string
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - activation_count
+      - active_device_count
+      - branch
+      - branch_name
+      - created_at
+      - customer_email
+      - customer_name
+      - expires_at
+      - id
+      - key_last4
+      - key_prefix
+      - last_activation_at
+      - license_type
+      - masked_key
+      - max_devices
+      - notes
+      - seats_available
+      - starts_at
+      - status
+    LicenseEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event:
+          allOf:
+          - $ref: '#/components/schemas/EventEnum'
+          readOnly: true
+        actor_name:
+          type: string
+          readOnly: true
+        device_name:
+          type: string
+          readOnly: true
+        detail:
+          readOnly: true
+        ip_address:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actor_name
+      - created_at
+      - detail
+      - device_name
+      - event
+      - id
+      - ip_address
+    LicenseStatusEnum:
+      enum:
+      - PENDING
+      - ACTIVE
+      - SUSPENDED
+      - EXPIRED
+      - REVOKED
+      type: string
+      description: |-
+        * `PENDING` - PENDING
+        * `ACTIVE` - ACTIVE
+        * `SUSPENDED` - SUSPENDED
+        * `EXPIRED` - EXPIRED
+        * `REVOKED` - REVOKED
+    LicenseTypeEnum:
+      enum:
+      - TRIAL
+      - MONTHLY
+      - YEARLY
+      - LIFETIME
+      type: string
+      description: |-
+        * `TRIAL` - TRIAL
+        * `MONTHLY` - MONTHLY
+        * `YEARLY` - YEARLY
+        * `LIFETIME` - LIFETIME
     LoginRequestRequest:
       type: object
       properties:
@@ -985,6 +1941,14 @@ components:
           minLength: 1
       required:
       - refresh
+    RenewLicenseRequest:
+      type: object
+      properties:
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
     ResolvedSetting:
       type: object
       properties:
@@ -1149,21 +2113,6 @@ components:
       required:
       - applied
       - errors
-    SimpleResult:
-      type: object
-      properties:
-        detail:
-          type: string
-      required:
-      - detail
-    StatusEnum:
-      enum:
-      - healthy
-      - degraded
-      type: string
-      description: |-
-        * `healthy` - healthy
-        * `degraded` - degraded
     SystemInfo:
       type: object
       properties:

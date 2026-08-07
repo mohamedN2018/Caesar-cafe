@@ -46,17 +46,24 @@ class TestNoFloatNearMoney:
                 assert node.func.id != "float", "float() called in money.py"
 
 
-class TestMoneyModuleIsPortable:
+class TestVendoredModulesArePortable:
     """
-    apps/core/money.py is vendored into the PySide6 Desktop client verbatim.
-
-    It must therefore have no Django dependency — otherwise the two sides cannot
-    share one algorithm, and they will drift.
+    These modules are copied into the PySide6 Desktop client verbatim, so both
+    sides run identical logic. A Django import in any of them breaks that — and
+    the two implementations would then be free to drift, which is exactly what
+    vendoring exists to prevent.
     """
 
-    def test_no_django_imports(self) -> None:
-        source = (APPS_DIR / "core" / "money.py").read_text(encoding="utf-8")
-        tree = ast.parse(source)
+    VENDORED = [
+        ("core", "money.py", "order totals must agree to the piaster"),
+        ("licensing", "offline_token.py", "the client verifies tokens locally"),
+        ("licensing", "keys.py", "the client normalizes typed keys before sending"),
+    ]
+
+    @pytest.mark.parametrize(("app", "filename", "why"), VENDORED)
+    def test_no_django_imports(self, app: str, filename: str, why: str) -> None:
+        tree = ast.parse((APPS_DIR / app / filename).read_text(encoding="utf-8"))
+
         imported: list[str] = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -66,7 +73,7 @@ class TestMoneyModuleIsPortable:
 
         django_imports = [name for name in imported if name.split(".")[0] == "django"]
         assert not django_imports, (
-            f"money.py must stay Django-free so the Desktop can vendor it; found: {django_imports}"
+            f"{app}/{filename} must stay Django-free ({why}); found: {django_imports}"
         )
 
 

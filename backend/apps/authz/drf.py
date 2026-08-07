@@ -28,6 +28,10 @@ PUBLIC_ROUTE_NAMES = frozenset(
         "accounts:login",
         "accounts:refresh",
         "accounts:mfa-verify",
+        # A device has no credentials until it activates, and none afterwards
+        # until it exchanges its secret. Both are throttled hard instead.
+        "licensing:activate",
+        "licensing:device-token",
         "schema",
         "swagger-ui",
         "redoc",

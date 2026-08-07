@@ -75,7 +75,3 @@ class MFASetupSerializer(serializers.Serializer):
 
 class MFAConfirmSerializer(serializers.Serializer):
     code = serializers.RegexField(r"^\d{6}$")
-
-
-class SimpleResultSerializer(serializers.Serializer):
-    detail = serializers.CharField()

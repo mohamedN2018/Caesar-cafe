@@ -121,7 +121,14 @@ class TokenFamily(BaseModel):
 
     KIND_CHOICES = [("WEB", "WEB"), ("DEVICE", "DEVICE"), ("POS", "POS")]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="token_families")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="token_families",
+        null=True,
+        blank=True,
+        help_text="Null for DEVICE sessions — a terminal is not a person.",
+    )
     current_jti = models.UUIDField(db_index=True)
     kind = models.CharField(max_length=10, choices=KIND_CHOICES, default="WEB")
     device_id = models.UUIDField(null=True, blank=True)

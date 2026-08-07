@@ -535,6 +535,44 @@ register(
     high_impact=True,
 )
 register(
+    key="license.warn_before_expiry_days",
+    type=SettingType.INTEGER,
+    default=14,
+    scope=Scope.ORGANIZATION,
+    group="licensing",
+    label_ar="التنبيه قبل انتهاء الترخيص (يوم)",
+    label_en="Warn before expiry",
+    validators=(Range(1, 180),),
+    permission="licenses.manage",
+    pushes_to_desktop=True,
+)
+register(
+    key="license.grace_days_after_expiry",
+    type=SettingType.INTEGER,
+    default=7,
+    scope=Scope.ORGANIZATION,
+    group="licensing",
+    label_ar="مهلة السماح بعد الانتهاء (يوم)",
+    label_en="Grace days after expiry",
+    help_ar="خلال هذه المدة يعمل النظام بالكامل مع تنبيه دائم.",
+    validators=(Range(0, 90),),
+    permission="licenses.manage",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="license.heartbeat_interval_minutes",
+    type=SettingType.INTEGER,
+    default=15,
+    scope=Scope.ORGANIZATION,
+    group="licensing",
+    label_ar="فترة نبضة الجهاز (دقيقة)",
+    label_en="Heartbeat interval",
+    validators=(Range(1, 1440),),
+    permission="licenses.manage",
+    pushes_to_desktop=True,
+)
+register(
     key="license.expiry_policy",
     type=SettingType.ENUM,
     default="BLOCK_NEW_ORDERS",

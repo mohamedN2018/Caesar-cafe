@@ -158,7 +158,38 @@ Exit criteria:
 
 ---
 
-## Phase 3 — Licensing & Activation 🔴
+## Phase 3 — Licensing & Activation 🔴 BACKEND COMPLETE
+
+**Verified on 2026-08-07:** ruff + format clean · **341 tests passing** · migrations clean ·
+`spectacular --fail-on-warn` clean across 28 endpoints · full activation → heartbeat → revocation
+flow smoke-tested live.
+
+Delivered: key generation and HMAC storage, activation with the locked seat check, device secrets,
+Ed25519 offline tokens with the clock ratchet, the graduated expiry policy, invoice-number blocks,
+licence/device admin API, and the event log.
+
+**Still outstanding for this phase:** the PySide6 Desktop skeleton (activation screen, keyring
+storage, offline-token verification, PIN pad). The server side it talks to is done and proven.
+
+Three real bugs were caught by tests written specifically to catch them:
+
+1. **Invoice blocks collided under concurrency.** `SELECT ... FOR UPDATE` on the blocks table locks
+   nothing when the table is empty, so the first four simultaneous allocations all computed
+   `start = 1`. Now the **branch row** is locked — it always exists, so it serializes even the
+   first allocation.
+2. **Failed activations were never recorded.** The audit event was written inside the transaction
+   that the raised exception then rolled back, so every failure vanished exactly when the audit
+   trail matters most. Failures are now recorded after the transaction unwinds.
+3. **Device tokens were undecodable.** A device principal has no human, so `sub` was set to null —
+   but RFC 7519 says `sub` is a string when present, and PyJWT enforces it. The claim is now
+   omitted entirely. This would have broken every POS terminal.
+
+Also corrected: `TokenFamily.user` is nullable, because a terminal is not a person and pretending
+otherwise would put someone's name on actions they never took.
+
+---
+
+## Phase 3 — Licensing & Activation (original plan)
 
 **The first phase where a mistake is unrecoverable in production.**
 
