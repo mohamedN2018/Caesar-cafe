@@ -410,6 +410,89 @@ register(
     pushes_to_desktop=True,
 )
 
+# ── Kitchen ──────────────────────────────────────────────────────────────────
+
+register(
+    key="kitchen.allow_recall_minutes",
+    type=SettingType.INTEGER,
+    default=30,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="مهلة استرجاع التذكرة (دقيقة)",
+    label_en="Recall window",
+    help_ar="بعدها لا يمكن استرجاع تذكرة — حتى لا تُستخدم لإعادة كتابة يوم مضى.",
+    validators=(Range(0, 1440),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="kitchen.warning_threshold_percent",
+    type=SettingType.INTEGER,
+    default=80,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="نسبة التحذير من الوقت المستهدف",
+    label_en="Warning threshold",
+    help_ar="عندها تتحول بطاقة التذكرة للون الكهرماني.",
+    validators=(Range(10, 100),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kitchen.print_ticket_mode",
+    type=SettingType.ENUM,
+    default="on_kds_failure",
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="طباعة تذكرة المطبخ",
+    label_en="Print kitchen ticket",
+    help_ar=(
+        "on_kds_failure: الطباعة هي مسار الطوارئ لو الشاشة أو الشبكة وقعت — "
+        "ولهذا طابعة المطبخ ليست اختيارية حتى مع وجود شاشة."
+    ),
+    choices=("always", "on_kds_failure", "never"),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kitchen.kds_columns",
+    type=SettingType.INTEGER,
+    default=4,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="عدد أعمدة شاشة المطبخ",
+    label_en="KDS columns",
+    validators=(Range(1, 8),),
+    overridable_at=(Scope.DEVICE,),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kitchen.kds_sound_on_new",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="صوت تنبيه عند تذكرة جديدة",
+    label_en="Sound on new ticket",
+    overridable_at=(Scope.DEVICE,),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kitchen.show_prices_on_ticket",
+    type=SettingType.BOOLEAN,
+    default=False,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="إظهار الأسعار على تذكرة المطبخ",
+    label_en="Show prices on ticket",
+    help_ar="مغلق افتراضياً: المطبخ لا يحتاج الأسعار، والأرقام المالية تنتشر بلا سبب.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+
 # ── Inventory ────────────────────────────────────────────────────────────────
 
 register(

@@ -308,15 +308,32 @@ def _discount_applied(order: Order, payload: dict, *, actor=None) -> None:
 
 @handles(EventType.ORDER_FIRED)
 def _order_fired(order: Order, payload: dict, *, actor=None) -> None:
-    now = timezone.now()
-    unfired = order.items.filter(status=ItemStatus.ACTIVE, fired_at__isnull=True)
-    if not unfired.exists():
+    """
+    Send the unfired items to the kitchen.
+
+    `route_order` stamps `fired_at`, which is what makes a repeated fire
+    idempotent: a second press sends only what has been added since.
+    """
+    from apps.kitchen.services import route_order
+
+    if not order.items.filter(status=ItemStatus.ACTIVE, fired_at__isnull=True).exists():
         raise EventRejected("لا توجد أصناف جديدة لإرسالها", code="NOTHING_TO_FIRE")
 
-    unfired.update(fired_at=now)
-    state.assert_transition(order.status, OrderStatus.IN_KITCHEN)
-    order.status = OrderStatus.IN_KITCHEN
-    order.save(update_fields=["status", "updated_at"])
+    result = route_order(order, user=actor)
+    if result.unrouted:
+        # Surfaced on the response, not swallowed: an item with no station is an
+        # item nobody makes, and the cashier needs to know now.
+        logger.warning(
+            "Fired items had no kitchen station",
+            extra={"order": order.local_number, "items": result.unrouted},
+        )
+
+    # Firing a second round from IN_KITCHEN is normal — a table orders more
+    # after the first round arrives. Only assert when the status actually moves.
+    if order.status != OrderStatus.IN_KITCHEN:
+        state.assert_transition(order.status, OrderStatus.IN_KITCHEN)
+        order.status = OrderStatus.IN_KITCHEN
+        order.save(update_fields=["status", "updated_at"])
 
 
 @handles(EventType.TABLE_ASSIGNED)

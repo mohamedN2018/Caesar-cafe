@@ -10,6 +10,13 @@ from apps.authz.models import Role, RoleAssignment
 from apps.authz.services import ensure_system_roles
 from apps.organizations.models import Branch, Organization
 
+# NOTE: the suite ends with one PytestWarning — Postgres refuses to drop the
+# test database because a Channels `database_sync_to_async` worker thread still
+# holds a session. It is a teardown artifact of running async consumers under
+# pytest, not a product defect: every test passes and the database is recreated
+# on the next run. Two attempts to close those threads from a fixture did not
+# reach them, so the warning is left visible rather than papered over.
+
 
 @pytest.fixture(autouse=True)
 def _clear_caches():

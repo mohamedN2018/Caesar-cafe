@@ -352,7 +352,50 @@ Exit criteria:
 
 ---
 
-## Phase 6 — Kitchen & Real-time
+## Phase 6 — Kitchen & Real-time ✅ DOMAIN COMPLETE
+
+**Verified on 2026-08-07:** ruff + format clean · **505 tests passing** (36 new: 26 kitchen +
+10 WebSocket) · migrations clean · `spectacular --fail-on-warn` clean.
+
+Delivered: `kitchen` (Station, KitchenTicket, TicketLine, routing on fire, the ticket state
+machine, bounded recall, prep-time capture, the performance endpoint), Django Channels
+(`BranchConsumer`, per-branch and per-station groups, `ProtocolTypeRouter` in `config/asgi.py`),
+the REST surface for stations, the ticket board and transitions, and six `kitchen.*` settings.
+
+Exit criteria met:
+
+- **A fired order reaches the KDS over the socket**, and the same tickets are reachable by REST
+  when the socket is not — `services.serialize_ticket` is the *single* source for both payloads.
+- **A multi-station order splits correctly**, and the order is READY only when every ticket is.
+  A customer whose coffee is done but whose cake is not has not had their order completed.
+- **Firing twice sends only what is new.** `fired_at` on the item is the idempotency mark, so a
+  Desktop that retries a timed-out fire does not double the kitchen's work.
+- **An item with no station is reported, not dropped.** A drink nobody makes is a problem the
+  cashier must learn about immediately, not when the customer asks where it is.
+- The consumer authenticates in `connect()` **before joining any group**, rejects cross-branch
+  subscriptions, and accepts no state changes over `receive_json` — the socket is a broadcast
+  channel, and every mutation still goes through the permission-checked REST path.
+- Broadcast failure is caught and logged: WebSockets are an optimization, never a correctness
+  requirement.
+
+Three bugs this phase found, all of them in the seam between orders and the kitchen:
+
+1. **A second fire from `IN_KITCHEN` raised `InvalidStateTransition`.** A table ordering more after
+   the first round arrives is ordinary, not an error — the transition is now asserted only when the
+   status actually moves.
+2. **`kitchen.allow_recall_minutes` was read but never registered.** The recall window resolved
+   against nothing. Caught because the registry refuses unknown keys rather than returning a
+   plausible default — the argument for C10 in one line.
+3. **REST and the WebSocket emitted different ticket shapes.** A KDS reconnecting after a dropped
+   socket would have had to parse a different object than the one it was receiving a second
+   earlier. That is exactly how a fallback path rots unnoticed, so both now emit
+   `serialize_ticket` verbatim.
+
+**Still outstanding:** the Desktop KDS screens, the Web live-kitchen view and station config, and
+kitchen ticket printing as the offline fallback — all client work, deferred with the rest of the
+Desktop POS surface.
+
+Original plan:
 
 Deliverables:
 - `kitchen`: Station, KitchenTicket, TicketLine, routing on fire, per-station filtering

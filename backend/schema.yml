@@ -2988,6 +2988,428 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/kitchen/performance/:
+    get:
+      operationId: kitchen_performance_retrieve
+      summary: Prep times by station
+      tags:
+      - kitchen
+      responses:
+        '200':
+          description: No response body
+  /api/v1/kitchen/stations/:
+    get:
+      operationId: kitchen_stations_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - kitchen
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Station'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: kitchen_stations_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - kitchen
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StationRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Station'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kitchen/stations/{id}/:
+    get:
+      operationId: kitchen_stations_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا station.
+        required: true
+      tags:
+      - kitchen
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Station'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: kitchen_stations_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا station.
+        required: true
+      tags:
+      - kitchen
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StationRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Station'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: kitchen_stations_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا station.
+        required: true
+      tags:
+      - kitchen
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStationRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStationRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStationRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Station'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: kitchen_stations_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا station.
+        required: true
+      tags:
+      - kitchen
+      responses:
+        '204':
+          description: No response body
+  /api/v1/kitchen/tickets/:
+    get:
+      operationId: kitchen_tickets_list
+      summary: Kitchen tickets
+      tags:
+      - kitchen
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Ticket'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kitchen/tickets/{id}/{action}/:
+    post:
+      operationId: kitchen_tickets_create
+      summary: Advance a ticket (accept · start · ready · served)
+      parameters:
+      - in: path
+        name: action
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kitchen
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Ticket'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kitchen/tickets/{id}/lines/{line_id}/ready/:
+    post:
+      operationId: kitchen_tickets_lines_ready_create
+      description: Per-item readiness, for stations that plate in stages.
+      summary: Mark one ticket line ready
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: line_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kitchen
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Ticket'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kitchen/tickets/{id}/recall/:
+    post:
+      operationId: kitchen_tickets_recall_create
+      summary: Recall a served ticket
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kitchen
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Ticket'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/licensing/activate/:
     post:
       operationId: licensing_activate_create
@@ -6822,6 +7244,35 @@ components:
           type: object
           additionalProperties: {}
           description: Setting key → new value. Each is validated independently.
+    PatchedStationRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          description: COFFEE, HOT, COLD, DESSERT, BAR
+          maxLength: 32
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        target_prep_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        auto_accept:
+          type: boolean
+          description: Skip the ACCEPTED step for stations that never triage, e.g.
+            a bar.
+        printer_name:
+          type: string
+          maxLength: 100
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
     PatchedStockCountRequest:
       type: object
       properties:
@@ -7612,6 +8063,73 @@ components:
         * `OPEN` - OPEN
         * `CLOSING` - CLOSING
         * `CLOSED` - CLOSED
+    Station:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          description: COFFEE, HOT, COLD, DESSERT, BAR
+          maxLength: 32
+        name_ar:
+          type: string
+          maxLength: 100
+        target_prep_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        auto_accept:
+          type: boolean
+          description: Skip the ACCEPTED step for stations that never triage, e.g.
+            a bar.
+        printer_name:
+          type: string
+          maxLength: 100
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - code
+      - id
+      - name_ar
+    StationRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          description: COFFEE, HOT, COLD, DESSERT, BAR
+          maxLength: 32
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        target_prep_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        auto_accept:
+          type: boolean
+          description: Skip the ACCEPTED step for stations that never triage, e.g.
+            a bar.
+        printer_name:
+          type: string
+          maxLength: 100
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - code
+      - name_ar
     StockCount:
       type: object
       properties:
@@ -7953,6 +8471,95 @@ components:
         * `OCCUPIED` - OCCUPIED
         * `RESERVED` - RESERVED
         * `CLEANING` - CLEANING
+    Ticket:
+      type: object
+      description: |-
+        The kitchen ticket, in ONE shape.
+
+        Deliberately not a ModelSerializer: `services.serialize_ticket` is the
+        single source, and both the WebSocket push and this REST fallback emit its
+        output verbatim. A KDS that reconnects after a dropped socket must not have
+        to parse a different object than the one it was receiving a second earlier —
+        two shapes is how a fallback path quietly rots.
+      properties:
+        id:
+          type: string
+          format: uuid
+        ticket_number:
+          type: integer
+        status:
+          type: string
+        order_id:
+          type: string
+          format: uuid
+        order_number:
+          type: string
+        order_type:
+          type: string
+        table:
+          type: string
+          nullable: true
+        station_id:
+          type: string
+          format: uuid
+        station_name:
+          type: string
+        target_minutes:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        elapsed_seconds:
+          type: integer
+        is_late:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketLine'
+      required:
+      - created_at
+      - elapsed_seconds
+      - id
+      - is_late
+      - lines
+      - order_id
+      - order_number
+      - order_type
+      - station_id
+      - station_name
+      - status
+      - table
+      - target_minutes
+      - ticket_number
+    TicketLine:
+      type: object
+      description: Documents the shape produced by `services.serialize_ticket`.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        quantity:
+          type: string
+        modifiers:
+          type: array
+          items:
+            type: string
+        note:
+          type: string
+        ready_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - modifiers
+      - name
+      - note
+      - quantity
+      - ready_at
     TokenPair:
       type: object
       properties:
