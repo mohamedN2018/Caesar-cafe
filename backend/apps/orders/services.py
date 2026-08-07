@@ -1,0 +1,451 @@
+"""
+Applying order events and folding them into the aggregate.
+
+`apply_events` is the only mutation path for an order. Every client — the SPA,
+the Desktop, the sync engine — goes through it, so ordering, idempotency,
+authorization and total recalculation exist in exactly one place.
+"""
+
+from __future__ import annotations
+
+import logging
+import uuid
+from dataclasses import dataclass
+from decimal import Decimal
+
+from django.db import transaction
+from django.utils import timezone
+
+from apps.catalog.models import Modifier, ProductVariant
+from apps.configuration import resolver
+from apps.configuration.resolver import ScopeContext
+from apps.core.exceptions import AppError, NotFoundError
+from apps.core.money import OrderLine, TaxRules, compute_order
+
+from . import state
+from .models import (
+    EventType,
+    ItemStatus,
+    Order,
+    OrderEvent,
+    OrderItem,
+    OrderItemModifier,
+    OrderStatus,
+    OrderType,
+)
+
+logger = logging.getLogger(__name__)
+
+
+class EventRejected(AppError):
+    status_code = 422
+    code = "EVENT_REJECTED"
+
+
+@dataclass(frozen=True)
+class ApplyResult:
+    order: Order
+    applied: list[str]
+    skipped: list[str]
+    """Event ids already recorded — a replay, not an error."""
+
+
+# ── tax rules ────────────────────────────────────────────────────────────────
+
+
+def tax_rules_for(branch) -> dict:
+    """
+    Resolve the branch's money rules, snapshotted onto the order at open time.
+
+    Snapshotting is what stops a mid-service VAT change from silently rewriting
+    a bill the customer is already looking at.
+    """
+    context = ScopeContext(organization_id=branch.organization_id, branch_id=branch.id)
+    return {
+        "vat_percent": resolver.get("finance.vat_percent", context),
+        "vat_enabled": resolver.get("finance.vat_enabled", context),
+        "vat_inclusive": resolver.get("finance.vat_inclusive", context),
+        "service_percent": resolver.get("finance.service_percent", context),
+        "service_enabled": resolver.get("finance.service_enabled", context),
+        "service_applies_to": resolver.get("finance.service_applies_to", context),
+        "rounding_step": resolver.get("finance.rounding_step", context),
+    }
+
+
+def _rules_from_order(order: Order) -> TaxRules:
+    return TaxRules(
+        vat_percent=order.vat_percent,
+        vat_enabled=order.vat_percent > 0,
+        vat_inclusive=order.vat_inclusive,
+        service_percent=order.service_percent,
+        service_enabled=order.service_percent > 0,
+        rounding_step=order.rounding_step,
+    )
+
+
+# ── opening ──────────────────────────────────────────────────────────────────
+
+
+@transaction.atomic
+def open_order(
+    *,
+    branch,
+    order_type: str = OrderType.DINE_IN,
+    order_id=None,
+    local_number: str | None = None,
+    table_session=None,
+    shift=None,
+    device_id=None,
+    user=None,
+) -> Order:
+    rules = tax_rules_for(branch)
+    service_applies = order_type in (rules["service_applies_to"] or [])
+
+    order = Order.objects.create(
+        id=order_id or uuid.uuid4(),
+        organization=branch.organization,
+        branch=branch,
+        order_type=order_type,
+        status=OrderStatus.DRAFT,
+        local_number=local_number or _next_local_number(branch, device_id),
+        table_session=table_session,
+        shift=shift,
+        device_id=device_id,
+        opened_by=user,
+        vat_percent=rules["vat_percent"] if rules["vat_enabled"] else Decimal("0"),
+        vat_inclusive=rules["vat_inclusive"],
+        service_percent=(
+            rules["service_percent"]
+            if (rules["service_enabled"] and service_applies)
+            else Decimal("0")
+        ),
+        rounding_step=rules["rounding_step"],
+        created_by=user,
+    )
+
+    _record(
+        order,
+        EventType.ORDER_OPENED,
+        payload={"order_type": order_type},
+        actor=user,
+        device_id=device_id,
+    )
+    order.status = OrderStatus.OPEN
+    order.save(update_fields=["status", "updated_at"])
+    return order
+
+
+def _next_local_number(branch, device_id) -> str:
+    """
+    `MB-01-0042`. Readable, and unique per branch without a coordination
+    round-trip — which an offline device cannot make.
+    """
+    device_code = str(device_id)[-2:].upper() if device_id else "00"
+    today = timezone.now().date()
+    count = Order.objects.filter(branch=branch, opened_at__date=today).count() + 1
+    return f"{branch.code}-{device_code}-{count:04d}"
+
+
+# ── events ───────────────────────────────────────────────────────────────────
+
+_HANDLERS = {}
+
+
+def handles(event_type):
+    def register(func):
+        _HANDLERS[event_type] = func
+        return func
+
+    return register
+
+
+@transaction.atomic
+def apply_events(
+    order: Order,
+    events: list[dict],
+    *,
+    actor=None,
+    device_id=None,
+    approval=None,
+) -> ApplyResult:
+    """
+    Append events to an order and refold it.
+
+    Events already recorded are SKIPPED, not rejected: a Desktop whose push
+    timed out must be able to retry the whole batch without duplicating a line.
+    """
+    locked = Order.objects.select_for_update().get(pk=order.pk)
+    existing_ids = set(map(str, locked.events.values_list("id", flat=True)))
+    next_sequence = (
+        locked.events.order_by("-sequence").values_list("sequence", flat=True).first() or 0
+    )
+
+    applied: list[str] = []
+    skipped: list[str] = []
+
+    for raw in events:
+        event_id = str(raw.get("id") or uuid.uuid4())
+        if event_id in existing_ids:
+            skipped.append(event_id)
+            continue
+
+        event_type = raw.get("type") or raw.get("event_type")
+        handler = _HANDLERS.get(event_type)
+        if handler is None:
+            raise EventRejected(f"نوع حدث غير معروف: {event_type}", code="UNKNOWN_EVENT_TYPE")
+
+        state.assert_mutable(locked)
+        handler(locked, raw.get("payload") or {}, actor=actor)
+
+        next_sequence += 1
+        OrderEvent.objects.create(
+            id=uuid.UUID(event_id),
+            order=locked,
+            sequence=next_sequence,
+            event_type=event_type,
+            payload=raw.get("payload") or {},
+            device_id=device_id,
+            actor=actor,
+            approved_by=approval,
+            occurred_at=raw.get("occurred_at") or timezone.now(),
+        )
+        existing_ids.add(event_id)
+        applied.append(event_id)
+
+    recalculate(locked)
+    return ApplyResult(order=locked, applied=applied, skipped=skipped)
+
+
+@handles(EventType.ITEM_ADDED)
+def _item_added(order: Order, payload: dict, *, actor=None) -> None:
+    variant = (
+        ProductVariant.objects.select_related("product", "product__station")
+        .filter(id=payload["variant_id"], product__branch_id=order.branch_id)
+        .first()
+    )
+    if variant is None:
+        raise NotFoundError("الصنف غير موجود", code="VARIANT_NOT_FOUND")
+
+    quantity = Decimal(str(payload.get("quantity", 1)))
+    if quantity <= 0:
+        raise EventRejected("الكمية يجب أن تكون أكبر من صفر", code="INVALID_QUANTITY")
+
+    item = OrderItem.objects.create(
+        order=order,
+        line_id=payload.get("line_id") or uuid.uuid4(),
+        variant=variant,
+        station=variant.product.station,
+        # Snapshots: the receipt must survive a later price change.
+        name_snapshot=str(variant),
+        unit_price_snapshot=variant.price,
+        cost_snapshot=variant.cost,
+        tax_exempt_snapshot=variant.product.is_tax_exempt,
+        quantity=quantity,
+        note=payload.get("note", "")[:200],
+        created_by=actor,
+    )
+
+    for modifier_id in payload.get("modifiers", []):
+        modifier = Modifier.objects.filter(id=modifier_id).first()
+        if modifier is None:
+            continue
+        OrderItemModifier.objects.create(
+            order_item=item,
+            modifier=modifier,
+            name_snapshot=modifier.name_ar,
+            price_delta_snapshot=modifier.price_delta,
+        )
+
+
+@handles(EventType.ITEM_QUANTITY_CHANGED)
+def _quantity_changed(order: Order, payload: dict, *, actor=None) -> None:
+    item = _get_line(order, payload["line_id"])
+    quantity = Decimal(str(payload["quantity"]))
+    if quantity <= 0:
+        raise EventRejected("الكمية يجب أن تكون أكبر من صفر", code="INVALID_QUANTITY")
+    item.quantity = quantity
+    item.save(update_fields=["quantity", "updated_at"])
+
+
+@handles(EventType.ITEM_VOIDED)
+def _item_voided(order: Order, payload: dict, *, actor=None) -> None:
+    """
+    Voiding marks, never deletes.
+
+    A deleted line is an unexplained gap in a financial record; a voided one is
+    an auditable decision, and the void rate per user is a loss-prevention
+    signal (docs/03).
+    """
+    item = _get_line(order, payload["line_id"])
+    item.status = ItemStatus.VOIDED
+    item.voided_at = timezone.now()
+    item.void_reason = payload.get("reason", "")[:200]
+    item.save(update_fields=["status", "voided_at", "void_reason", "updated_at"])
+
+
+@handles(EventType.ITEM_NOTE_SET)
+def _note_set(order: Order, payload: dict, *, actor=None) -> None:
+    item = _get_line(order, payload["line_id"])
+    item.note = payload.get("note", "")[:200]
+    item.save(update_fields=["note", "updated_at"])
+
+
+@handles(EventType.DISCOUNT_APPLIED)
+def _discount_applied(order: Order, payload: dict, *, actor=None) -> None:
+    percent = Decimal(str(payload.get("percent", 0)))
+    if not (Decimal("0") <= percent <= Decimal("100")):
+        raise EventRejected("نسبة خصم غير صالحة", code="INVALID_DISCOUNT")
+
+    if line_id := payload.get("line_id"):
+        item = _get_line(order, line_id)
+        item.discount_percent = percent
+        item.save(update_fields=["discount_percent", "updated_at"])
+    else:
+        order.discount_percent = percent
+        order.discount_reason = payload.get("reason", "")[:200]
+        order.save(update_fields=["discount_percent", "discount_reason", "updated_at"])
+
+
+@handles(EventType.ORDER_FIRED)
+def _order_fired(order: Order, payload: dict, *, actor=None) -> None:
+    now = timezone.now()
+    unfired = order.items.filter(status=ItemStatus.ACTIVE, fired_at__isnull=True)
+    if not unfired.exists():
+        raise EventRejected("لا توجد أصناف جديدة لإرسالها", code="NOTHING_TO_FIRE")
+
+    unfired.update(fired_at=now)
+    state.assert_transition(order.status, OrderStatus.IN_KITCHEN)
+    order.status = OrderStatus.IN_KITCHEN
+    order.save(update_fields=["status", "updated_at"])
+
+
+@handles(EventType.TABLE_ASSIGNED)
+def _table_assigned(order: Order, payload: dict, *, actor=None) -> None:
+    from apps.floor.models import TableSession
+
+    session = TableSession.objects.filter(id=payload["table_session_id"]).first()
+    if session is None:
+        raise NotFoundError("الجلسة غير موجودة", code="SESSION_NOT_FOUND")
+    order.table_session = session
+    order.save(update_fields=["table_session", "updated_at"])
+
+
+@handles(EventType.CUSTOMER_ASSIGNED)
+def _customer_assigned(order: Order, payload: dict, *, actor=None) -> None:
+    order.customer_name = payload.get("name", "")[:200]
+    order.customer_phone = payload.get("phone", "")[:32]
+    order.save(update_fields=["customer_name", "customer_phone", "updated_at"])
+
+
+def _get_line(order: Order, line_id) -> OrderItem:
+    item = order.items.filter(line_id=line_id).first()
+    if item is None:
+        raise NotFoundError("السطر غير موجود", code="LINE_NOT_FOUND")
+    return item
+
+
+def _record(order, event_type, *, payload=None, actor=None, device_id=None) -> OrderEvent:
+    next_sequence = (
+        order.events.order_by("-sequence").values_list("sequence", flat=True).first() or 0
+    ) + 1
+    return OrderEvent.objects.create(
+        id=uuid.uuid4(),
+        order=order,
+        sequence=next_sequence,
+        event_type=event_type,
+        payload=payload or {},
+        actor=actor,
+        device_id=device_id,
+        occurred_at=timezone.now(),
+    )
+
+
+# ── folding ──────────────────────────────────────────────────────────────────
+
+
+def recalculate(order: Order) -> Order:
+    """
+    Recompute totals from the item projection.
+
+    Uses `apps.core.money` — the same module the Desktop vendors — so the two
+    sides cannot disagree by a piaster.
+    """
+    items = list(order.items.filter(status=ItemStatus.ACTIVE).prefetch_related("modifiers"))
+
+    lines = [
+        OrderLine(
+            unit_price=item.unit_price_snapshot,
+            quantity=item.quantity,
+            discount_percent=item.discount_percent,
+            modifier_deltas=tuple(m.price_delta_snapshot for m in item.modifiers.all()),
+            tax_exempt=item.tax_exempt_snapshot,
+        )
+        for item in items
+    ]
+
+    totals = compute_order(lines, _rules_from_order(order), order.discount_percent)
+
+    for item, line_totals in zip(items, totals.lines, strict=True):
+        item.line_gross = line_totals.gross
+        item.line_discount = line_totals.discount
+        item.line_total = line_totals.net
+        item.save(update_fields=["line_gross", "line_discount", "line_total", "updated_at"])
+
+    order.subtotal = totals.subtotal
+    order.discount_total = totals.discount_total
+    order.service_total = totals.service_total
+    order.tax_total = totals.tax_total
+    order.rounding_adjustment = totals.rounding_adjustment
+    order.grand_total = totals.grand_total
+    order.save(
+        update_fields=[
+            "subtotal",
+            "discount_total",
+            "service_total",
+            "tax_total",
+            "rounding_adjustment",
+            "grand_total",
+            "updated_at",
+        ]
+    )
+    return order
+
+
+# ── lifecycle ────────────────────────────────────────────────────────────────
+
+
+@transaction.atomic
+def void_order(order: Order, *, reason: str, actor=None, approval=None) -> Order:
+    if order.status in state.TERMINAL:
+        raise state.InvalidStateTransition(
+            f"لا يمكن إلغاء طلب في حالة {order.status}", extra={"current": order.status}
+        )
+    state.assert_transition(order.status, OrderStatus.CANCELLED)
+
+    order.status = OrderStatus.CANCELLED
+    order.void_reason = reason[:200]
+    order.closed_at = timezone.now()
+    order.save(update_fields=["status", "void_reason", "closed_at", "updated_at"])
+
+    _record(order, EventType.ORDER_VOIDED, payload={"reason": reason}, actor=actor)
+    logger.warning(
+        "Order voided",
+        extra={"order": order.local_number, "reason": reason, "total": str(order.grand_total)},
+    )
+    return order
+
+
+def requires_void_approval(order: Order) -> bool:
+    """
+    Voiding is routine before the kitchen sees an order, and a loss-prevention
+    event afterwards. The grace window is a setting, not a constant.
+    """
+    if order.status == OrderStatus.DRAFT or order.status == OrderStatus.OPEN:
+        return False
+
+    context = ScopeContext(organization_id=order.organization_id, branch_id=order.branch_id)
+    grace = resolver.get("orders.void_grace_seconds", context)
+    fired = order.items.filter(fired_at__isnull=False).order_by("fired_at").first()
+    if fired is None:
+        return False
+    return (timezone.now() - fired.fired_at).total_seconds() > grace

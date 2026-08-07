@@ -286,7 +286,43 @@ Exit criteria:
 
 ---
 
-## Phase 5 — POS, Orders, Payments & Shifts 🔴
+## Phase 5 — POS ✅ DOMAIN COMPLETE
+
+**Verified on 2026-08-07:** ruff + format clean · **440 tests passing** · migrations clean ·
+`spectacular --fail-on-warn` clean.
+
+Delivered: `floor` (areas, tables, sessions), `orders` (the event stream, the fold, the state
+machine), `payments` (idempotent payments, split payment, refunds, frozen invoices),
+`shifts` (open/close, cash movements, X and Z reports, variance).
+
+**Commitment C1 is now real.** An order is an append-only event stream that the server folds into
+an aggregate. Two devices touching one table cannot silently lose an item to last-write-wins, and
+"why is this bill 204.29?" is answered by replaying the stream rather than inferring from a total.
+
+Exit criteria met:
+
+- The documented example — 2× cappuccino + 1× turkish, 12% service, 14% VAT — totals **204.29**,
+  the same figure as the POS mock-up in docs/04 and the Phase 1 golden fixture, computed by the
+  same module the Desktop vendors.
+- **Replaying a pushed event never duplicates a line.** The client-minted event id is the
+  idempotency key, so a Desktop whose push timed out can retry the whole batch.
+- **A replayed payment charges once**, and a replayed refund returns money once.
+- Tax rules are snapshotted at open time: a mid-service VAT change cannot rewrite a bill the
+  customer is already looking at.
+- `PAID → OPEN` is unreachable by construction. Reopening a paid order is a refund plus a new
+  order — two auditable records instead of one silently altered one.
+- Voiding marks rather than deletes; a deleted line is an unexplained gap in a financial record.
+- An invoice snapshot survives a later price change byte-identically.
+- Expected cash counts only methods flagged `counts_as_cash`, so a card payment never inflates
+  what the drawer should hold.
+- A shift with open orders cannot close.
+
+**Still outstanding:** the REST surface for orders/payments/shifts (the domain services are
+complete and tested), the Desktop POS screens, and the Web Admin screens.
+
+---
+
+## Phase 5 — POS, Orders, Payments & Shifts (original plan) 🔴
 
 **The financial core.**
 

@@ -410,6 +410,196 @@ register(
     pushes_to_desktop=True,
 )
 
+# ── Inventory ────────────────────────────────────────────────────────────────
+
+register(
+    key="inventory.deduct_on",
+    type=SettingType.ENUM,
+    default="PAYMENT",
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="خصم المخزون عند",
+    label_en="Deduct stock on",
+    help_ar=(
+        "PAYMENT أأمن: طلب متروك لا يستهلك مخزون. "
+        "FIRE أدق لحظياً: الباريستا استخدم البن سواء دفع العميل أو لا. "
+        "أيهما صحيح يعتمد على طريقة عمل الكافيه."
+    ),
+    choices=("FIRE", "PAYMENT", "SERVE"),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="inventory.allow_negative",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="السماح برصيد سالب",
+    label_en="Allow negative stock",
+    help_ar="كافيه خلص منه صنف وسط الخدمة لازم يقدر يسجل البيع.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="inventory.costing_method",
+    type=SettingType.ENUM,
+    default="WEIGHTED_AVG",
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="طريقة التكلفة",
+    label_en="Costing method",
+    choices=("WEIGHTED_AVG", "FIFO"),
+    permission="branch.edit_settings",
+    high_impact=True,
+)
+register(
+    key="inventory.waste_reasons",
+    type=SettingType.LIST,
+    default=["انسكاب", "انتهاء صلاحية", "خطأ تحضير", "تلف", "أخرى"],
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="أسباب الهالك",
+    label_en="Waste reasons",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="inventory.require_waste_reason",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="إلزام سبب الهالك",
+    label_en="Require waste reason",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="inventory.count_requires_approval",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="ترحيل الجرد يتطلب موافقة",
+    label_en="Count requires approval",
+    permission="branch.edit_settings",
+    high_impact=True,
+)
+
+# ── Shifts ───────────────────────────────────────────────────────────────────
+
+register(
+    key="shifts.required_to_sell",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="إلزام فتح وردية قبل البيع",
+    label_en="Shift required to sell",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="shifts.blind_close",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="إغلاق أعمى (إخفاء المتوقع)",
+    label_en="Blind close",
+    help_ar=("الكاشير يعد الدرج دون رؤية المتوقع، فيكون العد ملاحظة حقيقية لا رقماً مشتقاً من هدف."),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="shifts.max_variance",
+    type=SettingType.DECIMAL,
+    default=Decimal("50.00"),
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="أقصى فرق نقدي بدون موافقة",
+    label_en="Max variance without approval",
+    validators=(Range(Decimal("0"), Decimal("100000")),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="shifts.require_variance_reason",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="إلزام سبب الفرق",
+    label_en="Require variance reason",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="shifts.cash_movement_reasons",
+    type=SettingType.LIST,
+    default=["شراء مستلزمات", "سلفة", "إيداع بنكي", "مصروف نثري", "أخرى"],
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="أسباب الحركة النقدية",
+    label_en="Cash movement reasons",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="shifts.max_duration_hours",
+    type=SettingType.INTEGER,
+    default=16,
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="أقصى مدة وردية (ساعة)",
+    label_en="Max shift duration",
+    validators=(Range(1, 48),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+
+# ── Payments ─────────────────────────────────────────────────────────────────
+
+register(
+    key="payments.allow_split",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="payments",
+    label_ar="السماح بتقسيم الدفع",
+    label_en="Allow split payment",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="payments.allow_partial",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="payments",
+    label_ar="السماح بالدفع الجزئي",
+    label_en="Allow partial payment",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="payments.quick_tender_mode",
+    type=SettingType.ENUM,
+    default="smart",
+    scope=Scope.BRANCH,
+    group="payments",
+    label_ar="أزرار المبلغ السريع",
+    label_en="Quick tender mode",
+    help_ar="smart يحسب أقرب ٥٠ و١٠٠ والمضبوط — أكثر تفاعل في كافيه نقدي.",
+    choices=("smart", "fixed", "off"),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+
 # ── Security ─────────────────────────────────────────────────────────────────
 # The system is internet-facing from Phase 1 (C11), so these defaults are the
 # posture the first deployment actually runs with.

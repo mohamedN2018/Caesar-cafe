@@ -1,4 +1,4 @@
-# Caesar Cafe — كافيه القيصر
+﻿# Caesar Cafe â€” ÙƒØ§ÙÙŠÙ‡ Ø§Ù„Ù‚ÙŠØµØ±
 
 Integrated POS, Kitchen & Management System.
 
@@ -12,8 +12,8 @@ reconciles through an idempotent event log.
 
 ## Status
 
-**Phases 1–3 complete.** Foundation, identity, authorization, licensing, and the
-desktop activation gate — **405 tests passing** (341 backend + 64 desktop), 28 endpoints.
+**Phases 1â€“3 complete.** Foundation, identity, authorization, licensing, and the
+desktop activation gate â€” **405 tests passing** (341 backend + 64 desktop), 28 endpoints.
 Next: Phase 4, catalog & inventory. See the [roadmap](docs/08-roadmap.md).
 
 ```bash
@@ -25,11 +25,11 @@ docker compose -f docker-compose.dev.yml run --rm api \
 make check                    # lint + typecheck + tests
 ```
 
-API → `http://localhost:${API_PORT}/api/v1/system/health/`
-Web → `http://localhost:${FRONTEND_PORT}/`
-Docs → `/api/v1/docs/` (dev only)
+API â†’ `http://localhost:${API_PORT}/api/v1/system/health/`
+Web â†’ `http://localhost:${FRONTEND_PORT}/`
+Docs â†’ `/api/v1/docs/` (dev only)
 
-**Desktop client** (`desktop/`) — PySide6, Windows:
+**Desktop client** (`desktop/`) â€” PySide6, Windows:
 
 ```bash
 make signing-key              # generate LICENSE_SIGNING_KEY, put it in .env
@@ -38,7 +38,7 @@ python scripts/vendor_shared.py --check   # shared logic in sync with backend
 ```
 
 The desktop vendors `money.py`, `offline_token.py` and `keys.py` from the backend
-verbatim — order totals and licence checks must give identical answers on both
+verbatim â€” order totals and licence checks must give identical answers on both
 sides, so they are copied rather than reimplemented, and CI fails if they drift.
 
 ---
@@ -47,7 +47,7 @@ sides, so they are copied rather than reimplemented, and CI fails if they drift.
 
 The full design is documented and reviewed:
 
-### 📐 [Read the Architecture Dossier →](docs/README.md)
+### ðŸ“ [Read the Architecture Dossier â†’](docs/README.md)
 
 | | |
 |---|---|
@@ -64,18 +64,18 @@ The full design is documented and reviewed:
 | [11 Configuration Framework](docs/11-configuration.md) | Settings registry and the full ~180-setting catalog |
 | [12 Kids Area](docs/12-kids-area.md) | Time-based billing, tariff engine, capacity & child safety |
 
-Start with the [index](docs/README.md) — it carries the eleven architectural commitments and the
+Start with the [index](docs/README.md) â€” it carries the eleven architectural commitments and the
 assumptions register.
 
 Every business value in the system is a setting the admin edits from the web, not a constant in the
-code — service model, tax rates, thresholds, limits, labels, and lists. See
+code â€” service model, tax rates, thresholds, limits, labels, and lists. See
 [11](docs/11-configuration.md).
 
 ---
 
 ## Planned Stack
 
-**Backend** Python 3.12 · Django 5 · DRF · PostgreSQL 16 · Redis 7 · Celery · Channels
-**Frontend** Vue 3 · Vite · TypeScript · Tailwind (RTL-first) · Pinia · ECharts
-**Desktop** PySide6 · SQLite · PyInstaller + Inno Setup
-**Infra** Docker Compose · Caddy (automatic TLS)
+**Backend** Python 3.12 Â· Django 5 Â· DRF Â· PostgreSQL 16 Â· Redis 7 Â· Celery Â· Channels
+**Frontend** Vue 3 Â· Vite Â· TypeScript Â· Tailwind (RTL-first) Â· Pinia Â· ECharts
+**Desktop** PySide6 Â· SQLite Â· PyInstaller + Inno Setup
+**Infra** Docker Compose Â· Caddy (automatic TLS)
