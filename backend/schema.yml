@@ -1513,6 +1513,689 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/floor/areas/:
+    get:
+      operationId: floor_areas_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - floor
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Area'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: floor_areas_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AreaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AreaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AreaRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Area'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/floor/areas/{id}/:
+    get:
+      operationId: floor_areas_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا area.
+        required: true
+      tags:
+      - floor
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Area'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: floor_areas_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا area.
+        required: true
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AreaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AreaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AreaRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Area'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: floor_areas_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا area.
+        required: true
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAreaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAreaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAreaRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Area'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: floor_areas_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا area.
+        required: true
+      tags:
+      - floor
+      responses:
+        '204':
+          description: No response body
+  /api/v1/floor/sessions/:
+    post:
+      operationId: floor_sessions_create
+      summary: Open a table session
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenSessionRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpenSessionRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpenSessionRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/TableSession'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/floor/sessions/{id}/close/:
+    post:
+      operationId: floor_sessions_close_create
+      summary: Close a table session
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - floor
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/TableSession'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/floor/sessions/{id}/transfer/:
+    post:
+      operationId: floor_sessions_transfer_create
+      description: |-
+        Move a session to another table.
+
+        The SESSION moves, carrying every order with it — which is why the session
+        exists as a separate concept from the order.
+      summary: Transfer a session to another table
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/TableSession'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/floor/status/:
+    get:
+      operationId: floor_status_list
+      description: |-
+        The live board.
+
+        Honours `floor.waiter_sees_only_own_tables`: a waiter sees their own
+        section, which is the point of the setting rather than a UI nicety.
+      summary: Live floor status
+      tags:
+      - floor
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/FloorStatus'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/floor/tables/:
+    get:
+      operationId: floor_tables_list
+      description: '`pos_x`/`pos_y` come from the Web Admin''s drag-and-drop canvas.'
+      parameters:
+      - in: query
+        name: area
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - AVAILABLE
+          - CLEANING
+          - OCCUPIED
+          - RESERVED
+        description: |-
+          * `AVAILABLE` - AVAILABLE
+          * `OCCUPIED` - OCCUPIED
+          * `RESERVED` - RESERVED
+          * `CLEANING` - CLEANING
+      tags:
+      - floor
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Table'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: floor_tables_create
+      description: '`pos_x`/`pos_y` come from the Web Admin''s drag-and-drop canvas.'
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Table'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/floor/tables/{id}/:
+    get:
+      operationId: floor_tables_retrieve
+      description: '`pos_x`/`pos_y` come from the Web Admin''s drag-and-drop canvas.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا table.
+        required: true
+      tags:
+      - floor
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Table'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: floor_tables_update
+      description: '`pos_x`/`pos_y` come from the Web Admin''s drag-and-drop canvas.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا table.
+        required: true
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TableRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Table'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: floor_tables_partial_update
+      description: '`pos_x`/`pos_y` come from the Web Admin''s drag-and-drop canvas.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا table.
+        required: true
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTableRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTableRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTableRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Table'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: floor_tables_destroy
+      description: '`pos_x`/`pos_y` come from the Web Admin''s drag-and-drop canvas.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا table.
+        required: true
+      tags:
+      - floor
+      responses:
+        '204':
+          description: No response body
   /api/v1/inventory/adjustments/:
     post:
       operationId: inventory_adjustments_create
@@ -2699,6 +3382,743 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/orders/:
+    get:
+      operationId: orders_list
+      summary: List orders
+      tags:
+      - orders
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrderSummary'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: orders_create
+      summary: Open an order
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpenOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpenOrderRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Order'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/orders/{id}/:
+    get:
+      operationId: orders_retrieve
+      summary: Order detail
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Order'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/orders/{id}/events/:
+    get:
+      operationId: orders_events_list
+      description: |-
+        Append events to an order — the primary mutation path.
+
+        Events already recorded are reported as `skipped`, not rejected, so a
+        Desktop whose push timed out can retry the whole batch safely.
+      summary: Order event stream
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrderEvent'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: orders_events_create
+      description: |-
+        Append events to an order — the primary mutation path.
+
+        Events already recorded are reported as `skipped`, not rejected, so a
+        Desktop whose push timed out can retry the whole batch safely.
+      summary: Append order events
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EventBatchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/EventBatchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/EventBatchRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ApplyResult'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/orders/{id}/receipt/:
+    get:
+      operationId: orders_receipt_retrieve
+      description: |-
+        The receipt as structured data.
+
+        Rendered identically to a thermal printer, a PDF or a preview pane — so
+        what the cashier sees is what the customer receives.
+      summary: Receipt document
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      responses:
+        '200':
+          description: No response body
+  /api/v1/orders/{id}/void/:
+    post:
+      operationId: orders_void_create
+      summary: Void an order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - orders
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VoidOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VoidOrderRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Order'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/payments/:
+    get:
+      operationId: payments_list
+      description: |-
+        Take money.
+
+        Requires a human principal: a bare device token can drain the outbox at 3am
+        but cannot take a payment, because there would be nobody to name in the
+        audit log.
+      summary: List payments
+      tags:
+      - payments
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Payment'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: payments_create
+      description: |-
+        Take money.
+
+        Requires a human principal: a bare device token can drain the outbox at 3am
+        but cannot take a payment, because there would be nobody to name in the
+        audit log.
+      summary: Take a payment
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        description: Client-generated UUID. A replay returns the original result.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentRequestRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Payment'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/payments/invoices/:
+    get:
+      operationId: payments_invoices_list
+      summary: List invoices
+      tags:
+      - payments
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Invoice'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/payments/invoices/{id}/:
+    get:
+      operationId: payments_invoices_retrieve
+      summary: Invoice detail (frozen snapshot)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - payments
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Invoice'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/payments/methods/:
+    get:
+      operationId: payments_methods_list
+      description: Admin-managed rows, not an enum — adding InstaPay needs no deployment.
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - payments
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PaymentMethod'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: payments_methods_create
+      description: Admin-managed rows, not an enum — adding InstaPay needs no deployment.
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaymentMethod'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/payments/methods/{id}/:
+    get:
+      operationId: payments_methods_retrieve
+      description: Admin-managed rows, not an enum — adding InstaPay needs no deployment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا payment method.
+        required: true
+      tags:
+      - payments
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaymentMethod'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: payments_methods_update
+      description: Admin-managed rows, not an enum — adding InstaPay needs no deployment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا payment method.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentMethodRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaymentMethod'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: payments_methods_partial_update
+      description: Admin-managed rows, not an enum — adding InstaPay needs no deployment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا payment method.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentMethodRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentMethodRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentMethodRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaymentMethod'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: payments_methods_destroy
+      description: Admin-managed rows, not an enum — adding InstaPay needs no deployment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا payment method.
+        required: true
+      tags:
+      - payments
+      responses:
+        '204':
+          description: No response body
+  /api/v1/payments/refunds/:
+    get:
+      operationId: payments_refunds_list
+      summary: List refunds
+      tags:
+      - payments
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Refund'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: payments_refunds_create
+      summary: Refund a payment
+      parameters:
+      - in: header
+        name: Idempotency-Key
+        schema:
+          type: string
+        description: Client-generated UUID. A replay returns the original result.
+        required: true
+      tags:
+      - payments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefundRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefundRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefundRequestRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Refund'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/schema/:
     get:
       operationId: schema_retrieve
@@ -2981,6 +4401,297 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/shifts/:
+    get:
+      operationId: shifts_list
+      summary: List shifts
+      tags:
+      - shifts
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Shift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/shifts/{id}/cash-movements/:
+    get:
+      operationId: shifts_cash_movements_list
+      summary: Cash movements
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shifts
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/CashMovement'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: shifts_cash_movements_create
+      summary: Record a cash movement
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shifts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CashMovementRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CashMovementRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CashMovementRequestRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/CashMovement'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/shifts/{id}/close/:
+    post:
+      operationId: shifts_close_create
+      summary: Close a shift and freeze the Z-report
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shifts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseShiftRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CloseShiftRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CloseShiftRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Shift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/shifts/{id}/x-report/:
+    get:
+      operationId: shifts_x_report_retrieve
+      description: |-
+        A mid-shift read that closes nothing.
+
+        Honours `shifts.blind_close`: when on, the expected cash is withheld so the
+        cashier's count stays an observation rather than a number worked backwards
+        from a target.
+      summary: X-report
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shifts
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ShiftReport'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/shifts/{id}/z-report/:
+    get:
+      operationId: shifts_z_report_retrieve
+      summary: Z-report (frozen at close)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - shifts
+      responses:
+        '200':
+          description: No response body
+  /api/v1/shifts/current/:
+    get:
+      operationId: shifts_current_retrieve
+      summary: This device's open shift
+      tags:
+      - shifts
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Shift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/shifts/open/:
+    post:
+      operationId: shifts_open_create
+      summary: Open a shift
+      tags:
+      - shifts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenShiftRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OpenShiftRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OpenShiftRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Shift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/system/health/:
     get:
       operationId: system_health_retrieve
@@ -3142,6 +4853,24 @@ components:
       - item
       - new_quantity
       - reason
+    ApplyResult:
+      type: object
+      properties:
+        applied:
+          type: array
+          items:
+            type: string
+        skipped:
+          type: array
+          items:
+            type: string
+          description: Already recorded — a replay, not an error.
+        order:
+          $ref: '#/components/schemas/Order'
+      required:
+      - applied
+      - order
+      - skipped
     ApprovalToken:
       type: object
       properties:
@@ -3158,6 +4887,102 @@ components:
       - approved_by
       - expires_in
       - permission
+    Area:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name_ar:
+          type: string
+          description: الصالة / التراس / صالة الأطفال
+          maxLength: 100
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - id
+      - name_ar
+    AreaRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          description: الصالة / التراس / صالة الأطفال
+          maxLength: 100
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - name_ar
+    CashMovement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        movement_type:
+          $ref: '#/components/schemas/CashMovementTypeEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: Always positive; the type carries direction.
+        reason:
+          type: string
+          maxLength: 200
+        user_name:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - id
+      - movement_type
+      - occurred_at
+      - reason
+      - user_name
+    CashMovementRequestRequest:
+      type: object
+      properties:
+        movement_type:
+          $ref: '#/components/schemas/CashMovementTypeEnum'
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - amount
+      - movement_type
+      - reason
+    CashMovementTypeEnum:
+      enum:
+      - IN
+      - OUT
+      - EXPENSE
+      - DROP
+      type: string
+      description: |-
+        * `IN` - IN
+        * `OUT` - OUT
+        * `EXPENSE` - EXPENSE
+        * `DROP` - DROP
     Category:
       type: object
       properties:
@@ -3233,6 +5058,18 @@ components:
       required:
       - current_password
       - new_password
+    CloseShiftRequest:
+      type: object
+      properties:
+        counted_cash:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        reason:
+          type: string
+          maxLength: 200
+      required:
+      - counted_cash
     CostingMethodEnum:
       enum:
       - WEIGHTED_AVG
@@ -3241,6 +5078,20 @@ components:
       description: |-
         * `WEIGHTED_AVG` - WEIGHTED_AVG
         * `FIFO` - FIFO
+    CountStatusEnum:
+      enum:
+      - DRAFT
+      - COUNTING
+      - REVIEW
+      - POSTED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - DRAFT
+        * `COUNTING` - COUNTING
+        * `REVIEW` - REVIEW
+        * `POSTED` - POSTED
+        * `CANCELLED` - CANCELLED
     Detail:
       type: object
       description: |-
@@ -3387,6 +5238,15 @@ components:
       - item_name
       - ledger_quantity
       - level_quantity
+    EventBatchRequest:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventRequest'
+      required:
+      - events
     EventEnum:
       enum:
       - CREATED
@@ -3415,6 +5275,77 @@ components:
         * `DEVICE_REVOKED` - DEVICE_REVOKED
         * `DEVICE_RESET` - DEVICE_RESET
         * `HEARTBEAT_DENIED` - HEARTBEAT_DENIED
+    EventRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Idempotency key. Client-minted.
+        type:
+          type: string
+          minLength: 1
+        payload:
+          type: object
+          additionalProperties: {}
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - type
+    FloorStatus:
+      type: object
+      description: 'The live board: every table plus its open order summary.'
+      properties:
+        table_id:
+          type: string
+          format: uuid
+        number:
+          type: string
+        area:
+          type: string
+        seats:
+          type: integer
+        status:
+          type: string
+        pos_x:
+          type: integer
+        pos_y:
+          type: integer
+        session_id:
+          type: string
+          format: uuid
+          nullable: true
+        guest_count:
+          type: integer
+          nullable: true
+        opened_at:
+          type: string
+          format: date-time
+          nullable: true
+        order_count:
+          type: integer
+        total_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        waiter:
+          type: string
+          nullable: true
+      required:
+      - area
+      - guest_count
+      - number
+      - opened_at
+      - order_count
+      - pos_x
+      - pos_y
+      - seats
+      - session_id
+      - status
+      - table_id
+      - total_due
+      - waiter
     Health:
       type: object
       properties:
@@ -3593,6 +5524,48 @@ components:
       - base_unit
       - code
       - name_ar
+    Invoice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        order:
+          type: string
+          format: uuid
+          readOnly: true
+        order_number:
+          type: string
+          readOnly: true
+        invoice_number:
+          type: integer
+          readOnly: true
+          description: From the device's reserved block (C9).
+        serial:
+          type: string
+          readOnly: true
+          description: MB-2026-000123
+        issued_at:
+          type: string
+          format: date-time
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        snapshot:
+          readOnly: true
+      required:
+      - grand_total
+      - id
+      - invoice_number
+      - issued_at
+      - order
+      - order_number
+      - serial
+      - snapshot
     IssueLicenseRequest:
       type: object
       properties:
@@ -4111,26 +6084,470 @@ components:
           type: boolean
       required:
       - name_ar
-    MovementTypeEnum:
+    OpenOrderRequest:
+      type: object
+      properties:
+        order_id:
+          type: string
+          format: uuid
+          description: Client-minted, so an offline device can name an order before
+            syncing.
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          default: DINE_IN
+        table_session:
+          type: string
+          format: uuid
+          nullable: true
+        shift:
+          type: string
+          format: uuid
+          nullable: true
+    OpenSessionRequest:
+      type: object
+      properties:
+        table:
+          type: string
+          format: uuid
+        guest_count:
+          type: integer
+          minimum: 1
+          default: 1
+      required:
+      - table
+    OpenShiftRequest:
+      type: object
+      properties:
+        opening_cash:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          default: '0.00'
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        local_number:
+          type: string
+          readOnly: true
+          description: MB-01-0042 — readable, unique per device.
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        table_session:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        table_number:
+          type: string
+          readOnly: true
+        customer_name:
+          type: string
+          readOnly: true
+        customer_phone:
+          type: string
+          readOnly: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        discount_reason:
+          type: string
+          readOnly: true
+        service_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        tax_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        rounding_adjustment:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        paid_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        balance_due:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        vat_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        service_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        vat_inclusive:
+          type: boolean
+          readOnly: true
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        opened_by_name:
+          type: string
+          readOnly: true
+        void_reason:
+          type: string
+          readOnly: true
+        shift:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItem'
+          readOnly: true
+      required:
+      - balance_due
+      - closed_at
+      - customer_name
+      - customer_phone
+      - discount_percent
+      - discount_reason
+      - discount_total
+      - grand_total
+      - id
+      - items
+      - local_number
+      - opened_at
+      - opened_by_name
+      - order_type
+      - paid_total
+      - rounding_adjustment
+      - service_percent
+      - service_total
+      - shift
+      - status
+      - subtotal
+      - table_number
+      - table_session
+      - tax_total
+      - vat_inclusive
+      - vat_percent
+      - void_reason
+    OrderEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        sequence:
+          type: integer
+          readOnly: true
+        event_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderEventTypeEnum'
+          readOnly: true
+        payload:
+          readOnly: true
+        actor_name:
+          type: string
+          readOnly: true
+        approved_by_name:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Client clock — may be skewed.
+        recorded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: Server clock — authoritative.
+      required:
+      - actor_name
+      - approved_by_name
+      - event_type
+      - id
+      - occurred_at
+      - payload
+      - recorded_at
+      - sequence
+    OrderEventTypeEnum:
       enum:
-      - OPENING
-      - PURCHASE
-      - SALE
-      - WASTE
-      - ADJUSTMENT
-      - RETURN
-      - TRANSFER
-      - COUNT
+      - ORDER_OPENED
+      - ITEM_ADDED
+      - ITEM_QUANTITY_CHANGED
+      - ITEM_VOIDED
+      - ITEM_NOTE_SET
+      - DISCOUNT_APPLIED
+      - ORDER_FIRED
+      - TABLE_ASSIGNED
+      - CUSTOMER_ASSIGNED
+      - PAYMENT_TAKEN
+      - ORDER_CLOSED
+      - ORDER_VOIDED
       type: string
       description: |-
-        * `OPENING` - OPENING
-        * `PURCHASE` - PURCHASE
-        * `SALE` - SALE
-        * `WASTE` - WASTE
-        * `ADJUSTMENT` - ADJUSTMENT
-        * `RETURN` - RETURN
-        * `TRANSFER` - TRANSFER
-        * `COUNT` - COUNT
+        * `ORDER_OPENED` - ORDER_OPENED
+        * `ITEM_ADDED` - ITEM_ADDED
+        * `ITEM_QUANTITY_CHANGED` - ITEM_QUANTITY_CHANGED
+        * `ITEM_VOIDED` - ITEM_VOIDED
+        * `ITEM_NOTE_SET` - ITEM_NOTE_SET
+        * `DISCOUNT_APPLIED` - DISCOUNT_APPLIED
+        * `ORDER_FIRED` - ORDER_FIRED
+        * `TABLE_ASSIGNED` - TABLE_ASSIGNED
+        * `CUSTOMER_ASSIGNED` - CUSTOMER_ASSIGNED
+        * `PAYMENT_TAKEN` - PAYMENT_TAKEN
+        * `ORDER_CLOSED` - ORDER_CLOSED
+        * `ORDER_VOIDED` - ORDER_VOIDED
+    OrderItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        line_id:
+          type: string
+          format: uuid
+          readOnly: true
+          description: Client-minted; the id events refer to.
+        variant:
+          type: string
+          format: uuid
+          readOnly: true
+        name_snapshot:
+          type: string
+          readOnly: true
+        unit_price_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,7}(?:\.\d{0,3})?$
+          readOnly: true
+        discount_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          readOnly: true
+        line_gross:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        line_discount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderItemStatusEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+        fired_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+        station:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        station_name:
+          type: string
+          readOnly: true
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderItemModifier'
+          readOnly: true
+      required:
+      - discount_percent
+      - fired_at
+      - id
+      - line_discount
+      - line_gross
+      - line_id
+      - line_total
+      - modifiers
+      - name_snapshot
+      - note
+      - quantity
+      - station
+      - station_name
+      - status
+      - unit_price_snapshot
+      - variant
+      - void_reason
+      - voided_at
+    OrderItemModifier:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name_snapshot:
+          type: string
+          readOnly: true
+        price_delta_snapshot:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - id
+      - name_snapshot
+      - price_delta_snapshot
+    OrderItemStatusEnum:
+      enum:
+      - ACTIVE
+      - VOIDED
+      type: string
+      description: |-
+        * `ACTIVE` - ACTIVE
+        * `VOIDED` - VOIDED
+    OrderStatusEnum:
+      enum:
+      - DRAFT
+      - OPEN
+      - IN_KITCHEN
+      - READY
+      - SERVED
+      - PAID
+      - CANCELLED
+      - REFUNDED
+      type: string
+      description: |-
+        * `DRAFT` - DRAFT
+        * `OPEN` - OPEN
+        * `IN_KITCHEN` - IN_KITCHEN
+        * `READY` - READY
+        * `SERVED` - SERVED
+        * `PAID` - PAID
+        * `CANCELLED` - CANCELLED
+        * `REFUNDED` - REFUNDED
+    OrderSummary:
+      type: object
+      description: Lighter payload for the open-orders board, which polls frequently.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        local_number:
+          type: string
+          readOnly: true
+          description: MB-01-0042 — readable, unique per device.
+        order_type:
+          allOf:
+          - $ref: '#/components/schemas/OrderTypeEnum'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OrderStatusEnum'
+          readOnly: true
+        table_number:
+          type: string
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        paid_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+        item_count:
+          type: integer
+          readOnly: true
+          default: 0
+      required:
+      - grand_total
+      - id
+      - item_count
+      - local_number
+      - opened_at
+      - order_type
+      - paid_total
+      - status
+      - table_number
+    OrderTypeEnum:
+      enum:
+      - DINE_IN
+      - TAKE_AWAY
+      - DELIVERY
+      type: string
+      description: |-
+        * `DINE_IN` - DINE_IN
+        * `TAKE_AWAY` - TAKE_AWAY
+        * `DELIVERY` - DELIVERY
     OriginEnum:
       enum:
       - ORGANIZATION
@@ -4221,6 +6638,20 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StockCount'
+    PatchedAreaRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          description: الصالة / التراس / صالة الأطفال
+          maxLength: 100
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
     PatchedCategoryRequest:
       type: object
       properties:
@@ -4305,6 +6736,30 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+    PatchedPaymentMethodRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        opens_drawer:
+          type: boolean
+        requires_reference:
+          type: boolean
+        counts_as_cash:
+          type: boolean
+          description: Included in the shift's expected cash.
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
     PatchedProductRequest:
       type: object
       properties:
@@ -4380,6 +6835,174 @@ components:
           type: string
           format: date-time
           nullable: true
+    PatchedTableRequest:
+      type: object
+      properties:
+        area:
+          type: string
+          format: uuid
+        number:
+          type: string
+          minLength: 1
+          description: T-05
+          maxLength: 16
+        seats:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        status:
+          $ref: '#/components/schemas/TableStatusEnum'
+        pos_x:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        pos_y:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        is_active:
+          type: boolean
+    Payment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        order:
+          type: string
+          format: uuid
+          readOnly: true
+        order_number:
+          type: string
+          readOnly: true
+        method:
+          type: string
+          format: uuid
+          readOnly: true
+        method_name:
+          type: string
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        tendered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        change_given:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        received_by_name:
+          type: string
+          readOnly: true
+        paid_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - change_given
+      - id
+      - method
+      - method_name
+      - order
+      - order_number
+      - paid_at
+      - received_by_name
+      - reference
+      - tendered
+    PaymentMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 32
+        name_ar:
+          type: string
+          maxLength: 100
+        opens_drawer:
+          type: boolean
+        requires_reference:
+          type: boolean
+        counts_as_cash:
+          type: boolean
+          description: Included in the shift's expected cash.
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - code
+      - id
+      - name_ar
+    PaymentMethodRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        opens_drawer:
+          type: boolean
+        requires_reference:
+          type: boolean
+        counts_as_cash:
+          type: boolean
+          description: Included in the shift's expected cash.
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - code
+      - name_ar
+    PaymentRequestRequest:
+      type: object
+      properties:
+        order:
+          type: string
+          format: uuid
+        method:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        tendered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        reference:
+          type: string
+          maxLength: 64
+      required:
+      - amount
+      - method
+      - order
     PriceChangeRequest:
       type: object
       properties:
@@ -4604,6 +7227,75 @@ components:
           minLength: 1
       required:
       - refresh
+    Refund:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        order:
+          type: string
+          format: uuid
+          readOnly: true
+        order_number:
+          type: string
+          readOnly: true
+        original_payment:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        refunded_by_name:
+          type: string
+          readOnly: true
+        approved_by_name:
+          type: string
+          readOnly: true
+        refunded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - approved_by_name
+      - id
+      - order
+      - order_number
+      - original_payment
+      - reason
+      - refunded_at
+      - refunded_by_name
+    RefundRequestRequest:
+      type: object
+      properties:
+        order:
+          type: string
+          format: uuid
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+        original_payment:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - amount
+      - order
+      - reason
     RenewLicenseRequest:
       type: object
       properties:
@@ -4776,6 +7468,150 @@ components:
       required:
       - applied
       - errors
+    Shift:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ShiftStatusEnum'
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        user_name:
+          type: string
+          readOnly: true
+        device_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        opening_cash:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        counted_cash:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        variance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        variance_reason:
+          type: string
+          readOnly: true
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_by_name:
+          type: string
+          readOnly: true
+        z_report:
+          readOnly: true
+          description: Frozen at close.
+      required:
+      - closed_at
+      - closed_by_name
+      - counted_cash
+      - device_id
+      - id
+      - opened_at
+      - opening_cash
+      - status
+      - user
+      - user_name
+      - variance
+      - variance_reason
+      - z_report
+    ShiftReport:
+      type: object
+      description: |-
+        The X and Z reports share a shape.
+
+        Money fields are strings: these are Decimals serialized exactly, and a JSON
+        float would reintroduce the imprecision the whole system avoids.
+      properties:
+        shift_id:
+          type: string
+        opened_at:
+          type: string
+        user:
+          type: string
+          nullable: true
+        is_final:
+          type: boolean
+        gross_sales:
+          type: string
+        discounts:
+          type: string
+        refunds:
+          type: string
+        net_sales:
+          type: string
+        tax:
+          type: string
+        service:
+          type: string
+        cash_sales:
+          type: string
+        non_cash_sales:
+          type: string
+        cash_in:
+          type: string
+        cash_out:
+          type: string
+        expected_cash:
+          type: string
+        order_count:
+          type: integer
+        void_count:
+          type: integer
+      required:
+      - cash_in
+      - cash_out
+      - cash_sales
+      - discounts
+      - expected_cash
+      - gross_sales
+      - is_final
+      - net_sales
+      - non_cash_sales
+      - opened_at
+      - order_count
+      - refunds
+      - service
+      - shift_id
+      - tax
+      - user
+      - void_count
+    ShiftStatusEnum:
+      enum:
+      - OPEN
+      - CLOSING
+      - CLOSED
+      type: string
+      description: |-
+        * `OPEN` - OPEN
+        * `CLOSING` - CLOSING
+        * `CLOSED` - CLOSED
     StockCount:
       type: object
       properties:
@@ -4788,7 +7624,7 @@ components:
           maxLength: 32
         status:
           allOf:
-          - $ref: '#/components/schemas/StockCountStatusEnum'
+          - $ref: '#/components/schemas/CountStatusEnum'
           readOnly: true
         notes:
           type: string
@@ -4826,20 +7662,6 @@ components:
           nullable: true
       required:
       - reference
-    StockCountStatusEnum:
-      enum:
-      - DRAFT
-      - COUNTING
-      - REVIEW
-      - POSTED
-      - CANCELLED
-      type: string
-      description: |-
-        * `DRAFT` - DRAFT
-        * `COUNTING` - COUNTING
-        * `REVIEW` - REVIEW
-        * `POSTED` - POSTED
-        * `CANCELLED` - CANCELLED
     StockLevel:
       type: object
       properties:
@@ -4922,7 +7744,7 @@ components:
           readOnly: true
         movement_type:
           allOf:
-          - $ref: '#/components/schemas/MovementTypeEnum'
+          - $ref: '#/components/schemas/StockMovementTypeEnum'
           readOnly: true
         quantity_delta:
           type: string
@@ -4978,6 +7800,26 @@ components:
       - unit_cost
       - user_name
       - value_delta
+    StockMovementTypeEnum:
+      enum:
+      - OPENING
+      - PURCHASE
+      - SALE
+      - WASTE
+      - ADJUSTMENT
+      - RETURN
+      - TRANSFER
+      - COUNT
+      type: string
+      description: |-
+        * `OPENING` - OPENING
+        * `PURCHASE` - PURCHASE
+        * `SALE` - SALE
+        * `WASTE` - WASTE
+        * `ADJUSTMENT` - ADJUSTMENT
+        * `RETURN` - RETURN
+        * `TRANSFER` - TRANSFER
+        * `COUNT` - COUNT
     SystemInfo:
       type: object
       properties:
@@ -4992,6 +7834,125 @@ components:
       - api_version
       - min_supported_client_version
       - server_version
+    Table:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        area:
+          type: string
+          format: uuid
+        area_name:
+          type: string
+          readOnly: true
+        number:
+          type: string
+          description: T-05
+          maxLength: 16
+        seats:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        status:
+          $ref: '#/components/schemas/TableStatusEnum'
+        pos_x:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        pos_y:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        is_active:
+          type: boolean
+      required:
+      - area
+      - area_name
+      - id
+      - number
+    TableRequest:
+      type: object
+      properties:
+        area:
+          type: string
+          format: uuid
+        number:
+          type: string
+          minLength: 1
+          description: T-05
+          maxLength: 16
+        seats:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        status:
+          $ref: '#/components/schemas/TableStatusEnum'
+        pos_x:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        pos_y:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        is_active:
+          type: boolean
+      required:
+      - area
+      - number
+    TableSession:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        table:
+          type: string
+          format: uuid
+        table_number:
+          type: string
+          readOnly: true
+        guest_count:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        opened_at:
+          type: string
+          format: date-time
+          readOnly: true
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+        waiter:
+          type: string
+          format: uuid
+          nullable: true
+          description: Drives floor.waiter_sees_only_own_tables.
+        waiter_name:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - opened_at
+      - table
+      - table_number
+      - waiter_name
+    TableStatusEnum:
+      enum:
+      - AVAILABLE
+      - OCCUPIED
+      - RESERVED
+      - CLEANING
+      type: string
+      description: |-
+        * `AVAILABLE` - AVAILABLE
+        * `OCCUPIED` - OCCUPIED
+        * `RESERVED` - RESERVED
+        * `CLEANING` - CLEANING
     TokenPair:
       type: object
       properties:
@@ -5008,6 +7969,14 @@ components:
       - access_expires_in
       - refresh
       - refresh_expires_in
+    TransferRequest:
+      type: object
+      properties:
+        target_table:
+          type: string
+          format: uuid
+      required:
+      - target_table
     VerifyPinRequestRequest:
       type: object
       description: 'Step-up approval: a manager authorizes one action for one target.'
@@ -5031,6 +8000,15 @@ components:
       - permission
       - pin
       - user_id
+    VoidOrderRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - reason
     WasteRequest:
       type: object
       properties:

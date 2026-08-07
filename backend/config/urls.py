@@ -22,6 +22,10 @@ api_v1 = [
     path("licensing/", include("apps.licensing.urls")),
     path("catalog/", include("apps.catalog.urls")),
     path("inventory/", include("apps.inventory.urls")),
+    path("floor/", include("apps.floor.urls")),
+    path("orders/", include("apps.orders.urls")),
+    path("payments/", include("apps.payments.urls")),
+    path("shifts/", include("apps.shifts.urls")),
     path("settings/", include("apps.configuration.urls")),
 ]
 
