@@ -132,6 +132,13 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     # ── Licensing ────────────────────────────────────────────────────────────
     _p("licenses.view", "licensing", "عرض التراخيص"),
     _p("licenses.manage", "licensing", "إدارة التراخيص", sensitive=True),
+    # ── Sync (docs/07) ───────────────────────────────────────────────────────
+    # Push and pull are NOT here on purpose: they are device operations,
+    # authorized by the activated terminal itself. Gating them behind a human's
+    # permission would mean an outbox that cannot drain at 3am — which is
+    # exactly when a terminal that has been queueing since Tuesday needs to.
+    _p("sync.view", "sync", "عرض حالة المزامنة"),
+    _p("sync.resolve_conflicts", "sync", "حل تعارضات المزامنة", sensitive=True),
     # ── System ───────────────────────────────────────────────────────────────
     _p("system.settings", "system", "إعدادات النظام", sensitive=True),
     _p("audit.view", "system", "عرض سجل التدقيق"),
@@ -243,6 +250,8 @@ SYSTEM_ROLES: dict[str, dict] = {
             "branch.manage_printers",
             "devices.view",
             "licenses.view",
+            "sync.view",
+            "sync.resolve_conflicts",
             "audit.view",
         ],
     },

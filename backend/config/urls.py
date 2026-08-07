@@ -28,6 +28,7 @@ api_v1 = [
     path("shifts/", include("apps.shifts.urls")),
     path("kitchen/", include("apps.kitchen.urls")),
     path("kids/", include("apps.kids.urls")),
+    path("sync/", include("apps.sync.urls")),
     path("settings/", include("apps.configuration.urls")),
 ]
 

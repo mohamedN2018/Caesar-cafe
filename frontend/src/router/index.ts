@@ -100,6 +100,12 @@ const router = createRouter({
           meta: { permission: 'devices.view' },
         },
         {
+          path: 'sync',
+          name: 'sync',
+          component: () => import('@/views/sync/SyncStatusView.vue'),
+          meta: { permission: 'sync.view' },
+        },
+        {
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/settings/SettingsView.vue'),

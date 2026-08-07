@@ -49,13 +49,22 @@ class ShiftTotals:
 
 
 @transaction.atomic
-def open_shift(*, branch, user=None, device_id=None, opening_cash=Decimal("0")) -> Shift:
+def open_shift(
+    *, branch, user=None, device_id=None, opening_cash=Decimal("0"), shift_id=None
+) -> Shift:
+    """
+    `shift_id` lets an offline terminal name its own shift, the same way it
+    names its own orders — so the cash movements it queued against that id
+    resolve when they arrive, instead of referring to a shift that only got its
+    identity once the server saw it.
+    """
     if device_id is not None:
         existing = Shift.objects.filter(device_id=device_id, status=ShiftStatus.OPEN).first()
         if existing is not None:
             raise ShiftAlreadyOpen(extra={"shift_id": str(existing.id)})
 
     return Shift.objects.create(
+        **({"id": shift_id} if shift_id else {}),
         organization=branch.organization,
         branch=branch,
         user=user,

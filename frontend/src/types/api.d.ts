@@ -2317,6 +2317,134 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sync/conflicts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sync conflicts */
+        get: operations["sync_conflicts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/conflicts/{id}/resolve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Resolve a sync conflict */
+        post: operations["sync_conflicts_resolve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/operations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Pushed operations
+         * @description The push log — what each terminal actually sent, and what became of it.
+         */
+        get: operations["sync_operations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/pull/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Pull server changes on one stream */
+        get: operations["sync_pull_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/push/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Push a batch of queued operations */
+        post: operations["sync_push_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/state/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * This device's sync state
+         * @description Where this device stands, from the server's point of view.
+         *
+         *     A terminal asks this on startup so it can show an honest indicator instead
+         *     of assuming it is up to date because nothing has failed yet.
+         */
+        get: operations["sync_state_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sync/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sync health for the whole branch */
+        get: operations["sync_status_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/health/": {
         parameters: {
             query?: never;
@@ -2435,6 +2563,17 @@ export interface components {
             capacity: number;
             sessions: components["schemas"]["PlaySession"][];
         };
+        BranchStatus: {
+            /** Format: uuid */
+            branch_id: string;
+            devices: components["schemas"]["DeviceStatus"][];
+            stale_devices: number;
+            offline_alert_minutes: number;
+            open_conflicts: number;
+            heads: {
+                [key: string]: number;
+            };
+        };
         CashMovement: {
             /** Format: uuid */
             readonly id: string;
@@ -2486,6 +2625,14 @@ export interface components {
             color?: string;
             sort_order?: number;
             is_active?: boolean;
+        };
+        Change: {
+            seq: number;
+            entity_type: string;
+            /** Format: uuid */
+            entity_id: string;
+            operation: string;
+            payload: unknown;
         };
         ChangePasswordRequest: {
             current_password: string;
@@ -2635,6 +2782,23 @@ export interface components {
          * @enum {string}
          */
         DeviceModeEnum: "POS" | "KDS" | "BOTH";
+        DeviceStatus: {
+            /** Format: uuid */
+            device_id: string;
+            device_name: string;
+            status: string;
+            app_version: string;
+            /** Format: date-time */
+            last_seen_at: string | null;
+            /** Format: date-time */
+            last_push_at: string | null;
+            pending: number;
+            rejected: number;
+            open_conflicts: number;
+            cursors: {
+                [key: string]: number;
+            };
+        };
         /**
          * @description * `ACTIVE` - ACTIVE
          *     * `SUSPENDED` - SUSPENDED
@@ -3057,6 +3221,36 @@ export interface components {
              * @default 0.00
              */
             opening_cash: string;
+        };
+        /** @description One item from a device's outbox. */
+        OperationRequest: {
+            /**
+             * Format: uuid
+             * @description Client-minted and UNIQUE. This field alone is what makes a replay a no-op.
+             */
+            op_uuid: string;
+            entity_type: string;
+            /** Format: uuid */
+            entity_id?: string | null;
+            payload?: unknown;
+            /** @description The device's outbox ordering. */
+            client_seq?: number | null;
+            /** @description This device's nth operation on this aggregate. Drives SEQUENCE_GAP detection. */
+            aggregate_seq?: number | null;
+            /**
+             * Format: date-time
+             * @description The device's clock. Recorded, never trusted.
+             */
+            client_time?: string | null;
+        };
+        OperationResult: {
+            /** Format: uuid */
+            op_uuid: string;
+            status: string;
+            result?: unknown;
+            code?: string | null;
+            server_state?: unknown;
+            replayed?: boolean;
         };
         Order: {
             /** Format: uuid */
@@ -3844,6 +4038,23 @@ export interface components {
             sort_order?: number;
             is_active?: boolean;
         };
+        PullResponse: {
+            stream: components["schemas"]["SyncStreamEnum"];
+            /** @description The seq of the last row IN THIS RESPONSE — never the current head. */
+            cursor: number;
+            has_more: boolean;
+            changes: components["schemas"]["Change"][];
+        };
+        PushRequestRequest: {
+            /** Format: uuid */
+            batch_id?: string | null;
+            operations: components["schemas"]["OperationRequest"][];
+        };
+        PushResponse: {
+            applied: number;
+            failed: number;
+            results: components["schemas"]["OperationResult"][];
+        };
         RefreshRequestRequest: {
             refresh: string;
         };
@@ -3875,6 +4086,17 @@ export interface components {
         RenewLicenseRequest: {
             /** Format: date-time */
             expires_at: string;
+        };
+        /**
+         * @description * `ACKNOWLEDGED` - ACKNOWLEDGED
+         *     * `RETRIED` - RETRIED
+         *     * `DISCARDED` - DISCARDED
+         * @enum {string}
+         */
+        ResolutionEnum: "ACKNOWLEDGED" | "RETRIED" | "DISCARDED";
+        ResolveConflictRequest: {
+            resolution: components["schemas"]["ResolutionEnum"];
+            note?: string;
         };
         ResolvedSetting: {
             value: unknown;
@@ -4105,6 +4327,67 @@ export interface components {
          * @enum {string}
          */
         StockMovementTypeEnum: "OPENING" | "PURCHASE" | "SALE" | "WASTE" | "ADJUSTMENT" | "RETURN" | "TRANSFER" | "COUNT";
+        SyncConflict: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly operation: string;
+            /** Format: uuid */
+            readonly op_uuid: string;
+            readonly entity_type: string;
+            readonly device_name: string;
+            readonly code: string;
+            readonly message_ar: string;
+            /** @description What the server believed, so the human can compare. */
+            readonly server_state: unknown;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly resolved_at: string | null;
+            readonly resolution: string;
+            readonly resolution_note: string;
+        };
+        SyncOperation: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly op_uuid: string;
+            /** Format: uuid */
+            readonly batch_id: string | null;
+            /** Format: uuid */
+            readonly device: string | null;
+            readonly entity_type: string;
+            /** Format: uuid */
+            readonly entity_id: string | null;
+            readonly status: components["schemas"]["SyncOperationStatusEnum"];
+            readonly result: unknown;
+            readonly error_code: string;
+            readonly error_message: string;
+            /** @description client_time − server time at receipt. Recorded, never used for anything. */
+            readonly clock_skew_seconds: number;
+            /** Format: date-time */
+            readonly received_at: string;
+            /** Format: date-time */
+            readonly applied_at: string | null;
+        };
+        /**
+         * @description * `PENDING` - PENDING
+         *     * `APPLIED` - APPLIED
+         *     * `CONFLICT` - CONFLICT
+         *     * `REJECTED` - REJECTED
+         * @enum {string}
+         */
+        SyncOperationStatusEnum: "PENDING" | "APPLIED" | "CONFLICT" | "REJECTED";
+        /**
+         * @description * `config` - config
+         *     * `catalog` - catalog
+         *     * `floor` - floor
+         *     * `staff` - staff
+         *     * `orders` - orders
+         *     * `kids` - kids
+         * @enum {string}
+         */
+        SyncStreamEnum: "config" | "catalog" | "floor" | "staff" | "orders" | "kids";
         SystemInfo: {
             server_version: string;
             /** @description Clients below this are refused everything except the heartbeat. */
@@ -9263,6 +9546,235 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["Shift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    sync_conflicts_list: {
+        parameters: {
+            query?: {
+                resolved?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["SyncConflict"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    sync_conflicts_resolve_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResolveConflictRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ResolveConflictRequest"];
+                "multipart/form-data": components["schemas"]["ResolveConflictRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["SyncConflict"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    sync_operations_list: {
+        parameters: {
+            query?: {
+                device?: string;
+                status?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["SyncOperation"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    sync_pull_retrieve: {
+        parameters: {
+            query: {
+                /** @description Last seq this device processed. */
+                cursor?: number;
+                limit?: number;
+                stream: "catalog" | "config" | "floor" | "kids" | "orders" | "staff";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PullResponse"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    sync_push_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PushRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PushRequestRequest"];
+                "multipart/form-data": components["schemas"]["PushRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PushResponse"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+            207: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PushResponse"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    sync_state_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["DeviceStatus"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    sync_status_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["BranchStatus"];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

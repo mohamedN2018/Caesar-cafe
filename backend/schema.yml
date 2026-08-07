@@ -6670,6 +6670,309 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/sync/conflicts/:
+    get:
+      operationId: sync_conflicts_list
+      summary: Sync conflicts
+      parameters:
+      - in: query
+        name: resolved
+        schema:
+          type: boolean
+      tags:
+      - sync
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SyncConflict'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/sync/conflicts/{id}/resolve/:
+    post:
+      operationId: sync_conflicts_resolve_create
+      summary: Resolve a sync conflict
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - sync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResolveConflictRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResolveConflictRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResolveConflictRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SyncConflict'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/sync/operations/:
+    get:
+      operationId: sync_operations_list
+      description: The push log — what each terminal actually sent, and what became
+        of it.
+      summary: Pushed operations
+      parameters:
+      - in: query
+        name: device
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+      tags:
+      - sync
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SyncOperation'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/sync/pull/:
+    get:
+      operationId: sync_pull_retrieve
+      summary: Pull server changes on one stream
+      parameters:
+      - in: query
+        name: cursor
+        schema:
+          type: integer
+        description: Last seq this device processed.
+      - in: query
+        name: limit
+        schema:
+          type: integer
+      - in: query
+        name: stream
+        schema:
+          type: string
+          enum:
+          - catalog
+          - config
+          - floor
+          - kids
+          - orders
+          - staff
+        required: true
+      tags:
+      - sync
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PullResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/sync/push/:
+    post:
+      operationId: sync_push_create
+      summary: Push a batch of queued operations
+      tags:
+      - sync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PushRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PushRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PushRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PushResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+        '207':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PushResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/sync/state/:
+    get:
+      operationId: sync_state_retrieve
+      description: |-
+        Where this device stands, from the server's point of view.
+
+        A terminal asks this on startup so it can show an honest indicator instead
+        of assuming it is up to date because nothing has failed yet.
+      summary: This device's sync state
+      tags:
+      - sync
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/DeviceStatus'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/sync/status/:
+    get:
+      operationId: sync_status_retrieve
+      summary: Sync health for the whole branch
+      tags:
+      - sync
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/BranchStatus'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/system/health/:
     get:
       operationId: system_health_retrieve
@@ -6923,6 +7226,33 @@ components:
       - capacity
       - occupancy
       - sessions
+    BranchStatus:
+      type: object
+      properties:
+        branch_id:
+          type: string
+          format: uuid
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeviceStatus'
+        stale_devices:
+          type: integer
+        offline_alert_minutes:
+          type: integer
+        open_conflicts:
+          type: integer
+        heads:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - branch_id
+      - devices
+      - heads
+      - offline_alert_minutes
+      - open_conflicts
+      - stale_devices
     CashMovement:
       type: object
       properties:
@@ -7044,6 +7374,25 @@ components:
           type: boolean
       required:
       - name_ar
+    Change:
+      type: object
+      properties:
+        seq:
+          type: integer
+        entity_type:
+          type: string
+        entity_id:
+          type: string
+          format: uuid
+        operation:
+          type: string
+        payload: {}
+      required:
+      - entity_id
+      - entity_type
+      - operation
+      - payload
+      - seq
     ChangePasswordRequest:
       type: object
       properties:
@@ -7363,6 +7712,47 @@ components:
         * `POS` - POS
         * `KDS` - KDS
         * `BOTH` - BOTH
+    DeviceStatus:
+      type: object
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        device_name:
+          type: string
+        status:
+          type: string
+        app_version:
+          type: string
+        last_seen_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_push_at:
+          type: string
+          format: date-time
+          nullable: true
+        pending:
+          type: integer
+        rejected:
+          type: integer
+        open_conflicts:
+          type: integer
+        cursors:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - app_version
+      - cursors
+      - device_id
+      - device_name
+      - last_push_at
+      - last_seen_at
+      - open_conflicts
+      - pending
+      - rejected
+      - status
     DeviceStatusEnum:
       enum:
       - ACTIVE
@@ -8362,6 +8752,59 @@ components:
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
           default: '0.00'
+    OperationRequest:
+      type: object
+      description: One item from a device's outbox.
+      properties:
+        op_uuid:
+          type: string
+          format: uuid
+          description: Client-minted and UNIQUE. This field alone is what makes a
+            replay a no-op.
+        entity_type:
+          type: string
+          minLength: 1
+          maxLength: 48
+        entity_id:
+          type: string
+          format: uuid
+          nullable: true
+        payload: {}
+        client_seq:
+          type: integer
+          nullable: true
+          description: The device's outbox ordering.
+        aggregate_seq:
+          type: integer
+          nullable: true
+          description: This device's nth operation on this aggregate. Drives SEQUENCE_GAP
+            detection.
+        client_time:
+          type: string
+          format: date-time
+          nullable: true
+          description: The device's clock. Recorded, never trusted.
+      required:
+      - entity_type
+      - op_uuid
+    OperationResult:
+      type: object
+      properties:
+        op_uuid:
+          type: string
+          format: uuid
+        status:
+          type: string
+        result: {}
+        code:
+          type: string
+          nullable: true
+        server_state: {}
+        replayed:
+          type: boolean
+      required:
+      - op_uuid
+      - status
     Order:
       type: object
       properties:
@@ -10084,6 +10527,56 @@ components:
       required:
       - price
       - sku
+    PullResponse:
+      type: object
+      properties:
+        stream:
+          $ref: '#/components/schemas/SyncStreamEnum'
+        cursor:
+          type: integer
+          description: The seq of the last row IN THIS RESPONSE — never the current
+            head.
+        has_more:
+          type: boolean
+        changes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Change'
+      required:
+      - changes
+      - cursor
+      - has_more
+      - stream
+    PushRequestRequest:
+      type: object
+      properties:
+        batch_id:
+          type: string
+          format: uuid
+          nullable: true
+        operations:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationRequest'
+          maxItems: 500
+          minItems: 1
+      required:
+      - operations
+    PushResponse:
+      type: object
+      properties:
+        applied:
+          type: integer
+        failed:
+          type: integer
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/OperationResult'
+      required:
+      - applied
+      - failed
+      - results
     RefreshRequestRequest:
       type: object
       properties:
@@ -10169,6 +10662,26 @@ components:
           format: date-time
       required:
       - expires_at
+    ResolutionEnum:
+      enum:
+      - ACKNOWLEDGED
+      - RETRIED
+      - DISCARDED
+      type: string
+      description: |-
+        * `ACKNOWLEDGED` - ACKNOWLEDGED
+        * `RETRIED` - RETRIED
+        * `DISCARDED` - DISCARDED
+    ResolveConflictRequest:
+      type: object
+      properties:
+        resolution:
+          $ref: '#/components/schemas/ResolutionEnum'
+        note:
+          type: string
+          maxLength: 250
+      required:
+      - resolution
     ResolvedSetting:
       type: object
       properties:
@@ -10752,6 +11265,161 @@ components:
         * `RETURN` - RETURN
         * `TRANSFER` - TRANSFER
         * `COUNT` - COUNT
+    SyncConflict:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        operation:
+          type: string
+          format: uuid
+          readOnly: true
+        op_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        entity_type:
+          type: string
+          readOnly: true
+        device_name:
+          type: string
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        message_ar:
+          type: string
+          readOnly: true
+        server_state:
+          readOnly: true
+          description: What the server believed, so the human can compare.
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        resolution:
+          type: string
+          readOnly: true
+        resolution_note:
+          type: string
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - device_name
+      - entity_type
+      - id
+      - message_ar
+      - op_uuid
+      - operation
+      - resolution
+      - resolution_note
+      - resolved_at
+      - server_state
+    SyncOperation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        op_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+        batch_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        device:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        entity_type:
+          type: string
+          readOnly: true
+        entity_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/SyncOperationStatusEnum'
+          readOnly: true
+        result:
+          readOnly: true
+        error_code:
+          type: string
+          readOnly: true
+        error_message:
+          type: string
+          readOnly: true
+        clock_skew_seconds:
+          type: integer
+          readOnly: true
+          description: client_time − server time at receipt. Recorded, never used
+            for anything.
+        received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - applied_at
+      - batch_id
+      - clock_skew_seconds
+      - device
+      - entity_id
+      - entity_type
+      - error_code
+      - error_message
+      - id
+      - op_uuid
+      - received_at
+      - result
+      - status
+    SyncOperationStatusEnum:
+      enum:
+      - PENDING
+      - APPLIED
+      - CONFLICT
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - PENDING
+        * `APPLIED` - APPLIED
+        * `CONFLICT` - CONFLICT
+        * `REJECTED` - REJECTED
+    SyncStreamEnum:
+      enum:
+      - config
+      - catalog
+      - floor
+      - staff
+      - orders
+      - kids
+      type: string
+      description: |-
+        * `config` - config
+        * `catalog` - catalog
+        * `floor` - floor
+        * `staff` - staff
+        * `orders` - orders
+        * `kids` - kids
     SystemInfo:
       type: object
       properties:

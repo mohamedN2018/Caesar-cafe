@@ -63,6 +63,7 @@ const groups: NavGroup[] = [
     items: [
       { label: 'التراخيص', to: '/licensing', icon: '🔑', permission: 'licenses.view' },
       { label: 'الأجهزة', to: '/devices', icon: '🖥️', permission: 'devices.view' },
+      { label: 'المزامنة', to: '/sync', icon: '🔄', permission: 'sync.view' },
       { label: 'الإعدادات', to: '/settings', icon: '⚙️', permission: 'branch.view' },
     ],
   },

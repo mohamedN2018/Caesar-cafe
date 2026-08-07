@@ -115,6 +115,15 @@ class Invoice(BaseModel):
     order = models.OneToOneField("orders.Order", on_delete=models.PROTECT, related_name="invoice")
     invoice_number = models.BigIntegerField(help_text="From the device's reserved block (C9).")
     serial = models.CharField(max_length=32, help_text="MB-2026-000123")
+    provisional_serial = models.CharField(
+        max_length=32,
+        blank=True,
+        help_text=(
+            "What a terminal printed after exhausting its block offline, e.g. "
+            "MB-01-P042. Recorded beside the permanent serial so the slip in a "
+            "customer's hand can still be matched to this invoice (C9)."
+        ),
+    )
     issued_at = models.DateTimeField(auto_now_add=True, db_index=True)
     snapshot = models.JSONField(default=dict)
 

@@ -791,6 +791,44 @@ register(
     label_en="Device offline alert",
     validators=(Range(5, 1440),),
 )
+register(
+    key="sync.pull_page_size",
+    type=SettingType.INTEGER,
+    default=500,
+    scope=Scope.BRANCH,
+    group="sync",
+    label_ar="حجم صفحة الاستلام",
+    label_en="Pull page size",
+    validators=(Range(10, 2000),),
+    overridable_at=(Scope.DEVICE,),
+    pushes_to_desktop=True,
+)
+register(
+    key="sync.max_clock_skew_seconds",
+    type=SettingType.INTEGER,
+    default=300,
+    scope=Scope.BRANCH,
+    group="sync",
+    label_ar="أقصى فرق مسموح في ساعة الجهاز (ثانية)",
+    label_en="Max clock skew",
+    help_ar=(
+        "تجاوز الحد يُسجَّل كتعارض للمراجعة — ولا تُرفض العملية أبداً بسببه، "
+        "لأن البيع حدث فعلاً وساعة الخادم هي المعتمدة في كل ما يهم."
+    ),
+    validators=(Range(30, 86400),),
+    pushes_to_desktop=True,
+)
+register(
+    key="sync.pending_alert_threshold",
+    type=SettingType.INTEGER,
+    default=100,
+    scope=Scope.BRANCH,
+    group="sync",
+    label_ar="تنبيه عند تراكم العمليات",
+    label_en="Pending operations alert",
+    help_ar="طابور يكبر معناه جهاز توقف عن الإرسال — والمبيعات على قرص صلب.",
+    validators=(Range(1, 10000),),
+)
 
 # ── Licensing ────────────────────────────────────────────────────────────────
 

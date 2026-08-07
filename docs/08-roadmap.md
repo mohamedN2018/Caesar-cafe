@@ -488,7 +488,63 @@ Exit criteria:
 
 ---
 
-## Phase 7 — Offline & Sync Engine 🔴
+## Phase 7 — Offline & Sync Engine ✅ SERVER SIDE COMPLETE
+
+**Verified on 2026-08-08:** ruff + format clean · **652 tests passing** (46 new) · migrations
+clean · `spectacular --fail-on-warn` clean · frontend build clean.
+
+Delivered: the `sync` app — `ChangeLog` (the monotonic pull feed), `SyncOperation` (the
+idempotency gate), `SyncConflict`, `DeviceCursor`; push handlers for orders, events, payments,
+refunds, shifts, cash movements, waste and play sessions; the change-log receivers that keep
+catalog/floor/config/staff/kids/orders fed; `/sync/push`, `/sync/pull`, `/sync/state`,
+`/sync/status`, `/sync/conflicts`; provisional-invoice reconciliation; four new `sync.*` settings;
+and the Web Admin sync-health screen.
+
+Exit criteria met, one row of the docs/07 test matrix each:
+
+- **A duplicate batch replays to nothing.** `op_uuid` is UNIQUE and checked before any work, so
+  the second push reports the first push's results verbatim and creates nothing.
+- **A payment retried after a timeout charges once** — even with a fresh `op_uuid`, because the
+  payment's own idempotency key catches what the operation gate cannot.
+- **A partial batch does not block a terminal.** 50 valid operations with one malformed one in the
+  middle: 50 applied, 1 rejected. An all-or-nothing batch means one poisoned row stalls a terminal
+  forever, and the good sales behind it never arrive.
+- **Two devices editing one table produce both items and no conflict.** C1's central claim, tested
+  rather than asserted: the operations commute, so the conflict does not exist to resolve.
+- **`SEQUENCE_GAP` self-heals** — the client backfills and nobody is involved.
+  **`ORDER_ALREADY_CLOSED` does not**, and goes to a human with the server's state attached.
+- **A pull never skips a row across a transaction boundary.** Tested with a real writer holding an
+  open transaction while a second row commits behind it: neither row is served, and the cursor does
+  not advance past the one still in flight. Without the `pg_current_xact_id` / `pg_snapshot_xmin`
+  guard this is a row that exactly one device loses forever — rare, silent, unreproducible.
+- **150 events queued offline drain in order with exact totals**, and the server's own sequence
+  comes out gapless.
+- **A skewed clock is flagged, never silently accepted and never used to reject a sale.** The sale
+  really happened; the server's clock is authoritative for everything that matters, so a 2-hour
+  skew raises a `CLOCK_SKEW` conflict and applies the operation.
+- **A provisional serial printed offline is recorded beside the permanent one**, so the slip in a
+  customer's hand can still be matched to its invoice (C9).
+
+Three design decisions worth recording:
+
+1. **Push and pull are device-authorized, not permission-gated.** An outbox has to drain at 3am
+   with nobody logged in. A device still cannot act as a person — the actor on every operation is
+   whoever the POS token says was logged in, and every handler runs the ordinary,
+   permission-checked service rather than a sync-specific copy of the rule.
+2. **`apply_push` is deliberately NOT one outer transaction.** Each operation gets its own
+   savepoint. An outer transaction rolling back on the last operation would discard the
+   forty-nine before it, and the device — told nothing succeeded — would resend all fifty forever.
+3. **Mirror updates are emitted by signals, not by explicit calls at each write site.** A price
+   changed through the admin, a management command, a data migration or an endpoint nobody has
+   written yet must all reach the terminals. The explicit-call version is one refactor away from a
+   Desktop running silently on last month's prices, and that failure is invisible until a customer
+   is charged the wrong amount.
+
+**Still outstanding — the Desktop half:** the SQLite schema with its `m_`/`l_` separation, the
+single-transaction outbox write, the drainer with jittered backoff, the local fold, and the header
+sync indicator. The server contract they build against is now fixed and tested.
+
+Original plan:
 
 Deliverables:
 - Desktop SQLite schema + migrations; `m_`/`l_` separation
