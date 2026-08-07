@@ -102,6 +102,61 @@ class TestCatalogIntegrity:
         assert not problems, problems
 
 
+class TestRolesAreCoherent:
+    """
+    You cannot mutate what you cannot see.
+
+    A role holding a write capability without the matching read is incoherent:
+    the UI hides the screen, the API refuses the lookup, and the user is asked
+    to write off an item they are not allowed to find. Caught for real — CASHIER
+    shipped with `inventory.waste` but no `inventory.view`.
+    """
+
+    #: write code -> the read code it cannot function without
+    IMPLIES = {
+        "inventory.waste": "inventory.view",
+        "inventory.adjust": "inventory.view",
+        "inventory.count": "inventory.view",
+        "inventory.post_count": "inventory.view",
+        "catalog.create": "catalog.view",
+        "catalog.edit": "catalog.view",
+        "catalog.change_price": "catalog.view",
+        "catalog.manage_recipes": "catalog.view",
+        "purchasing.create_po": "purchasing.view",
+        "purchasing.receive": "purchasing.view",
+        "purchasing.pay_supplier": "purchasing.view",
+        "orders.create": "orders.view",
+        "orders.edit_items": "orders.view",
+        "orders.void_item": "orders.view",
+        "orders.refund": "orders.view",
+        "payments.take": "orders.view",
+        "kids.checkin": "kids.view",
+        "kids.checkout": "kids.view",
+        "kitchen.update_status": "kitchen.view",
+        "floor.open_table": "floor.view",
+        "floor.transfer": "floor.view",
+        "devices.manage": "devices.view",
+        "licenses.manage": "licenses.view",
+        "staff.manage_users": "staff.view",
+    }
+
+    def test_every_write_capability_has_its_read(self) -> None:
+        problems = []
+        for role, spec in catalog.SYSTEM_ROLES.items():
+            held = set(spec["permissions"])
+            problems.extend(
+                f"{role}: has {write} but not {read}"
+                for write, read in self.IMPLIES.items()
+                if write in held and read not in held
+            )
+        assert not problems, "Incoherent roles:\n  " + "\n  ".join(problems)
+
+    def test_the_guard_would_catch_a_regression(self) -> None:
+        """A guard that cannot fail is not a guard."""
+        broken = {"inventory.waste"}
+        assert any(write in broken and read not in broken for write, read in self.IMPLIES.items())
+
+
 class TestDocumentedRoleExclusions:
     """The three invariants stated in docs/05 as non-negotiable."""
 

@@ -1,0 +1,232 @@
+<script setup lang="ts">
+/**
+ * One order, with its event stream.
+ *
+ * The stream is the point: "why is this bill 204.29?" is answered by reading
+ * what happened, in order, not by trusting a total.
+ */
+import { onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
+
+import { ApiError, api } from '@/api/client'
+import UiAlert from '@/components/ui/UiAlert.vue'
+import UiBadge from '@/components/ui/UiBadge.vue'
+import UiCard from '@/components/ui/UiCard.vue'
+import UiSkeleton from '@/components/ui/UiSkeleton.vue'
+import { dateTime, money, percent, quantity } from '@/lib/format'
+
+interface Item {
+  id: string
+  name_snapshot: string
+  unit_price_snapshot: string
+  quantity: string
+  discount_percent: string
+  line_total: string
+  status: string
+  note: string
+  void_reason: string
+  modifiers: { id: string; name_snapshot: string; price_delta_snapshot: string }[]
+}
+
+interface Order {
+  id: string
+  local_number: string
+  order_type: string
+  status: string
+  table_number: string | null
+  subtotal: string
+  discount_total: string
+  discount_reason: string
+  service_total: string
+  tax_total: string
+  rounding_adjustment: string
+  grand_total: string
+  paid_total: string
+  balance_due: string
+  vat_percent: string
+  service_percent: string
+  opened_at: string
+  closed_at: string | null
+  opened_by_name: string | null
+  void_reason: string
+}
+
+interface Event {
+  id: string
+  sequence: number
+  event_type: string
+  payload: Record<string, unknown>
+  actor_name: string | null
+  approved_by_name: string | null
+  occurred_at: string
+}
+
+const EVENT_LABELS: Record<string, string> = {
+  ORDER_OPENED: 'فتح الطلب',
+  ITEM_ADDED: 'إضافة صنف',
+  ITEM_QUANTITY_CHANGED: 'تغيير الكمية',
+  ITEM_VOIDED: 'إلغاء صنف',
+  ITEM_NOTE_SET: 'إضافة ملاحظة',
+  DISCOUNT_APPLIED: 'تطبيق خصم',
+  ORDER_FIRED: 'إرسال للمطبخ',
+  TABLE_ASSIGNED: 'تحديد طاولة',
+  CUSTOMER_ASSIGNED: 'تحديد عميل',
+  PAYMENT_TAKEN: 'تحصيل دفعة',
+  ORDER_CLOSED: 'إغلاق الطلب',
+  ORDER_VOIDED: 'إلغاء الطلب',
+}
+
+const route = useRoute()
+const order = ref<Order | null>(null)
+const items = ref<Item[]>([])
+const events = ref<Event[]>([])
+const loading = ref(true)
+const error = ref('')
+
+onMounted(async () => {
+  const id = route.params.id as string
+  try {
+    const [detail, stream] = await Promise.all([
+      api.get<Order & { items: Item[] }>(`/orders/${id}/`),
+      api.get<Event[]>(`/orders/${id}/events/`),
+    ])
+    order.value = detail
+    items.value = detail.items
+    events.value = stream
+  } catch (caught) {
+    error.value = caught instanceof ApiError ? caught.message : 'تعذر تحميل الطلب'
+  } finally {
+    loading.value = false
+  }
+})
+</script>
+
+<template>
+  <div class="space-y-6">
+    <UiSkeleton v-if="loading" :rows="10" />
+    <UiAlert v-else-if="error" tone="error">{{ error }}</UiAlert>
+
+    <template v-else-if="order">
+      <div class="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 class="text-2xl font-bold text-slate-900">{{ order.local_number }}</h1>
+          <p class="mt-1 text-sm text-slate-500">
+            {{ order.table_number ? `طاولة ${order.table_number}` : 'تيك أواي' }} ·
+            {{ dateTime(order.opened_at) }}
+            <span v-if="order.opened_by_name"> · {{ order.opened_by_name }}</span>
+          </p>
+        </div>
+        <UiBadge :tone="order.status === 'PAID' ? 'success' : 'info'">{{ order.status }}</UiBadge>
+      </div>
+
+      <UiAlert v-if="order.void_reason" tone="warning">
+        تم إلغاء الطلب: {{ order.void_reason }}
+      </UiAlert>
+
+      <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <UiCard title="الأصناف">
+          <ul class="divide-y divide-slate-100">
+            <li
+              v-for="item in items"
+              :key="item.id"
+              class="flex items-start justify-between gap-4 py-3"
+              :class="item.status === 'VOIDED' && 'opacity-50'"
+            >
+              <div class="min-w-0">
+                <p class="font-medium text-slate-900">
+                  <span class="tabular-nums">{{ quantity(item.quantity) }}×</span>
+                  {{ item.name_snapshot }}
+                  <UiBadge v-if="item.status === 'VOIDED'" tone="danger">ملغي</UiBadge>
+                </p>
+                <p v-if="item.modifiers.length" class="text-sm text-slate-500">
+                  {{ item.modifiers.map((m) => m.name_snapshot).join('، ') }}
+                </p>
+                <p v-if="item.note" class="text-sm text-slate-500">📝 {{ item.note }}</p>
+                <p v-if="item.void_reason" class="text-sm text-red-600">
+                  سبب الإلغاء: {{ item.void_reason }}
+                </p>
+              </div>
+              <div class="text-end">
+                <p class="font-medium tabular-nums">{{ money(item.line_total) }}</p>
+                <p class="text-xs text-slate-500 tabular-nums">
+                  {{ money(item.unit_price_snapshot) }} للوحدة
+                </p>
+              </div>
+            </li>
+          </ul>
+        </UiCard>
+
+        <UiCard title="الحساب">
+          <dl class="space-y-2.5 text-sm">
+            <div class="flex justify-between">
+              <dt class="text-slate-600">الإجمالي</dt>
+              <dd class="tabular-nums">{{ money(order.subtotal) }}</dd>
+            </div>
+            <div v-if="Number(order.discount_total)" class="flex justify-between text-emerald-700">
+              <dt>خصم</dt>
+              <dd class="tabular-nums">− {{ money(order.discount_total) }}</dd>
+            </div>
+            <div v-if="Number(order.service_total)" class="flex justify-between">
+              <dt class="text-slate-600">خدمة {{ percent(order.service_percent) }}</dt>
+              <dd class="tabular-nums">{{ money(order.service_total) }}</dd>
+            </div>
+            <div v-if="Number(order.tax_total)" class="flex justify-between">
+              <dt class="text-slate-600">ض.ق.م {{ percent(order.vat_percent) }}</dt>
+              <dd class="tabular-nums">{{ money(order.tax_total) }}</dd>
+            </div>
+            <div
+              v-if="Number(order.rounding_adjustment)"
+              class="flex justify-between text-slate-500"
+            >
+              <dt>تقريب</dt>
+              <dd class="tabular-nums">{{ money(order.rounding_adjustment) }}</dd>
+            </div>
+            <div class="flex justify-between border-t border-slate-200 pt-2.5 text-base font-bold">
+              <dt>المطلوب</dt>
+              <dd class="tabular-nums">{{ money(order.grand_total) }}</dd>
+            </div>
+            <div v-if="Number(order.paid_total)" class="flex justify-between text-emerald-700">
+              <dt>المدفوع</dt>
+              <dd class="tabular-nums">{{ money(order.paid_total) }}</dd>
+            </div>
+            <div
+              v-if="Number(order.balance_due) > 0"
+              class="flex justify-between font-semibold text-amber-700"
+            >
+              <dt>المتبقي</dt>
+              <dd class="tabular-nums">{{ money(order.balance_due) }}</dd>
+            </div>
+          </dl>
+        </UiCard>
+      </div>
+
+      <UiCard
+        title="سلسلة الأحداث"
+        subtitle="السجل الكامل لما حدث في هذا الطلب، بالترتيب."
+      >
+        <ol class="space-y-3">
+          <li v-for="event in events" :key="event.id" class="flex gap-3">
+            <span
+              class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full
+                     bg-slate-100 text-xs font-semibold tabular-nums text-slate-600"
+            >
+              {{ event.sequence }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-slate-900">
+                {{ EVENT_LABELS[event.event_type] ?? event.event_type }}
+              </p>
+              <p class="text-xs text-slate-500">
+                {{ dateTime(event.occurred_at) }}
+                <span v-if="event.actor_name"> · {{ event.actor_name }}</span>
+                <span v-if="event.approved_by_name" class="text-amber-700">
+                  · بموافقة {{ event.approved_by_name }}
+                </span>
+              </p>
+            </div>
+          </li>
+        </ol>
+      </UiCard>
+    </template>
+  </div>
+</template>

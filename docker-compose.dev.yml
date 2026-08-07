@@ -88,6 +88,11 @@ services:
     working_dir: /app
     command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
     env_file: [.env]
+    environment:
+      # Derived from API_PORT rather than set separately in .env. Two hardcoded
+      # copies of the same port is a trap: change one and the browser silently
+      # calls a port nothing is listening on.
+      VITE_API_BASE_URL: http://localhost:${API_PORT:-8000}/api/v1
     volumes:
       - ./frontend:/app
       # `npm run api:types` reads ../backend/schema.yml. In CI the whole repo is

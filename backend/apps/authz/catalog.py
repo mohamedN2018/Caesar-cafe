@@ -270,6 +270,10 @@ SYSTEM_ROLES: dict[str, dict] = {
             "kids.extend_session",
             "kids.log_incident",
             "catalog.view",
+            # `inventory.view` accompanies `inventory.waste` deliberately: you
+            # cannot sensibly write off an item you are not allowed to look up,
+            # and the low-stock alert is exactly what a cashier needs to see.
+            "inventory.view",
             "inventory.waste",
             "shifts.open",
             "shifts.close",
