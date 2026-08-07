@@ -4,6 +4,2088 @@
  */
 
 export interface paths {
+    "/api/v1/auth/change-password/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Change your own password */
+        post: operations["auth_change_password_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/login/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Log in with email and password
+         * @description Web login. Rate-limited per IP and per account (threat D1).
+         */
+        post: operations["auth_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/logout/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log out */
+        post: operations["auth_logout_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/me/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current principal
+         * @description Profile plus the effective permission set the UI uses to shape itself.
+         */
+        get: operations["auth_me_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/confirm/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm MFA enrolment */
+        post: operations["auth_mfa_confirm_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/disable/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Disable MFA */
+        post: operations["auth_mfa_disable_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/mfa/setup/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Begin MFA enrolment */
+        post: operations["auth_mfa_setup_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/refresh/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rotate the refresh token
+         * @description Rotate a refresh token. Reuse revokes every session for the account.
+         */
+        post: operations["auth_refresh_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List your active sessions
+         * @description Active sessions, so a user can spot a login they do not recognise.
+         */
+        get: operations["auth_sessions_retrieve"];
+        put?: never;
+        post?: never;
+        /**
+         * Revoke all your other sessions
+         * @description Active sessions, so a user can spot a login they do not recognise.
+         */
+        delete: operations["auth_sessions_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/set-pin/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set your POS PIN
+         * @description Setting a POS PIN requires the account password, not just a session.
+         */
+        post: operations["auth_set_pin_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/verify-pin/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Manager step-up approval
+         * @description Step-up approval (docs/05).
+         *
+         *     A manager enters their PIN to authorize ONE action for the cashier who is
+         *     already logged in. The cashier is never logged out, and both identities are
+         *     recorded against the resulting operation.
+         */
+        post: operations["auth_verify_pin_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/categories/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["catalog_categories_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["catalog_categories_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/categories/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["catalog_categories_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["catalog_categories_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["catalog_categories_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["catalog_categories_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/catalog/modifier-groups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["catalog_modifier_groups_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["catalog_modifier_groups_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/modifier-groups/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["catalog_modifier_groups_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["catalog_modifier_groups_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["catalog_modifier_groups_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["catalog_modifier_groups_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/catalog/products/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["catalog_products_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["catalog_products_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/products/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["catalog_products_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["catalog_products_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["catalog_products_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["catalog_products_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/catalog/products/{id}/variants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a variant
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["catalog_products_variants_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/variants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Price changes, always recorded.
+         *
+         *     A receipt is a legal record of what was sold at what price, so every change
+         *     leaves a trail that explains why last Monday's total differs from today's.
+         */
+        get: operations["catalog_variants_list"];
+        put?: never;
+        /**
+         * @description Price changes, always recorded.
+         *
+         *     A receipt is a legal record of what was sold at what price, so every change
+         *     leaves a trail that explains why last Monday's total differs from today's.
+         */
+        post: operations["catalog_variants_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/variants/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Price changes, always recorded.
+         *
+         *     A receipt is a legal record of what was sold at what price, so every change
+         *     leaves a trail that explains why last Monday's total differs from today's.
+         */
+        get: operations["catalog_variants_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalog/variants/change/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Change a variant's price
+         * @description Price changes, always recorded.
+         *
+         *     A receipt is a legal record of what was sold at what price, so every change
+         *     leaves a trail that explains why last Monday's total differs from today's.
+         */
+        post: operations["catalog_variants_change_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floor/areas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["floor_areas_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["floor_areas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floor/areas/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["floor_areas_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["floor_areas_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["floor_areas_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["floor_areas_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/floor/sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open a table session */
+        post: operations["floor_sessions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floor/sessions/{id}/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a table session */
+        post: operations["floor_sessions_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floor/sessions/{id}/transfer/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Transfer a session to another table
+         * @description Move a session to another table.
+         *
+         *     The SESSION moves, carrying every order with it — which is why the session
+         *     exists as a separate concept from the order.
+         */
+        post: operations["floor_sessions_transfer_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floor/status/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Live floor status
+         * @description The live board.
+         *
+         *     Honours `floor.waiter_sees_only_own_tables`: a waiter sees their own
+         *     section, which is the point of the setting rather than a UI nicety.
+         */
+        get: operations["floor_status_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floor/tables/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `pos_x`/`pos_y` come from the Web Admin's drag-and-drop canvas. */
+        get: operations["floor_tables_list"];
+        put?: never;
+        /** @description `pos_x`/`pos_y` come from the Web Admin's drag-and-drop canvas. */
+        post: operations["floor_tables_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/floor/tables/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `pos_x`/`pos_y` come from the Web Admin's drag-and-drop canvas. */
+        get: operations["floor_tables_retrieve"];
+        /** @description `pos_x`/`pos_y` come from the Web Admin's drag-and-drop canvas. */
+        put: operations["floor_tables_update"];
+        post?: never;
+        /** @description `pos_x`/`pos_y` come from the Web Admin's drag-and-drop canvas. */
+        delete: operations["floor_tables_destroy"];
+        options?: never;
+        head?: never;
+        /** @description `pos_x`/`pos_y` come from the Web Admin's drag-and-drop canvas. */
+        patch: operations["floor_tables_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/inventory/adjustments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Set stock to an absolute quantity */
+        post: operations["inventory_adjustments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/counts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["inventory_counts_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["inventory_counts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/counts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["inventory_counts_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["inventory_counts_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["inventory_counts_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["inventory_counts_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/inventory/counts/{id}/post/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post a count, turning variances into movements
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["inventory_counts_post_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["inventory_items_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["inventory_items_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/items/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["inventory_items_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["inventory_items_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["inventory_items_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["inventory_items_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/inventory/levels/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current stock levels
+         * @description Current stock. `?low_stock=true` for the reorder list.
+         */
+        get: operations["inventory_levels_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/movements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stock ledger
+         * @description The ledger. Read-only by design — movements are written by services.
+         */
+        get: operations["inventory_movements_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/reconcile/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reconcile levels against the ledger
+         * @description Replay the ledger and report any drift.
+         *
+         *     A clean result proves the projection still matches the ledger; a drift is a
+         *     bug in a write path, not a stock problem.
+         */
+        get: operations["inventory_reconcile_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory/waste/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Record waste */
+        post: operations["inventory_waste_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/areas/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_areas_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["kids_areas_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/areas/{area_id}/board/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Live kids-area board */
+        get: operations["kids_areas_board_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/areas/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_areas_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["kids_areas_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["kids_areas_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["kids_areas_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/kids/children/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_children_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["kids_children_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/children/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_children_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["kids_children_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["kids_children_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["kids_children_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/kids/guardians/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_guardians_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["kids_guardians_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/guardians/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_guardians_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["kids_guardians_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["kids_guardians_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["kids_guardians_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/kids/incidents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_incidents_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["kids_incidents_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/incidents/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_incidents_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/incidents/log/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Log a play-area incident */
+        post: operations["kids_incidents_log_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/reports/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Kids-area revenue and occupancy */
+        get: operations["kids_reports_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/sessions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Play sessions */
+        get: operations["kids_sessions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/sessions/{id}/check-out/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a child out and bill the session */
+        post: operations["kids_sessions_check_out_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/sessions/{id}/override/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Override a session charge */
+        post: operations["kids_sessions_override_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/sessions/{id}/tariff/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Move a running session to another tariff */
+        post: operations["kids_sessions_tariff_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/sessions/check-in/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check a child in */
+        post: operations["kids_sessions_check_in_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/tariffs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_tariffs_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["kids_tariffs_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kids/tariffs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kids_tariffs_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["kids_tariffs_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["kids_tariffs_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["kids_tariffs_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/kids/tariffs/{id}/preview/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Preview what a tariff charges
+         * @description Worked examples for the tariff builder.
+         *
+         *     Runs the same `compute_charge` a real checkout runs, so what an admin sees
+         *     while designing a rule is what a parent will be charged under it.
+         */
+        get: operations["kids_tariffs_preview_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kitchen/performance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Prep times by station */
+        get: operations["kitchen_performance_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kitchen/stations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kitchen_stations_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["kitchen_stations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kitchen/stations/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["kitchen_stations_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["kitchen_stations_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["kitchen_stations_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["kitchen_stations_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/kitchen/tickets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Kitchen tickets */
+        get: operations["kitchen_tickets_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kitchen/tickets/{id}/{action}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Advance a ticket (accept · start · ready · served) */
+        post: operations["kitchen_tickets_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kitchen/tickets/{id}/lines/{line_id}/ready/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one ticket line ready
+         * @description Per-item readiness, for stations that plate in stages.
+         */
+        post: operations["kitchen_tickets_lines_ready_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/kitchen/tickets/{id}/recall/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recall a served ticket */
+        post: operations["kitchen_tickets_recall_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/activate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate a device against a licence key
+         * @description The activation handshake. Public by necessity — the device has no
+         *     credentials yet — so it is rate-limited hard (5/hour/IP).
+         */
+        post: operations["licensing_activate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/device-token/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Obtain a device access token
+         * @description Exchange the long-lived device secret for a short-lived access token.
+         */
+        post: operations["licensing_device_token_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/devices/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List activated devices */
+        get: operations["licensing_devices_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/devices/{id}/{action}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Act on a device
+         * @description revoke · reset · suspend · resume
+         */
+        post: operations["licensing_devices_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/heartbeat/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Device heartbeat
+         * @description Periodic liveness + licence status, and how a fresh offline token reaches
+         *     the device. A terminal that is online daily slides its grace window forward
+         *     without ever noticing the mechanism.
+         */
+        post: operations["licensing_heartbeat_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/invoice-blocks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Allocate an invoice number block
+         * @description Reserve the next disjoint invoice-number range for this device (C9).
+         */
+        post: operations["licensing_invoice_blocks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/licenses/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List licences */
+        get: operations["licensing_licenses_list"];
+        put?: never;
+        /** Issue a licence */
+        post: operations["licensing_licenses_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/licenses/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Licence detail */
+        get: operations["licensing_licenses_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/licenses/{id}/{action}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Act on a licence (suspend · resume · revoke · renew · regenerate-key)
+         * @description suspend · resume · revoke · renew · regenerate-key
+         */
+        post: operations["licensing_license_action"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/licensing/licenses/{id}/events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Licence event log */
+        get: operations["licensing_licenses_events_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List orders */
+        get: operations["orders_list"];
+        put?: never;
+        /** Open an order */
+        post: operations["orders_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Order detail */
+        get: operations["orders_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Order event stream
+         * @description Append events to an order — the primary mutation path.
+         *
+         *     Events already recorded are reported as `skipped`, not rejected, so a
+         *     Desktop whose push timed out can retry the whole batch safely.
+         */
+        get: operations["orders_events_list"];
+        put?: never;
+        /**
+         * Append order events
+         * @description Append events to an order — the primary mutation path.
+         *
+         *     Events already recorded are reported as `skipped`, not rejected, so a
+         *     Desktop whose push timed out can retry the whole batch safely.
+         */
+        post: operations["orders_events_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/receipt/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Receipt document
+         * @description The receipt as structured data.
+         *
+         *     Rendered identically to a thermal printer, a PDF or a preview pane — so
+         *     what the cashier sees is what the customer receives.
+         */
+        get: operations["orders_receipt_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Void an order */
+        post: operations["orders_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List payments
+         * @description Take money.
+         *
+         *     Requires a human principal: a bare device token can drain the outbox at 3am
+         *     but cannot take a payment, because there would be nobody to name in the
+         *     audit log.
+         */
+        get: operations["payments_list"];
+        put?: never;
+        /**
+         * Take a payment
+         * @description Take money.
+         *
+         *     Requires a human principal: a bare device token can drain the outbox at 3am
+         *     but cannot take a payment, because there would be nobody to name in the
+         *     audit log.
+         */
+        post: operations["payments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/invoices/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List invoices */
+        get: operations["payments_invoices_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/invoices/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Invoice detail (frozen snapshot) */
+        get: operations["payments_invoices_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/methods/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Admin-managed rows, not an enum — adding InstaPay needs no deployment. */
+        get: operations["payments_methods_list"];
+        put?: never;
+        /** @description Admin-managed rows, not an enum — adding InstaPay needs no deployment. */
+        post: operations["payments_methods_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/payments/methods/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Admin-managed rows, not an enum — adding InstaPay needs no deployment. */
+        get: operations["payments_methods_retrieve"];
+        /** @description Admin-managed rows, not an enum — adding InstaPay needs no deployment. */
+        put: operations["payments_methods_update"];
+        post?: never;
+        /** @description Admin-managed rows, not an enum — adding InstaPay needs no deployment. */
+        delete: operations["payments_methods_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Admin-managed rows, not an enum — adding InstaPay needs no deployment. */
+        patch: operations["payments_methods_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/payments/refunds/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List refunds */
+        get: operations["payments_refunds_list"];
+        put?: never;
+        /** Refund a payment */
+        post: operations["payments_refunds_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/schema/": {
         parameters: {
             query?: never;
@@ -108,6 +2190,133 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shifts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List shifts */
+        get: operations["shifts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/{id}/cash-movements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cash movements */
+        get: operations["shifts_cash_movements_list"];
+        put?: never;
+        /** Record a cash movement */
+        post: operations["shifts_cash_movements_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/{id}/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Close a shift and freeze the Z-report */
+        post: operations["shifts_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/{id}/x-report/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * X-report
+         * @description A mid-shift read that closes nothing.
+         *
+         *     Honours `shifts.blind_close`: when on, the expected cash is withheld so the
+         *     cashier's count stays an observation rather than a number worked backwards
+         *     from a target.
+         */
+        get: operations["shifts_x_report_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/{id}/z-report/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Z-report (frozen at close) */
+        get: operations["shifts_z_report_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/current/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** This device's open shift */
+        get: operations["shifts_current_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/open/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Open a shift */
+        post: operations["shifts_open_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/health/": {
         parameters: {
             query?: never;
@@ -156,14 +2365,865 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        ActivationRequestRequest: {
+            /** @description QSR-XXXX-XXXX-XXXX-XXXX. Case and dashes are normalized. */
+            license_key: string;
+            /** Format: email */
+            email: string;
+            device_name: string;
+            /** @default POS */
+            mode: components["schemas"]["DeviceModeEnum"];
+            platform?: string;
+            app_version?: string;
+            /** @description Advisory telemetry. Never used for authorization. */
+            fingerprint?: string;
+        };
+        ActivationResponse: {
+            /** Format: uuid */
+            device_id: string;
+            /** @description Returned once. Store in the OS keychain. */
+            device_secret: string;
+            /** @description Ed25519-signed; verified locally. */
+            offline_token: string;
+            /** Format: uuid */
+            branch_id: string;
+            branch_name: string;
+            device_name: string;
+            mode: string;
+            license_status: string;
+            /** Format: date-time */
+            license_expires_at: string | null;
+        };
+        AdjustmentRequest: {
+            /** Format: uuid */
+            item: string;
+            /** Format: decimal */
+            new_quantity: string;
+            reason: string;
+        };
+        ApplyResult: {
+            applied: string[];
+            /** @description Already recorded — a replay, not an error. */
+            skipped: string[];
+            order: components["schemas"]["Order"];
+        };
+        ApprovalToken: {
+            approval_token: string;
+            expires_in: number;
+            permission: string;
+            approved_by: string;
+        };
+        Area: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description الصالة / التراس / صالة الأطفال */
+            name_ar: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        AreaRequest: {
+            /** @description الصالة / التراس / صالة الأطفال */
+            name_ar: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        Board: {
+            /** Format: uuid */
+            area_id: string;
+            area_name: string;
+            occupancy: number;
+            capacity: number;
+            sessions: components["schemas"]["PlaySession"][];
+        };
+        CashMovement: {
+            /** Format: uuid */
+            readonly id: string;
+            movement_type: components["schemas"]["CashMovementTypeEnum"];
+            /**
+             * Format: decimal
+             * @description Always positive; the type carries direction.
+             */
+            amount: string;
+            reason: string;
+            readonly user_name: string;
+            /** Format: date-time */
+            readonly occurred_at: string;
+        };
+        CashMovementRequestRequest: {
+            movement_type: components["schemas"]["CashMovementTypeEnum"];
+            /** Format: decimal */
+            amount: string;
+            reason: string;
+        };
+        /**
+         * @description * `IN` - IN
+         *     * `OUT` - OUT
+         *     * `EXPENSE` - EXPENSE
+         *     * `DROP` - DROP
+         * @enum {string}
+         */
+        CashMovementTypeEnum: "IN" | "OUT" | "EXPENSE" | "DROP";
+        Category: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            parent?: string | null;
+            name_ar: string;
+            name_en?: string;
+            /** @description #RRGGBB for the POS grid. */
+            color?: string;
+            sort_order?: number;
+            is_active?: boolean;
+            /** @default 0 */
+            readonly product_count: number;
+        };
+        CategoryRequest: {
+            /** Format: uuid */
+            parent?: string | null;
+            name_ar: string;
+            name_en?: string;
+            /** @description #RRGGBB for the POS grid. */
+            color?: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        ChangePasswordRequest: {
+            current_password: string;
+            new_password: string;
+        };
+        ChangeTariffRequest: {
+            /** Format: uuid */
+            tariff: string;
+        };
+        /**
+         * @description Deliberately short. A parent with a restless child will not tolerate a long
+         *     form, and every optional field here is one the staff can fill in later.
+         */
+        CheckInRequest: {
+            /** Format: uuid */
+            area: string;
+            child_name: string;
+            guardian_name: string;
+            guardian_phone?: string;
+            /** Format: uuid */
+            guardian_id?: string | null;
+            age_months?: number | null;
+            /** Format: date */
+            birth_date?: string | null;
+            /** Format: uuid */
+            tariff?: string | null;
+            tag_number: string;
+            /** Format: uuid */
+            order?: string | null;
+            /**
+             * Format: uuid
+             * @description Client-minted, so an offline check-in keeps its identity.
+             */
+            session_id?: string | null;
+            medical_notes?: string;
+        };
+        CheckInResponse: {
+            session: components["schemas"]["PlaySession"];
+            /** @description Non-blocking problems the staff member must see, e.g. an age outside limits. */
+            warnings: string[];
+        };
+        CheckOutRequest: {
+            /**
+             * @description The staff member confirmed the recipient's identity. Not a formality.
+             * @default false
+             */
+            verified: boolean;
+            /** Format: uuid */
+            released_to_guardian?: string | null;
+            /** @description Step-up token for kids.release_to_other, from POST /auth/approve. */
+            approval_token?: string;
+            /**
+             * Format: uuid
+             * @description Append to this order; omit to open a new one.
+             */
+            bill_to_order?: string | null;
+            /** @default true */
+            bill: boolean;
+        };
+        CheckOutResponse: {
+            session: components["schemas"]["PlaySession"];
+            /** Format: uuid */
+            order_id: string | null;
+            charge: string;
+        };
+        Child: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            guardian: string;
+            first_name: string;
+            /** Format: date */
+            birth_date?: string | null;
+            age_months_snapshot?: number;
+            /** @description Allergies, conditions staff must know about. */
+            medical_notes?: string;
+            consent_recorded?: boolean;
+        };
+        ChildRequest: {
+            /** Format: uuid */
+            guardian: string;
+            first_name: string;
+            /** Format: date */
+            birth_date?: string | null;
+            age_months_snapshot?: number;
+            /** @description Allergies, conditions staff must know about. */
+            medical_notes?: string;
+            consent_recorded?: boolean;
+        };
+        CloseShiftRequest: {
+            /** Format: decimal */
+            counted_cash: string;
+            reason?: string;
+        };
+        /**
+         * @description * `WEIGHTED_AVG` - WEIGHTED_AVG
+         *     * `FIFO` - FIFO
+         * @enum {string}
+         */
+        CostingMethodEnum: "WEIGHTED_AVG" | "FIFO";
+        /**
+         * @description * `DRAFT` - DRAFT
+         *     * `COUNTING` - COUNTING
+         *     * `REVIEW` - REVIEW
+         *     * `POSTED` - POSTED
+         *     * `CANCELLED` - CANCELLED
+         * @enum {string}
+         */
+        CountStatusEnum: "DRAFT" | "COUNTING" | "REVIEW" | "POSTED" | "CANCELLED";
+        /**
+         * @description A single human-readable result message.
+         *
+         *     Lives here rather than being redefined per app: drf-spectacular keys
+         *     components by class NAME, so two identically-named serializers in different
+         *     apps silently produce a wrong schema.
+         */
+        Detail: {
+            detail: string;
+        };
+        Device: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly device_name: string;
+            readonly mode: components["schemas"]["DeviceModeEnum"];
+            readonly status: components["schemas"]["DeviceStatusEnum"];
+            readonly platform: string;
+            readonly app_version: string;
+            /** Format: uuid */
+            readonly branch: string;
+            readonly branch_name: string;
+            /** Format: uuid */
+            readonly license: string;
+            readonly license_key: string;
+            /** Format: date-time */
+            readonly first_activated_at: string;
+            /** Format: date-time */
+            readonly last_seen_at: string | null;
+            readonly last_ip: string | null;
+            readonly fingerprint_changed_count: number;
+            /** Format: double */
+            readonly minutes_since_seen: number | null;
+        };
+        /**
+         * @description * `POS` - POS
+         *     * `KDS` - KDS
+         *     * `BOTH` - BOTH
+         * @enum {string}
+         */
+        DeviceModeEnum: "POS" | "KDS" | "BOTH";
+        /**
+         * @description * `ACTIVE` - ACTIVE
+         *     * `SUSPENDED` - SUSPENDED
+         *     * `REVOKED` - REVOKED
+         * @enum {string}
+         */
+        DeviceStatusEnum: "ACTIVE" | "SUSPENDED" | "REVOKED";
+        DeviceTokenRequestRequest: {
+            /** Format: uuid */
+            device_id: string;
+            device_secret: string;
+        };
+        Drift: {
+            item_code: string;
+            item_name: string;
+            /** Format: decimal */
+            level_quantity: string;
+            /** Format: decimal */
+            ledger_quantity: string;
+            /** Format: decimal */
+            difference: string;
+        };
+        EventBatchRequest: {
+            events: components["schemas"]["EventRequest"][];
+        };
+        /**
+         * @description * `CREATED` - CREATED
+         *     * `ACTIVATED` - ACTIVATED
+         *     * `ACTIVATION_FAILED` - ACTIVATION_FAILED
+         *     * `SUSPENDED` - SUSPENDED
+         *     * `RESUMED` - RESUMED
+         *     * `RENEWED` - RENEWED
+         *     * `REVOKED` - REVOKED
+         *     * `SEATS_CHANGED` - SEATS_CHANGED
+         *     * `KEY_REGENERATED` - KEY_REGENERATED
+         *     * `DEVICE_REVOKED` - DEVICE_REVOKED
+         *     * `DEVICE_RESET` - DEVICE_RESET
+         *     * `HEARTBEAT_DENIED` - HEARTBEAT_DENIED
+         * @enum {string}
+         */
+        EventEnum: "CREATED" | "ACTIVATED" | "ACTIVATION_FAILED" | "SUSPENDED" | "RESUMED" | "RENEWED" | "REVOKED" | "SEATS_CHANGED" | "KEY_REGENERATED" | "DEVICE_REVOKED" | "DEVICE_RESET" | "HEARTBEAT_DENIED";
+        EventRequest: {
+            /**
+             * Format: uuid
+             * @description Idempotency key. Client-minted.
+             */
+            id?: string;
+            type: string;
+            payload?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            occurred_at?: string;
+        };
+        /** @description The live board: every table plus its open order summary. */
+        FloorStatus: {
+            /** Format: uuid */
+            table_id: string;
+            number: string;
+            area: string;
+            seats: number;
+            status: string;
+            pos_x: number;
+            pos_y: number;
+            /** Format: uuid */
+            session_id: string | null;
+            guest_count: number | null;
+            /** Format: date-time */
+            opened_at: string | null;
+            order_count: number;
+            /** Format: decimal */
+            total_due: string;
+            waiter: string | null;
+        };
+        Guardian: {
+            /** Format: uuid */
+            readonly id: string;
+            full_name: string;
+            phone?: string;
+            national_id?: string;
+            readonly visit_count: number;
+            notes?: string;
+        };
+        GuardianRequest: {
+            full_name: string;
+            phone?: string;
+            national_id?: string;
+            notes?: string;
+        };
         Health: {
-            status: components["schemas"]["StatusEnum"];
+            status: components["schemas"]["HealthStatusEnum"];
             version: string;
             checks: components["schemas"]["HealthChecks"];
         };
         HealthChecks: {
             database: boolean;
         };
+        /**
+         * @description * `healthy` - healthy
+         *     * `degraded` - degraded
+         * @enum {string}
+         */
+        HealthStatusEnum: "healthy" | "degraded";
+        HeartbeatRequestRequest: {
+            app_version?: string;
+            /** @default 0 */
+            pending_operations: number;
+        };
+        HeartbeatResponse: {
+            /** Format: date-time */
+            server_time: string;
+            license_status: string;
+            stage: string;
+            can_open_new_orders: boolean;
+            can_close_open_orders: boolean;
+            days_until_expiry: number | null;
+            message_ar: string;
+            offline_token: string;
+            min_supported_client_version: string;
+            latest_version: string;
+        };
+        IncidentCreateRequest: {
+            /** Format: uuid */
+            area: string;
+            /** Format: uuid */
+            session?: string | null;
+            incident_type: components["schemas"]["PlayIncidentTypeEnum"];
+            description: string;
+            /** Format: date-time */
+            occurred_at?: string | null;
+        };
+        InventoryItem: {
+            /** Format: uuid */
+            readonly id: string;
+            code: string;
+            name_ar: string;
+            name_en?: string;
+            item_type?: components["schemas"]["ItemTypeEnum"];
+            /** Format: uuid */
+            base_unit: string;
+            readonly base_unit_code: string;
+            /** Format: uuid */
+            default_supplier?: string | null;
+            /** Format: decimal */
+            minimum_stock?: string;
+            /** Format: decimal */
+            reorder_level?: string;
+            /** Format: decimal */
+            reorder_quantity?: string;
+            costing_method?: components["schemas"]["CostingMethodEnum"];
+            is_active?: boolean;
+            /** Format: decimal */
+            readonly quantity_on_hand: string;
+            /** Format: decimal */
+            readonly weighted_avg_cost: string;
+        };
+        InventoryItemRequest: {
+            code: string;
+            name_ar: string;
+            name_en?: string;
+            item_type?: components["schemas"]["ItemTypeEnum"];
+            /** Format: uuid */
+            base_unit: string;
+            /** Format: uuid */
+            default_supplier?: string | null;
+            /** Format: decimal */
+            minimum_stock?: string;
+            /** Format: decimal */
+            reorder_level?: string;
+            /** Format: decimal */
+            reorder_quantity?: string;
+            costing_method?: components["schemas"]["CostingMethodEnum"];
+            is_active?: boolean;
+        };
+        Invoice: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly order: string;
+            readonly order_number: string;
+            /** @description From the device's reserved block (C9). */
+            readonly invoice_number: number;
+            /** @description MB-2026-000123 */
+            readonly serial: string;
+            /** Format: date-time */
+            readonly issued_at: string;
+            /** Format: decimal */
+            readonly grand_total: string;
+            readonly snapshot: unknown;
+        };
+        IssueLicenseRequest: {
+            /** Format: email */
+            customer_email: string;
+            customer_name?: string;
+            license_type: components["schemas"]["LicenseTypeEnum"];
+            /** @default 3 */
+            max_devices: number;
+            /**
+             * Format: date-time
+             * @description Omit for a LIFETIME licence.
+             */
+            expires_at?: string | null;
+            /** Format: uuid */
+            branch_id?: string | null;
+            notes?: string;
+        };
+        IssuedLicense: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly masked_key: string;
+            /** @description QSR-7X29, for display. */
+            readonly key_prefix: string;
+            readonly key_last4: string;
+            /** Format: email */
+            readonly customer_email: string;
+            readonly customer_name: string;
+            readonly license_type: components["schemas"]["LicenseTypeEnum"];
+            readonly status: components["schemas"]["LicenseStatusEnum"];
+            /** Format: date-time */
+            readonly starts_at: string;
+            /**
+             * Format: date-time
+             * @description Null = lifetime.
+             */
+            readonly expires_at: string | null;
+            readonly max_devices: number;
+            readonly active_device_count: number;
+            readonly seats_available: number;
+            readonly activation_count: number;
+            /** Format: date-time */
+            readonly last_activation_at: string | null;
+            /**
+             * Format: uuid
+             * @description Bound at first activation.
+             */
+            readonly branch: string | null;
+            readonly branch_name: string;
+            readonly notes: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly license_key: string;
+            readonly warning_ar: string;
+        };
+        /**
+         * @description * `RAW` - RAW
+         *     * `CONSUMABLE` - CONSUMABLE
+         *     * `PACKAGING` - PACKAGING
+         *     * `FINISHED` - FINISHED
+         * @enum {string}
+         */
+        ItemTypeEnum: "RAW" | "CONSUMABLE" | "PACKAGING" | "FINISHED";
+        License: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly masked_key: string;
+            /** @description QSR-7X29, for display. */
+            readonly key_prefix: string;
+            readonly key_last4: string;
+            /** Format: email */
+            readonly customer_email: string;
+            readonly customer_name: string;
+            readonly license_type: components["schemas"]["LicenseTypeEnum"];
+            readonly status: components["schemas"]["LicenseStatusEnum"];
+            /** Format: date-time */
+            readonly starts_at: string;
+            /**
+             * Format: date-time
+             * @description Null = lifetime.
+             */
+            readonly expires_at: string | null;
+            readonly max_devices: number;
+            readonly active_device_count: number;
+            readonly seats_available: number;
+            readonly activation_count: number;
+            /** Format: date-time */
+            readonly last_activation_at: string | null;
+            /**
+             * Format: uuid
+             * @description Bound at first activation.
+             */
+            readonly branch: string | null;
+            readonly branch_name: string;
+            readonly notes: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        LicenseEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly event: components["schemas"]["EventEnum"];
+            readonly actor_name: string;
+            readonly device_name: string;
+            readonly detail: unknown;
+            readonly ip_address: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `PENDING` - PENDING
+         *     * `ACTIVE` - ACTIVE
+         *     * `SUSPENDED` - SUSPENDED
+         *     * `EXPIRED` - EXPIRED
+         *     * `REVOKED` - REVOKED
+         * @enum {string}
+         */
+        LicenseStatusEnum: "PENDING" | "ACTIVE" | "SUSPENDED" | "EXPIRED" | "REVOKED";
+        /**
+         * @description * `TRIAL` - TRIAL
+         *     * `MONTHLY` - MONTHLY
+         *     * `YEARLY` - YEARLY
+         *     * `LIFETIME` - LIFETIME
+         * @enum {string}
+         */
+        LicenseTypeEnum: "TRIAL" | "MONTHLY" | "YEARLY" | "LIFETIME";
+        LoginRequestRequest: {
+            /** Format: email */
+            email: string;
+            password: string;
+            mfa_code?: string;
+            recovery_code?: string;
+        };
+        LogoutRequestRequest: {
+            refresh: string;
+        };
+        MFAConfirmRequest: {
+            code: string;
+        };
+        MFASetup: {
+            secret: string;
+            provisioning_uri: string;
+            recovery_codes: string[];
+        };
+        Me: {
+            /** Format: uuid */
+            id: string;
+            /** Format: email */
+            email: string;
+            full_name_ar: string;
+            full_name_en: string;
+            /** Format: uuid */
+            organization_id: string | null;
+            /** Format: uuid */
+            branch_id: string | null;
+            kind: string;
+            is_superuser: boolean;
+            mfa_enabled: boolean;
+            has_pin: boolean;
+            permissions: string[];
+            roles: string[];
+        };
+        Modifier: {
+            /** Format: uuid */
+            readonly id: string;
+            name_ar: string;
+            /** Format: decimal */
+            price_delta?: string;
+            /**
+             * Format: uuid
+             * @description Set when the modifier consumes stock, e.g. an extra shot.
+             */
+            inventory_item?: string | null;
+            /** Format: decimal */
+            quantity_consumed?: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        ModifierGroup: {
+            /** Format: uuid */
+            readonly id: string;
+            name_ar: string;
+            min_select?: number;
+            max_select?: number;
+            is_required?: boolean;
+            sort_order?: number;
+            readonly modifiers: components["schemas"]["Modifier"][];
+        };
+        ModifierGroupRequest: {
+            name_ar: string;
+            min_select?: number;
+            max_select?: number;
+            is_required?: boolean;
+            sort_order?: number;
+        };
+        ModifierRequest: {
+            name_ar: string;
+            /** Format: decimal */
+            price_delta?: string;
+            /**
+             * Format: uuid
+             * @description Set when the modifier consumes stock, e.g. an extra shot.
+             */
+            inventory_item?: string | null;
+            /** Format: decimal */
+            quantity_consumed?: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        OpenOrderRequest: {
+            /**
+             * Format: uuid
+             * @description Client-minted, so an offline device can name an order before syncing.
+             */
+            order_id?: string;
+            /** @default DINE_IN */
+            order_type: components["schemas"]["OrderTypeEnum"];
+            /** Format: uuid */
+            table_session?: string | null;
+            /** Format: uuid */
+            shift?: string | null;
+        };
+        OpenSessionRequest: {
+            /** Format: uuid */
+            table: string;
+            /** @default 1 */
+            guest_count: number;
+        };
+        OpenShiftRequest: {
+            /**
+             * Format: decimal
+             * @default 0.00
+             */
+            opening_cash: string;
+        };
+        Order: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description MB-01-0042 — readable, unique per device. */
+            readonly local_number: string;
+            readonly order_type: components["schemas"]["OrderTypeEnum"];
+            readonly status: components["schemas"]["OrderStatusEnum"];
+            /** Format: uuid */
+            readonly table_session: string | null;
+            readonly table_number: string;
+            readonly customer_name: string;
+            readonly customer_phone: string;
+            /** Format: decimal */
+            readonly subtotal: string;
+            /** Format: decimal */
+            readonly discount_total: string;
+            /** Format: decimal */
+            readonly discount_percent: string;
+            readonly discount_reason: string;
+            /** Format: decimal */
+            readonly service_total: string;
+            /** Format: decimal */
+            readonly tax_total: string;
+            /** Format: decimal */
+            readonly rounding_adjustment: string;
+            /** Format: decimal */
+            readonly grand_total: string;
+            /** Format: decimal */
+            readonly paid_total: string;
+            /** Format: decimal */
+            readonly balance_due: string;
+            /** Format: decimal */
+            readonly vat_percent: string;
+            /** Format: decimal */
+            readonly service_percent: string;
+            readonly vat_inclusive: boolean;
+            /** Format: date-time */
+            readonly opened_at: string;
+            /** Format: date-time */
+            readonly closed_at: string | null;
+            readonly opened_by_name: string;
+            readonly void_reason: string;
+            /** Format: uuid */
+            readonly shift: string | null;
+            readonly items: components["schemas"]["OrderItem"][];
+        };
+        OrderEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly sequence: number;
+            readonly event_type: components["schemas"]["OrderEventTypeEnum"];
+            readonly payload: unknown;
+            readonly actor_name: string;
+            readonly approved_by_name: string;
+            /**
+             * Format: date-time
+             * @description Client clock — may be skewed.
+             */
+            readonly occurred_at: string;
+            /**
+             * Format: date-time
+             * @description Server clock — authoritative.
+             */
+            readonly recorded_at: string;
+        };
+        /**
+         * @description * `ORDER_OPENED` - ORDER_OPENED
+         *     * `ITEM_ADDED` - ITEM_ADDED
+         *     * `ITEM_QUANTITY_CHANGED` - ITEM_QUANTITY_CHANGED
+         *     * `ITEM_VOIDED` - ITEM_VOIDED
+         *     * `ITEM_NOTE_SET` - ITEM_NOTE_SET
+         *     * `DISCOUNT_APPLIED` - DISCOUNT_APPLIED
+         *     * `ORDER_FIRED` - ORDER_FIRED
+         *     * `PLAY_SESSION_CHARGED` - PLAY_SESSION_CHARGED
+         *     * `TABLE_ASSIGNED` - TABLE_ASSIGNED
+         *     * `CUSTOMER_ASSIGNED` - CUSTOMER_ASSIGNED
+         *     * `PAYMENT_TAKEN` - PAYMENT_TAKEN
+         *     * `ORDER_CLOSED` - ORDER_CLOSED
+         *     * `ORDER_VOIDED` - ORDER_VOIDED
+         * @enum {string}
+         */
+        OrderEventTypeEnum: "ORDER_OPENED" | "ITEM_ADDED" | "ITEM_QUANTITY_CHANGED" | "ITEM_VOIDED" | "ITEM_NOTE_SET" | "DISCOUNT_APPLIED" | "ORDER_FIRED" | "PLAY_SESSION_CHARGED" | "TABLE_ASSIGNED" | "CUSTOMER_ASSIGNED" | "PAYMENT_TAKEN" | "ORDER_CLOSED" | "ORDER_VOIDED";
+        OrderItem: {
+            /** Format: uuid */
+            readonly id: string;
+            /**
+             * Format: uuid
+             * @description Client-minted; the id events refer to.
+             */
+            readonly line_id: string;
+            /** Format: uuid */
+            readonly variant: string;
+            readonly name_snapshot: string;
+            /** Format: decimal */
+            readonly unit_price_snapshot: string;
+            /** Format: decimal */
+            readonly quantity: string;
+            /** Format: decimal */
+            readonly discount_percent: string;
+            /** Format: decimal */
+            readonly line_gross: string;
+            /** Format: decimal */
+            readonly line_discount: string;
+            /** Format: decimal */
+            readonly line_total: string;
+            readonly status: components["schemas"]["OrderItemStatusEnum"];
+            readonly note: string;
+            /** Format: date-time */
+            readonly fired_at: string | null;
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            readonly void_reason: string;
+            /** Format: uuid */
+            readonly station: string | null;
+            readonly station_name: string;
+            readonly modifiers: components["schemas"]["OrderItemModifier"][];
+        };
+        OrderItemModifier: {
+            readonly id: number;
+            readonly name_snapshot: string;
+            /** Format: decimal */
+            readonly price_delta_snapshot: string;
+        };
+        /**
+         * @description * `ACTIVE` - ACTIVE
+         *     * `VOIDED` - VOIDED
+         * @enum {string}
+         */
+        OrderItemStatusEnum: "ACTIVE" | "VOIDED";
+        /**
+         * @description * `DRAFT` - DRAFT
+         *     * `OPEN` - OPEN
+         *     * `IN_KITCHEN` - IN_KITCHEN
+         *     * `READY` - READY
+         *     * `SERVED` - SERVED
+         *     * `PAID` - PAID
+         *     * `CANCELLED` - CANCELLED
+         *     * `REFUNDED` - REFUNDED
+         * @enum {string}
+         */
+        OrderStatusEnum: "DRAFT" | "OPEN" | "IN_KITCHEN" | "READY" | "SERVED" | "PAID" | "CANCELLED" | "REFUNDED";
+        /** @description Lighter payload for the open-orders board, which polls frequently. */
+        OrderSummary: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description MB-01-0042 — readable, unique per device. */
+            readonly local_number: string;
+            readonly order_type: components["schemas"]["OrderTypeEnum"];
+            readonly status: components["schemas"]["OrderStatusEnum"];
+            readonly table_number: string;
+            /** Format: decimal */
+            readonly grand_total: string;
+            /** Format: decimal */
+            readonly paid_total: string;
+            /** Format: date-time */
+            readonly opened_at: string;
+            /** @default 0 */
+            readonly item_count: number;
+        };
+        /**
+         * @description * `DINE_IN` - DINE_IN
+         *     * `TAKE_AWAY` - TAKE_AWAY
+         *     * `DELIVERY` - DELIVERY
+         * @enum {string}
+         */
+        OrderTypeEnum: "DINE_IN" | "TAKE_AWAY" | "DELIVERY";
         /**
          * @description * `ORGANIZATION` - ORGANIZATION
          *     * `BRANCH` - BRANCH
@@ -173,6 +3233,248 @@ export interface components {
          * @enum {string}
          */
         OriginEnum: "ORGANIZATION" | "BRANCH" | "DEVICE" | "ROLE" | "DEFAULT";
+        OverrideChargeRequest: {
+            /** Format: decimal */
+            amount: string;
+            reason: string;
+        };
+        PaginatedChildList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["Child"][];
+        };
+        PaginatedGuardianList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["Guardian"][];
+        };
+        PaginatedInventoryItemList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["InventoryItem"][];
+        };
+        PaginatedPlayIncidentList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["PlayIncident"][];
+        };
+        PaginatedProductList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["Product"][];
+        };
+        PaginatedProductVariantList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["ProductVariant"][];
+        };
+        PaginatedStockCountList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["StockCount"][];
+        };
+        PatchedAreaRequest: {
+            /** @description الصالة / التراس / صالة الأطفال */
+            name_ar?: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        PatchedCategoryRequest: {
+            /** Format: uuid */
+            parent?: string | null;
+            name_ar?: string;
+            name_en?: string;
+            /** @description #RRGGBB for the POS grid. */
+            color?: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        PatchedChildRequest: {
+            /** Format: uuid */
+            guardian?: string;
+            first_name?: string;
+            /** Format: date */
+            birth_date?: string | null;
+            age_months_snapshot?: number;
+            /** @description Allergies, conditions staff must know about. */
+            medical_notes?: string;
+            consent_recorded?: boolean;
+        };
+        PatchedGuardianRequest: {
+            full_name?: string;
+            phone?: string;
+            national_id?: string;
+            notes?: string;
+        };
+        PatchedInventoryItemRequest: {
+            code?: string;
+            name_ar?: string;
+            name_en?: string;
+            item_type?: components["schemas"]["ItemTypeEnum"];
+            /** Format: uuid */
+            base_unit?: string;
+            /** Format: uuid */
+            default_supplier?: string | null;
+            /** Format: decimal */
+            minimum_stock?: string;
+            /** Format: decimal */
+            reorder_level?: string;
+            /** Format: decimal */
+            reorder_quantity?: string;
+            costing_method?: components["schemas"]["CostingMethodEnum"];
+            is_active?: boolean;
+        };
+        PatchedModifierGroupRequest: {
+            name_ar?: string;
+            min_select?: number;
+            max_select?: number;
+            is_required?: boolean;
+            sort_order?: number;
+        };
+        PatchedPaymentMethodRequest: {
+            code?: string;
+            name_ar?: string;
+            opens_drawer?: boolean;
+            requires_reference?: boolean;
+            /** @description Included in the shift's expected cash. */
+            counts_as_cash?: boolean;
+            is_active?: boolean;
+            sort_order?: number;
+        };
+        PatchedPlayAreaRequest: {
+            name_ar?: string;
+            max_capacity?: number;
+            min_age_months?: number;
+            max_age_months?: number;
+            requires_socks?: boolean;
+            /**
+             * Format: uuid
+             * @description The service product a session is billed as. Overrides `kids.billing_product`. The price comes from the tariff, never from the variant — this only gives the sale a place in the catalog.
+             */
+            billing_variant?: string | null;
+            /**
+             * Format: uuid
+             * @description Added to the order at check-in when socks are required.
+             */
+            socks_variant?: string | null;
+            notes?: string;
+            is_active?: boolean;
+        };
+        PatchedPlayTariffRequest: {
+            /** Format: uuid */
+            area?: string;
+            name_ar?: string;
+            mode?: components["schemas"]["PlayTariffModeEnum"];
+            /** Format: decimal */
+            entry_fee?: string;
+            /** @description TIMED: what the entry fee covers. */
+            included_minutes?: number;
+            /** @description PACKAGE: the fixed duration the flat fee buys. */
+            package_minutes?: number;
+            block_minutes?: number;
+            /** Format: decimal */
+            block_rate?: string;
+            /** @description Null = use the branch's kids.grace_minutes. */
+            grace_minutes?: number | null;
+            /**
+             * Format: decimal
+             * @description 0 = uncapped.
+             */
+            daily_cap?: string;
+            /** @description Monday=0. Empty = every day. */
+            applies_days?: unknown;
+            /** Format: time */
+            applies_from?: string | null;
+            /** Format: time */
+            applies_to?: string | null;
+            /** @description Highest matching priority wins at check-in. */
+            priority?: number;
+            is_default?: boolean;
+            is_active?: boolean;
+        };
+        PatchedProductRequest: {
+            /** Format: uuid */
+            category?: string;
+            /**
+             * Format: uuid
+             * @description Where this is prepared. Drives kitchen ticket routing.
+             */
+            station?: string | null;
+            sku?: string;
+            barcode?: string;
+            name_ar?: string;
+            name_en?: string;
+            description_ar?: string;
+            /** Format: binary */
+            image?: string | null;
+            /**
+             * Format: decimal
+             * @description Null = use the branch VAT rate.
+             */
+            tax_percent?: string | null;
+            is_tax_exempt?: boolean;
+            /** @description False for items with no recipe, e.g. a bought-in bottle. */
+            track_inventory?: boolean;
+            is_sellable?: boolean;
+            is_active?: boolean;
+            sort_order?: number;
+        };
         PatchedSettingWriteRequestRequest: {
             scope?: components["schemas"]["ScopeEnum"];
             /** Format: uuid */
@@ -181,6 +3483,398 @@ export interface components {
             values?: {
                 [key: string]: unknown;
             };
+        };
+        PatchedStationRequest: {
+            /** @description COFFEE, HOT, COLD, DESSERT, BAR */
+            code?: string;
+            name_ar?: string;
+            target_prep_minutes?: number;
+            /** @description Skip the ACCEPTED step for stations that never triage, e.g. a bar. */
+            auto_accept?: boolean;
+            printer_name?: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        PatchedStockCountRequest: {
+            reference?: string;
+            notes?: string;
+            /** Format: date-time */
+            counted_at?: string | null;
+        };
+        PatchedTableRequest: {
+            /** Format: uuid */
+            area?: string;
+            /** @description T-05 */
+            number?: string;
+            seats?: number;
+            status?: components["schemas"]["TableStatusEnum"];
+            pos_x?: number;
+            pos_y?: number;
+            is_active?: boolean;
+        };
+        Payment: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly order: string;
+            readonly order_number: string;
+            /** Format: uuid */
+            readonly method: string;
+            readonly method_name: string;
+            /** Format: decimal */
+            readonly amount: string;
+            /** Format: decimal */
+            readonly tendered: string | null;
+            /** Format: decimal */
+            readonly change_given: string;
+            readonly reference: string;
+            readonly received_by_name: string;
+            /** Format: date-time */
+            readonly paid_at: string;
+        };
+        PaymentMethod: {
+            /** Format: uuid */
+            readonly id: string;
+            code: string;
+            name_ar: string;
+            opens_drawer?: boolean;
+            requires_reference?: boolean;
+            /** @description Included in the shift's expected cash. */
+            counts_as_cash?: boolean;
+            is_active?: boolean;
+            sort_order?: number;
+        };
+        PaymentMethodRequest: {
+            code: string;
+            name_ar: string;
+            opens_drawer?: boolean;
+            requires_reference?: boolean;
+            /** @description Included in the shift's expected cash. */
+            counts_as_cash?: boolean;
+            is_active?: boolean;
+            sort_order?: number;
+        };
+        PaymentRequestRequest: {
+            /** Format: uuid */
+            order: string;
+            /** Format: uuid */
+            method: string;
+            /** Format: decimal */
+            amount: string;
+            /** Format: decimal */
+            tendered?: string | null;
+            reference?: string;
+        };
+        PlayArea: {
+            /** Format: uuid */
+            readonly id: string;
+            name_ar?: string;
+            max_capacity?: number;
+            min_age_months?: number;
+            max_age_months?: number;
+            requires_socks?: boolean;
+            /**
+             * Format: uuid
+             * @description The service product a session is billed as. Overrides `kids.billing_product`. The price comes from the tariff, never from the variant — this only gives the sale a place in the catalog.
+             */
+            billing_variant?: string | null;
+            /**
+             * Format: uuid
+             * @description Added to the order at check-in when socks are required.
+             */
+            socks_variant?: string | null;
+            notes?: string;
+            is_active?: boolean;
+            readonly occupancy: number;
+        };
+        PlayAreaRequest: {
+            name_ar?: string;
+            max_capacity?: number;
+            min_age_months?: number;
+            max_age_months?: number;
+            requires_socks?: boolean;
+            /**
+             * Format: uuid
+             * @description The service product a session is billed as. Overrides `kids.billing_product`. The price comes from the tariff, never from the variant — this only gives the sale a place in the catalog.
+             */
+            billing_variant?: string | null;
+            /**
+             * Format: uuid
+             * @description Added to the order at check-in when socks are required.
+             */
+            socks_variant?: string | null;
+            notes?: string;
+            is_active?: boolean;
+        };
+        PlayIncident: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            area: string;
+            /** Format: uuid */
+            session?: string | null;
+            incident_type?: components["schemas"]["PlayIncidentTypeEnum"];
+            description: string;
+            /** Format: date-time */
+            occurred_at?: string;
+            /** Format: uuid */
+            readonly reported_by: string | null;
+        };
+        PlayIncidentRequest: {
+            /** Format: uuid */
+            area: string;
+            /** Format: uuid */
+            session?: string | null;
+            incident_type?: components["schemas"]["PlayIncidentTypeEnum"];
+            description: string;
+            /** Format: date-time */
+            occurred_at?: string;
+        };
+        /**
+         * @description * `INJURY` - INJURY
+         *     * `DISPUTE` - DISPUTE
+         *     * `LOST_ITEM` - LOST_ITEM
+         *     * `CAPACITY` - CAPACITY
+         *     * `OTHER` - OTHER
+         * @enum {string}
+         */
+        PlayIncidentTypeEnum: "INJURY" | "DISPUTE" | "LOST_ITEM" | "CAPACITY" | "OTHER";
+        /**
+         * @description Documents the shape produced by `services.serialize_session` — the one
+         *     payload the live board, the check-out screen and the Z-report all read.
+         */
+        PlaySession: {
+            /** Format: uuid */
+            id: string;
+            tag_number: string;
+            status: string;
+            child_name: string;
+            age_months: number;
+            guardian_name: string;
+            guardian_phone: string;
+            /** Format: uuid */
+            area_id: string;
+            tariff_name: string;
+            /** Format: date-time */
+            checked_in_at: string;
+            /** Format: date-time */
+            expected_end_at: string | null;
+            /** Format: date-time */
+            checked_out_at: string | null;
+            elapsed_minutes: number;
+            remaining_minutes: number | null;
+            is_overdue: boolean;
+            running_charge: string;
+            capped: boolean;
+            billable_minutes: number;
+            computed_charge: string;
+            override_charge: string | null;
+            payable: string;
+            /** Format: uuid */
+            order_id: string | null;
+            medical_notes: string;
+        };
+        PlayTariff: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            area: string;
+            name_ar: string;
+            mode?: components["schemas"]["PlayTariffModeEnum"];
+            /** Format: decimal */
+            entry_fee: string;
+            /** @description TIMED: what the entry fee covers. */
+            included_minutes?: number;
+            /** @description PACKAGE: the fixed duration the flat fee buys. */
+            package_minutes?: number;
+            block_minutes?: number;
+            /** Format: decimal */
+            block_rate?: string;
+            /** @description Null = use the branch's kids.grace_minutes. */
+            grace_minutes?: number | null;
+            /**
+             * Format: decimal
+             * @description 0 = uncapped.
+             */
+            daily_cap?: string;
+            /** @description Monday=0. Empty = every day. */
+            applies_days?: unknown;
+            /** Format: time */
+            applies_from?: string | null;
+            /** Format: time */
+            applies_to?: string | null;
+            /** @description Highest matching priority wins at check-in. */
+            priority?: number;
+            is_default?: boolean;
+            is_active?: boolean;
+        };
+        /**
+         * @description * `TIMED` - TIMED
+         *     * `PACKAGE` - PACKAGE
+         *     * `OPEN_DAY` - OPEN_DAY
+         * @enum {string}
+         */
+        PlayTariffModeEnum: "TIMED" | "PACKAGE" | "OPEN_DAY";
+        PlayTariffRequest: {
+            /** Format: uuid */
+            area: string;
+            name_ar: string;
+            mode?: components["schemas"]["PlayTariffModeEnum"];
+            /** Format: decimal */
+            entry_fee: string;
+            /** @description TIMED: what the entry fee covers. */
+            included_minutes?: number;
+            /** @description PACKAGE: the fixed duration the flat fee buys. */
+            package_minutes?: number;
+            block_minutes?: number;
+            /** Format: decimal */
+            block_rate?: string;
+            /** @description Null = use the branch's kids.grace_minutes. */
+            grace_minutes?: number | null;
+            /**
+             * Format: decimal
+             * @description 0 = uncapped.
+             */
+            daily_cap?: string;
+            /** @description Monday=0. Empty = every day. */
+            applies_days?: unknown;
+            /** Format: time */
+            applies_from?: string | null;
+            /** Format: time */
+            applies_to?: string | null;
+            /** @description Highest matching priority wins at check-in. */
+            priority?: number;
+            is_default?: boolean;
+            is_active?: boolean;
+        };
+        PriceChangeRequest: {
+            /** Format: uuid */
+            variant: string;
+            /** Format: decimal */
+            new_price: string;
+            reason?: string;
+        };
+        Product: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            category: string;
+            readonly category_name: string;
+            /**
+             * Format: uuid
+             * @description Where this is prepared. Drives kitchen ticket routing.
+             */
+            station?: string | null;
+            readonly station_name: string;
+            sku: string;
+            barcode?: string;
+            name_ar: string;
+            name_en?: string;
+            description_ar?: string;
+            /** Format: uri */
+            image?: string | null;
+            /**
+             * Format: decimal
+             * @description Null = use the branch VAT rate.
+             */
+            tax_percent?: string | null;
+            is_tax_exempt?: boolean;
+            /** @description False for items with no recipe, e.g. a bought-in bottle. */
+            track_inventory?: boolean;
+            is_sellable?: boolean;
+            is_active?: boolean;
+            sort_order?: number;
+            readonly variants: components["schemas"]["ProductVariant"][];
+        };
+        ProductRequest: {
+            /** Format: uuid */
+            category: string;
+            /**
+             * Format: uuid
+             * @description Where this is prepared. Drives kitchen ticket routing.
+             */
+            station?: string | null;
+            sku: string;
+            barcode?: string;
+            name_ar: string;
+            name_en?: string;
+            description_ar?: string;
+            /** Format: binary */
+            image?: string | null;
+            /**
+             * Format: decimal
+             * @description Null = use the branch VAT rate.
+             */
+            tax_percent?: string | null;
+            is_tax_exempt?: boolean;
+            /** @description False for items with no recipe, e.g. a bought-in bottle. */
+            track_inventory?: boolean;
+            is_sellable?: boolean;
+            is_active?: boolean;
+            sort_order?: number;
+        };
+        ProductVariant: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description وسط / كبير. Blank if sole. */
+            name_ar?: string;
+            sku: string;
+            /** Format: decimal */
+            price: string;
+            /**
+             * Format: decimal
+             * @description Computed from the recipe. Never entered by hand.
+             */
+            readonly cost: string;
+            /** Format: decimal */
+            readonly margin: string;
+            /** Format: decimal */
+            readonly margin_percent: string;
+            is_default?: boolean;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        ProductVariantRequest: {
+            /** @description وسط / كبير. Blank if sole. */
+            name_ar?: string;
+            sku: string;
+            /** Format: decimal */
+            price: string;
+            is_default?: boolean;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        RefreshRequestRequest: {
+            refresh: string;
+        };
+        Refund: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly order: string;
+            readonly order_number: string;
+            /** Format: uuid */
+            readonly original_payment: string | null;
+            /** Format: decimal */
+            readonly amount: string;
+            readonly reason: string;
+            readonly refunded_by_name: string;
+            readonly approved_by_name: string;
+            /** Format: date-time */
+            readonly refunded_at: string;
+        };
+        RefundRequestRequest: {
+            /** Format: uuid */
+            order: string;
+            /** Format: decimal */
+            amount: string;
+            reason: string;
+            /** Format: uuid */
+            original_payment?: string | null;
+        };
+        RenewLicenseRequest: {
+            /** Format: date-time */
+            expires_at: string;
         };
         ResolvedSetting: {
             value: unknown;
@@ -195,6 +3889,10 @@ export interface components {
          * @enum {string}
          */
         ScopeEnum: "ORGANIZATION" | "BRANCH" | "DEVICE" | "ROLE";
+        SetPinRequest: {
+            pin: string;
+            current_password: string;
+        };
         SettingDefinition: {
             key: string;
             type: string;
@@ -246,17 +3944,310 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        Shift: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly status: components["schemas"]["ShiftStatusEnum"];
+            /** Format: uuid */
+            readonly user: string | null;
+            readonly user_name: string;
+            /** Format: uuid */
+            readonly device_id: string | null;
+            /** Format: decimal */
+            readonly opening_cash: string;
+            /** Format: decimal */
+            readonly counted_cash: string | null;
+            /** Format: decimal */
+            readonly variance: string | null;
+            readonly variance_reason: string;
+            /** Format: date-time */
+            readonly opened_at: string;
+            /** Format: date-time */
+            readonly closed_at: string | null;
+            readonly closed_by_name: string;
+            /** @description Frozen at close. */
+            readonly z_report: unknown;
+        };
         /**
-         * @description * `healthy` - healthy
-         *     * `degraded` - degraded
+         * @description The X and Z reports share a shape.
+         *
+         *     Money fields are strings: these are Decimals serialized exactly, and a JSON
+         *     float would reintroduce the imprecision the whole system avoids.
+         */
+        ShiftReport: {
+            shift_id: string;
+            opened_at: string;
+            user: string | null;
+            is_final: boolean;
+            gross_sales: string;
+            discounts: string;
+            refunds: string;
+            net_sales: string;
+            tax: string;
+            service: string;
+            cash_sales: string;
+            non_cash_sales: string;
+            cash_in: string;
+            cash_out: string;
+            expected_cash: string;
+            order_count: number;
+            void_count: number;
+        };
+        /**
+         * @description * `OPEN` - OPEN
+         *     * `CLOSING` - CLOSING
+         *     * `CLOSED` - CLOSED
          * @enum {string}
          */
-        StatusEnum: "healthy" | "degraded";
+        ShiftStatusEnum: "OPEN" | "CLOSING" | "CLOSED";
+        Station: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description COFFEE, HOT, COLD, DESSERT, BAR */
+            code: string;
+            name_ar: string;
+            target_prep_minutes?: number;
+            /** @description Skip the ACCEPTED step for stations that never triage, e.g. a bar. */
+            auto_accept?: boolean;
+            printer_name?: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        StationRequest: {
+            /** @description COFFEE, HOT, COLD, DESSERT, BAR */
+            code: string;
+            name_ar: string;
+            target_prep_minutes?: number;
+            /** @description Skip the ACCEPTED step for stations that never triage, e.g. a bar. */
+            auto_accept?: boolean;
+            printer_name?: string;
+            sort_order?: number;
+            is_active?: boolean;
+        };
+        StockCount: {
+            /** Format: uuid */
+            readonly id: string;
+            reference: string;
+            readonly status: components["schemas"]["CountStatusEnum"];
+            notes?: string;
+            /** Format: date-time */
+            counted_at?: string | null;
+            /** Format: date-time */
+            readonly posted_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        StockCountRequest: {
+            reference: string;
+            notes?: string;
+            /** Format: date-time */
+            counted_at?: string | null;
+        };
+        StockLevel: {
+            /** Format: uuid */
+            readonly item: string;
+            readonly item_code: string;
+            readonly item_name: string;
+            readonly unit_code: string;
+            /** Format: decimal */
+            readonly quantity_on_hand: string;
+            /**
+             * Format: decimal
+             * @description Committed to open, unpaid orders — so low-stock alerts reflect reality.
+             */
+            readonly quantity_reserved: string;
+            /** Format: decimal */
+            readonly quantity_available: string;
+            /** Format: decimal */
+            readonly weighted_avg_cost: string;
+            /** Format: decimal */
+            readonly total_value: string;
+            readonly is_low: boolean;
+            /** Format: date-time */
+            readonly last_movement_at: string | null;
+        };
+        StockMovement: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly item: string;
+            readonly item_code: string;
+            readonly item_name: string;
+            readonly movement_type: components["schemas"]["StockMovementTypeEnum"];
+            /**
+             * Format: decimal
+             * @description Signed: negative consumes stock.
+             */
+            readonly quantity_delta: string;
+            /** Format: decimal */
+            readonly unit_cost: string;
+            /** Format: decimal */
+            readonly balance_after: string;
+            /** Format: decimal */
+            readonly value_delta: string;
+            readonly ref_type: string;
+            /** Format: uuid */
+            readonly ref_id: string | null;
+            readonly user_name: string;
+            readonly reason: string;
+            /** Format: date-time */
+            readonly occurred_at: string;
+        };
+        /**
+         * @description * `OPENING` - OPENING
+         *     * `PURCHASE` - PURCHASE
+         *     * `SALE` - SALE
+         *     * `WASTE` - WASTE
+         *     * `ADJUSTMENT` - ADJUSTMENT
+         *     * `RETURN` - RETURN
+         *     * `TRANSFER` - TRANSFER
+         *     * `COUNT` - COUNT
+         * @enum {string}
+         */
+        StockMovementTypeEnum: "OPENING" | "PURCHASE" | "SALE" | "WASTE" | "ADJUSTMENT" | "RETURN" | "TRANSFER" | "COUNT";
         SystemInfo: {
             server_version: string;
             /** @description Clients below this are refused everything except the heartbeat. */
             min_supported_client_version: string;
             api_version: string;
+        };
+        Table: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            area: string;
+            readonly area_name: string;
+            /** @description T-05 */
+            number: string;
+            seats?: number;
+            status?: components["schemas"]["TableStatusEnum"];
+            pos_x?: number;
+            pos_y?: number;
+            is_active?: boolean;
+        };
+        TableRequest: {
+            /** Format: uuid */
+            area: string;
+            /** @description T-05 */
+            number: string;
+            seats?: number;
+            status?: components["schemas"]["TableStatusEnum"];
+            pos_x?: number;
+            pos_y?: number;
+            is_active?: boolean;
+        };
+        TableSession: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            table: string;
+            readonly table_number: string;
+            guest_count?: number;
+            /** Format: date-time */
+            readonly opened_at: string;
+            /** Format: date-time */
+            closed_at?: string | null;
+            /**
+             * Format: uuid
+             * @description Drives floor.waiter_sees_only_own_tables.
+             */
+            waiter?: string | null;
+            readonly waiter_name: string;
+        };
+        /**
+         * @description * `AVAILABLE` - AVAILABLE
+         *     * `OCCUPIED` - OCCUPIED
+         *     * `RESERVED` - RESERVED
+         *     * `CLEANING` - CLEANING
+         * @enum {string}
+         */
+        TableStatusEnum: "AVAILABLE" | "OCCUPIED" | "RESERVED" | "CLEANING";
+        /**
+         * @description One worked example, computed by the authoritative engine.
+         *
+         *     The tariff builder shows these so an admin sees what a rule actually costs
+         *     before saving it. Deliberately a server round-trip: a preview calculated in
+         *     the browser would be a second pricing implementation, and a second
+         *     implementation is how the displayed number and the charged number drift.
+         */
+        TariffPreview: {
+            minutes: number;
+            charge: string;
+            billable_minutes: number;
+            blocks: number;
+            capped: boolean;
+        };
+        /**
+         * @description The kitchen ticket, in ONE shape.
+         *
+         *     Deliberately not a ModelSerializer: `services.serialize_ticket` is the
+         *     single source, and both the WebSocket push and this REST fallback emit its
+         *     output verbatim. A KDS that reconnects after a dropped socket must not have
+         *     to parse a different object than the one it was receiving a second earlier —
+         *     two shapes is how a fallback path quietly rots.
+         */
+        Ticket: {
+            /** Format: uuid */
+            id: string;
+            ticket_number: number;
+            status: string;
+            /** Format: uuid */
+            order_id: string;
+            order_number: string;
+            order_type: string;
+            table: string | null;
+            /** Format: uuid */
+            station_id: string;
+            station_name: string;
+            target_minutes: number;
+            /** Format: date-time */
+            created_at: string;
+            elapsed_seconds: number;
+            is_late: boolean;
+            lines: components["schemas"]["TicketLine"][];
+        };
+        /** @description Documents the shape produced by `services.serialize_ticket`. */
+        TicketLine: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            quantity: string;
+            modifiers: string[];
+            note: string;
+            /** Format: date-time */
+            ready_at: string | null;
+        };
+        TokenPair: {
+            access: string;
+            refresh: string;
+            access_expires_in: number;
+            refresh_expires_in: number;
+        };
+        TransferRequest: {
+            /** Format: uuid */
+            target_table: string;
+        };
+        /** @description Step-up approval: a manager authorizes one action for one target. */
+        VerifyPinRequestRequest: {
+            /**
+             * Format: uuid
+             * @description The approver — the person entering their PIN.
+             */
+            user_id: string;
+            pin: string;
+            permission: string;
+            target?: string;
+            amount?: string;
+        };
+        VoidOrderRequest: {
+            reason: string;
+        };
+        WasteRequest: {
+            /** Format: uuid */
+            item: string;
+            /** Format: decimal */
+            quantity: string;
+            reason: string;
         };
         ErrorEnvelope: {
             /** @enum {boolean} */
@@ -286,6 +4277,4551 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    auth_change_password_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChangePasswordRequest"];
+                "multipart/form-data": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Detail"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_login_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LoginRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LoginRequestRequest"];
+                "multipart/form-data": components["schemas"]["LoginRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TokenPair"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_logout_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogoutRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LogoutRequestRequest"];
+                "multipart/form-data": components["schemas"]["LogoutRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Detail"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_me_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Me"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_mfa_confirm_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MFAConfirmRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MFAConfirmRequest"];
+                "multipart/form-data": components["schemas"]["MFAConfirmRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Detail"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_mfa_disable_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangePasswordRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChangePasswordRequest"];
+                "multipart/form-data": components["schemas"]["ChangePasswordRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Detail"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+            /** @description No response body */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    auth_mfa_setup_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["MFASetup"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_refresh_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefreshRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RefreshRequestRequest"];
+                "multipart/form-data": components["schemas"]["RefreshRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TokenPair"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_sessions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    auth_sessions_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Detail"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_set_pin_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetPinRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SetPinRequest"];
+                "multipart/form-data": components["schemas"]["SetPinRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Detail"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_verify_pin_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VerifyPinRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["VerifyPinRequestRequest"];
+                "multipart/form-data": components["schemas"]["VerifyPinRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ApprovalToken"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_categories_list: {
+        parameters: {
+            query?: {
+                is_active?: boolean;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                parent?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Category"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_categories_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CategoryRequest"];
+                "multipart/form-data": components["schemas"]["CategoryRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Category"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_categories_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا category. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Category"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_categories_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا category. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CategoryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CategoryRequest"];
+                "multipart/form-data": components["schemas"]["CategoryRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Category"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_categories_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا category. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    catalog_categories_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا category. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCategoryRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedCategoryRequest"];
+                "multipart/form-data": components["schemas"]["PatchedCategoryRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Category"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_modifier_groups_list: {
+        parameters: {
+            query?: {
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ModifierGroup"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_modifier_groups_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierGroupRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ModifierGroupRequest"];
+                "multipart/form-data": components["schemas"]["ModifierGroupRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ModifierGroup"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_modifier_groups_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا modifier group. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ModifierGroup"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_modifier_groups_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا modifier group. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ModifierGroupRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ModifierGroupRequest"];
+                "multipart/form-data": components["schemas"]["ModifierGroupRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ModifierGroup"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_modifier_groups_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا modifier group. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    catalog_modifier_groups_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا modifier group. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedModifierGroupRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedModifierGroupRequest"];
+                "multipart/form-data": components["schemas"]["PatchedModifierGroupRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ModifierGroup"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_products_list: {
+        parameters: {
+            query?: {
+                category?: string;
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                is_active?: boolean;
+                is_sellable?: boolean;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+                station?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedProductList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_products_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductRequest"];
+                "multipart/form-data": components["schemas"]["ProductRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Product"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_products_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Product"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_products_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductRequest"];
+                "multipart/form-data": components["schemas"]["ProductRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Product"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_products_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    catalog_products_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedProductRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProductRequest"];
+                "multipart/form-data": components["schemas"]["PatchedProductRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Product"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_products_variants_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductVariantRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductVariantRequest"];
+                "multipart/form-data": components["schemas"]["ProductVariantRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ProductVariant"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_variants_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedProductVariantList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_variants_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductVariantRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductVariantRequest"];
+                "multipart/form-data": components["schemas"]["ProductVariantRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ProductVariant"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_variants_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product variant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ProductVariant"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_variants_change_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PriceChangeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PriceChangeRequest"];
+                "multipart/form-data": components["schemas"]["PriceChangeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ProductVariant"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_areas_list: {
+        parameters: {
+            query?: {
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Area"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_areas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AreaRequest"];
+                "multipart/form-data": components["schemas"]["AreaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Area"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_areas_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا area. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Area"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_areas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا area. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AreaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AreaRequest"];
+                "multipart/form-data": components["schemas"]["AreaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Area"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_areas_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا area. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    floor_areas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا area. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedAreaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedAreaRequest"];
+                "multipart/form-data": components["schemas"]["PatchedAreaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Area"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_sessions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OpenSessionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpenSessionRequest"];
+                "multipart/form-data": components["schemas"]["OpenSessionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TableSession"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_sessions_close_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TableSession"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_sessions_transfer_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransferRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TransferRequest"];
+                "multipart/form-data": components["schemas"]["TransferRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TableSession"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_status_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["FloorStatus"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_tables_list: {
+        parameters: {
+            query?: {
+                area?: string;
+                is_active?: boolean;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+                /**
+                 * @description * `AVAILABLE` - AVAILABLE
+                 *     * `OCCUPIED` - OCCUPIED
+                 *     * `RESERVED` - RESERVED
+                 *     * `CLEANING` - CLEANING
+                 */
+                status?: "AVAILABLE" | "CLEANING" | "OCCUPIED" | "RESERVED";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Table"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_tables_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TableRequest"];
+                "multipart/form-data": components["schemas"]["TableRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Table"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_tables_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا table. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Table"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_tables_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا table. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TableRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["TableRequest"];
+                "multipart/form-data": components["schemas"]["TableRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Table"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_tables_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا table. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    floor_tables_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا table. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedTableRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedTableRequest"];
+                "multipart/form-data": components["schemas"]["PatchedTableRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Table"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_adjustments_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdjustmentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AdjustmentRequest"];
+                "multipart/form-data": components["schemas"]["AdjustmentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockMovement"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_counts_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedStockCountList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_counts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockCountRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StockCountRequest"];
+                "multipart/form-data": components["schemas"]["StockCountRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockCount"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_counts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا stock count. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockCount"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_counts_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا stock count. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StockCountRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StockCountRequest"];
+                "multipart/form-data": components["schemas"]["StockCountRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockCount"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_counts_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا stock count. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventory_counts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا stock count. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedStockCountRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedStockCountRequest"];
+                "multipart/form-data": components["schemas"]["PatchedStockCountRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockCount"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_counts_post_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا stock count. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockCount"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_items_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                default_supplier?: string;
+                is_active?: boolean;
+                /**
+                 * @description * `RAW` - RAW
+                 *     * `CONSUMABLE` - CONSUMABLE
+                 *     * `PACKAGING` - PACKAGING
+                 *     * `FINISHED` - FINISHED
+                 */
+                item_type?: "CONSUMABLE" | "FINISHED" | "PACKAGING" | "RAW";
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedInventoryItemList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_items_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryItemRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["InventoryItemRequest"];
+                "multipart/form-data": components["schemas"]["InventoryItemRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["InventoryItem"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_items_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا inventory item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["InventoryItem"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_items_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا inventory item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InventoryItemRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["InventoryItemRequest"];
+                "multipart/form-data": components["schemas"]["InventoryItemRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["InventoryItem"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_items_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا inventory item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    inventory_items_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا inventory item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedInventoryItemRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedInventoryItemRequest"];
+                "multipart/form-data": components["schemas"]["PatchedInventoryItemRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["InventoryItem"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_levels_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockLevel"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_movements_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockMovement"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_reconcile_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Drift"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    inventory_waste_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WasteRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["WasteRequest"];
+                "multipart/form-data": components["schemas"]["WasteRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["StockMovement"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_areas_list: {
+        parameters: {
+            query?: {
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayArea"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_areas_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PlayAreaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlayAreaRequest"];
+                "multipart/form-data": components["schemas"]["PlayAreaRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayArea"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_areas_board_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                area_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Board"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_areas_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play area. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayArea"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_areas_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play area. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PlayAreaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlayAreaRequest"];
+                "multipart/form-data": components["schemas"]["PlayAreaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayArea"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_areas_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play area. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kids_areas_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play area. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPlayAreaRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPlayAreaRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPlayAreaRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayArea"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_children_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedChildList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_children_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChildRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChildRequest"];
+                "multipart/form-data": components["schemas"]["ChildRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Child"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_children_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا child. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Child"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_children_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا child. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChildRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChildRequest"];
+                "multipart/form-data": components["schemas"]["ChildRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Child"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_children_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا child. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kids_children_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا child. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedChildRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedChildRequest"];
+                "multipart/form-data": components["schemas"]["PatchedChildRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Child"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_guardians_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedGuardianList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_guardians_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuardianRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GuardianRequest"];
+                "multipart/form-data": components["schemas"]["GuardianRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Guardian"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_guardians_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا guardian. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Guardian"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_guardians_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا guardian. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GuardianRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GuardianRequest"];
+                "multipart/form-data": components["schemas"]["GuardianRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Guardian"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_guardians_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا guardian. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kids_guardians_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا guardian. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedGuardianRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedGuardianRequest"];
+                "multipart/form-data": components["schemas"]["PatchedGuardianRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Guardian"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_incidents_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedPlayIncidentList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_incidents_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayIncidentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlayIncidentRequest"];
+                "multipart/form-data": components["schemas"]["PlayIncidentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayIncident"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_incidents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play incident. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayIncident"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_incidents_log_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IncidentCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["IncidentCreateRequest"];
+                "multipart/form-data": components["schemas"]["IncidentCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayIncident"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_reports_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kids_sessions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlaySession"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_sessions_check_out_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CheckOutRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CheckOutRequest"];
+                "multipart/form-data": components["schemas"]["CheckOutRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["CheckOutResponse"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_sessions_override_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OverrideChargeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OverrideChargeRequest"];
+                "multipart/form-data": components["schemas"]["OverrideChargeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlaySession"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_sessions_tariff_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChangeTariffRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ChangeTariffRequest"];
+                "multipart/form-data": components["schemas"]["ChangeTariffRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlaySession"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_sessions_check_in_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CheckInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CheckInRequest"];
+                "multipart/form-data": components["schemas"]["CheckInRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["CheckInResponse"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_tariffs_list: {
+        parameters: {
+            query?: {
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayTariff"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_tariffs_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayTariffRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlayTariffRequest"];
+                "multipart/form-data": components["schemas"]["PlayTariffRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayTariff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_tariffs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play tariff. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayTariff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_tariffs_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play tariff. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PlayTariffRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PlayTariffRequest"];
+                "multipart/form-data": components["schemas"]["PlayTariffRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayTariff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_tariffs_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play tariff. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kids_tariffs_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا play tariff. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPlayTariffRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPlayTariffRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPlayTariffRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PlayTariff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kids_tariffs_preview_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TariffPreview"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_performance_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kitchen_stations_list: {
+        parameters: {
+            query?: {
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Station"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_stations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StationRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StationRequest"];
+                "multipart/form-data": components["schemas"]["StationRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Station"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_stations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا station. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Station"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_stations_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا station. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StationRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StationRequest"];
+                "multipart/form-data": components["schemas"]["StationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Station"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_stations_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا station. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    kitchen_stations_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا station. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedStationRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedStationRequest"];
+                "multipart/form-data": components["schemas"]["PatchedStationRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Station"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_tickets_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Ticket"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_tickets_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Ticket"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_tickets_lines_ready_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+                line_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Ticket"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    kitchen_tickets_recall_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Ticket"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_activate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ActivationRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ActivationRequestRequest"];
+                "multipart/form-data": components["schemas"]["ActivationRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ActivationResponse"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_device_token_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeviceTokenRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DeviceTokenRequestRequest"];
+                "multipart/form-data": components["schemas"]["DeviceTokenRequestRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    licensing_devices_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Device"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_devices_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Detail"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_heartbeat_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["HeartbeatRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["HeartbeatRequestRequest"];
+                "multipart/form-data": components["schemas"]["HeartbeatRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["HeartbeatResponse"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_invoice_blocks_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    licensing_licenses_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["License"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_licenses_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IssueLicenseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["IssueLicenseRequest"];
+                "multipart/form-data": components["schemas"]["IssueLicenseRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["IssuedLicense"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_licenses_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["License"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_license_action: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                action: string;
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RenewLicenseRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RenewLicenseRequest"];
+                "multipart/form-data": components["schemas"]["RenewLicenseRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["License"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    licensing_licenses_events_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["LicenseEvent"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    orders_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["OrderSummary"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    orders_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OpenOrderRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpenOrderRequest"];
+                "multipart/form-data": components["schemas"]["OpenOrderRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Order"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    orders_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Order"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    orders_events_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["OrderEvent"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    orders_events_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EventBatchRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["EventBatchRequest"];
+                "multipart/form-data": components["schemas"]["EventBatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ApplyResult"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    orders_receipt_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    orders_void_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidOrderRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["VoidOrderRequest"];
+                "multipart/form-data": components["schemas"]["VoidOrderRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Order"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Payment"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_create: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. A replay returns the original result. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaymentRequestRequest"];
+                "multipart/form-data": components["schemas"]["PaymentRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Payment"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_invoices_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Invoice"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_invoices_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Invoice"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_methods_list: {
+        parameters: {
+            query?: {
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaymentMethod"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_methods_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentMethodRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaymentMethodRequest"];
+                "multipart/form-data": components["schemas"]["PaymentMethodRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaymentMethod"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_methods_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا payment method. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaymentMethod"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_methods_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا payment method. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PaymentMethodRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PaymentMethodRequest"];
+                "multipart/form-data": components["schemas"]["PaymentMethodRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaymentMethod"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_methods_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا payment method. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    payments_methods_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا payment method. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPaymentMethodRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPaymentMethodRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPaymentMethodRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaymentMethod"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_refunds_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Refund"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    payments_refunds_create: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description Client-generated UUID. A replay returns the original result. */
+                "Idempotency-Key": string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RefundRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RefundRequestRequest"];
+                "multipart/form-data": components["schemas"]["RefundRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Refund"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     schema_retrieve: {
         parameters: {
             query?: {
@@ -492,6 +9028,241 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["SettingSchemaResponse"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    shifts_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Shift"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    shifts_cash_movements_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["CashMovement"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    shifts_cash_movements_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CashMovementRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CashMovementRequestRequest"];
+                "multipart/form-data": components["schemas"]["CashMovementRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["CashMovement"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    shifts_close_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseShiftRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CloseShiftRequest"];
+                "multipart/form-data": components["schemas"]["CloseShiftRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Shift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    shifts_x_report_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ShiftReport"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    shifts_z_report_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    shifts_current_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Shift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    shifts_open_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["OpenShiftRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["OpenShiftRequest"];
+                "multipart/form-data": components["schemas"]["OpenShiftRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Shift"];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

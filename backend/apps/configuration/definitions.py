@@ -1037,3 +1037,101 @@ register(
     permission="branch.edit_settings",
     pushes_to_desktop=True,
 )
+register(
+    key="kids.billing_product",
+    type=SettingType.STRING,
+    default="",
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="صنف احتساب جلسة اللعب",
+    label_en="Play session billing product",
+    help_ar=(
+        "الصنف الذي تُسجَّل عليه الجلسة في الفاتورة. السعر يأتي من التعريفة وليس من الصنف — "
+        "وجوده فقط ليظهر دخل الصالة في تقارير المبيعات مع باقي الأصناف."
+    ),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.socks_product",
+    type=SettingType.STRING,
+    default="",
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="صنف شراب الأطفال",
+    label_en="Socks product",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.default_tariff",
+    type=SettingType.STRING,
+    default="",
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="التعريفة الافتراضية",
+    label_en="Default tariff",
+    help_ar="تُقترح عند الدخول إذا لم تطابق أي تعريفة موقوتة وقت الدخول.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.require_guardian_phone",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="إلزام رقم هاتف ولي الأمر",
+    label_en="Require guardian phone",
+    help_ar="الهاتف هو وسيلة الوصول الوحيدة لولي الأمر إذا حدث شيء.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.overdue_alert_minutes",
+    type=SettingType.INTEGER,
+    default=5,
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="تنبيه التأخير بعد انتهاء الباقة (دقائق)",
+    label_en="Overdue alert",
+    validators=(Range(0, 120),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.print_checkin_slip",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="طباعة إيصال الدخول",
+    label_en="Print check-in slip",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.tag_numbers",
+    type=SettingType.STRING,
+    default="1-30",
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="أرقام التاجات المتاحة",
+    label_en="Wristband tag range",
+    help_ar="مدى مثل 1-30، أو أرقام مفصولة بفواصل.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.allow_charge_override",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="السماح بتعديل قيمة الجلسة",
+    label_en="Allow charge override",
+    help_ar="مقيَّد بصلاحية kids.override_charge، والقيمة المحسوبة تُحفظ دائماً بجوار المعدَّلة.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)

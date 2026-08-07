@@ -141,6 +141,26 @@ def compute_totals(shift: Shift) -> ShiftTotals:
     )
 
 
+def _outstanding_play(shift: Shift) -> dict:
+    """
+    Children still in the play area, with their running charge.
+
+    Deliberately reported rather than blocking: a handover with children present
+    is completely ordinary — the day shift ends, the kids stay. What must not
+    happen is the shift closing *silently* over an unbilled meter, so the
+    liability is on the report and the count is in the log.
+    """
+    from apps.kids import services as kids_services
+
+    sessions = kids_services.outstanding_sessions(shift.branch)
+    liability = sum((Decimal(s["running_charge"]) for s in sessions), Decimal("0.00"))
+    return {
+        "open_play_sessions": len(sessions),
+        "open_play_liability": str(liability),
+        "play_sessions": sessions,
+    }
+
+
 def x_report(shift: Shift) -> dict:
     """A mid-shift read. Does not close anything."""
     totals = compute_totals(shift)
@@ -150,6 +170,7 @@ def x_report(shift: Shift) -> dict:
         "user": shift.user.full_name_ar if shift.user else None,
         "is_final": False,
         **{k: str(v) if isinstance(v, Decimal) else v for k, v in totals.__dict__.items()},
+        **_outstanding_play(shift),
     }
 
 
@@ -210,6 +231,16 @@ def close_shift(
         "approved_by": approved_by.full_name_ar if approved_by else None,
     }
     locked.save()
+
+    if locked.z_report.get("open_play_sessions"):
+        logger.warning(
+            "Shift closed with children still in the play area",
+            extra={
+                "shift": str(locked.id),
+                "sessions": locked.z_report["open_play_sessions"],
+                "liability": locked.z_report["open_play_liability"],
+            },
+        )
 
     if variance != 0:
         logger.warning(

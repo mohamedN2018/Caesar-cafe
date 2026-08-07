@@ -28,6 +28,7 @@ VENDORED = ROOT / "desktop" / "src" / "caesar_pos" / "vendored"
 #: (source relative to backend/apps, why it must be shared)
 MODULES = [
     ("core/money.py", "order totals must agree to the piaster"),
+    ("core/play_pricing.py", "a play session checked out offline must price identically"),
     ("licensing/offline_token.py", "the client verifies licence tokens locally"),
     ("licensing/keys.py", "the client normalizes typed keys before sending them"),
 ]

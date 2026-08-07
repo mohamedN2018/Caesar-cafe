@@ -1,0 +1,239 @@
+{
+  "_comment": [
+    "Golden cases for apps/core/play_pricing.py — hand-computed from the tariff",
+    "tables in docs/12-kids-area.md. The Desktop vendors the same module and runs",
+    "this same file, so a session priced offline and the server's recomputation on",
+    "sync cannot disagree. Every `charge` here was worked out by hand first, then",
+    "checked against the code — not the other way round.",
+    "Times, where given, are ISO-8601 with an offset so the midnight cases are",
+    "unambiguous."
+  ],
+
+  "tariffs": {
+    "HOUR_METER": {
+      "_note": "The docs/12 worked example: 25 covering 30 min, then 15/15 min, 5 grace, cap 120.",
+      "mode": "TIMED",
+      "entry_fee": "25.00",
+      "included_minutes": 30,
+      "block_minutes": 15,
+      "block_rate": "15.00",
+      "grace_minutes": 5,
+      "daily_cap": "120.00"
+    },
+    "PLAY_HOUR": {
+      "_note": "ساعة لعب — flat 40 for an hour, then half-hour blocks at 15.",
+      "mode": "PACKAGE",
+      "entry_fee": "40.00",
+      "package_minutes": 60,
+      "block_minutes": 30,
+      "block_rate": "15.00",
+      "grace_minutes": 5,
+      "daily_cap": "0.00"
+    },
+    "OPEN_DAY": {
+      "mode": "OPEN_DAY",
+      "entry_fee": "100.00"
+    },
+    "TINY_CAP": {
+      "_note": "A cap below the entry fee. Nonsense pricing, but it must bind rather than be ignored.",
+      "mode": "TIMED",
+      "entry_fee": "25.00",
+      "included_minutes": 30,
+      "block_minutes": 15,
+      "block_rate": "15.00",
+      "grace_minutes": 5,
+      "daily_cap": "20.00"
+    }
+  },
+
+  "cases": [
+    {
+      "name": "zero minutes still costs the entry fee",
+      "why": "The child came in. Entry was bought, not rented.",
+      "tariff": "HOUR_METER",
+      "minutes": 0,
+      "expect": { "charge": "25.00", "billable_minutes": 0, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "22 min — inside the included period",
+      "tariff": "HOUR_METER",
+      "minutes": 22,
+      "expect": { "charge": "25.00", "billable_minutes": 22, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "30 min — exactly the included period",
+      "tariff": "HOUR_METER",
+      "minutes": 30,
+      "expect": { "charge": "25.00", "billable_minutes": 30, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "34 min — 4 over, inside the 5-min grace",
+      "why": "docs/12: the parent two minutes late is not charged a full block.",
+      "tariff": "HOUR_METER",
+      "minutes": 34,
+      "expect": { "charge": "25.00", "billable_minutes": 34, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "35 min — exactly at grace, still free",
+      "why": "Grace is inclusive. The boundary must not be a surprise at the counter.",
+      "tariff": "HOUR_METER",
+      "minutes": 35,
+      "expect": { "charge": "25.00", "billable_minutes": 35, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "36 min — one minute past grace, one block",
+      "tariff": "HOUR_METER",
+      "minutes": 36,
+      "expect": { "charge": "40.00", "billable_minutes": 45, "blocks": 1, "capped": false }
+    },
+    {
+      "name": "38 min — grace exceeded, one block",
+      "tariff": "HOUR_METER",
+      "minutes": 38,
+      "expect": { "charge": "40.00", "billable_minutes": 45, "blocks": 1, "capped": false }
+    },
+    {
+      "name": "52 min — two blocks",
+      "tariff": "HOUR_METER",
+      "minutes": 52,
+      "expect": { "charge": "55.00", "billable_minutes": 60, "blocks": 2, "capped": false }
+    },
+    {
+      "name": "4 hours — capped",
+      "why": "14 blocks would be 235. The cap is what an all-afternoon visit costs.",
+      "tariff": "HOUR_METER",
+      "minutes": 240,
+      "expect": { "charge": "120.00", "billable_minutes": 240, "blocks": 14, "capped": true }
+    },
+    {
+      "name": "cap below the entry fee still binds",
+      "tariff": "TINY_CAP",
+      "minutes": 10,
+      "expect": { "charge": "20.00", "billable_minutes": 10, "blocks": 0, "capped": true }
+    },
+
+    {
+      "name": "package — 45 min inside the hour",
+      "tariff": "PLAY_HOUR",
+      "minutes": 45,
+      "expect": { "charge": "40.00", "billable_minutes": 45, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "package — 64 min, 4 over, inside grace",
+      "tariff": "PLAY_HOUR",
+      "minutes": 64,
+      "expect": { "charge": "40.00", "billable_minutes": 64, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "package — 76 min, the docs/12 check-out screen",
+      "why": "١٤:٣٢ → ١٥:٤٨ · ٧٦ دقيقة · ساعة لعب + ١٦ د إضافية · ٥٥.٠٠ ج",
+      "tariff": "PLAY_HOUR",
+      "minutes": 76,
+      "expect": { "charge": "55.00", "billable_minutes": 90, "blocks": 1, "capped": false }
+    },
+    {
+      "name": "package — 130 min, three overrun blocks",
+      "tariff": "PLAY_HOUR",
+      "minutes": 130,
+      "expect": { "charge": "85.00", "billable_minutes": 150, "blocks": 3, "capped": false }
+    },
+    {
+      "name": "package — uncapped by design",
+      "why": "daily_cap 0 means no cap. A five-hour package visit pays for all of it.",
+      "tariff": "PLAY_HOUR",
+      "minutes": 300,
+      "expect": { "charge": "160.00", "billable_minutes": 300, "blocks": 8, "capped": false }
+    },
+
+    {
+      "name": "open day — zero minutes",
+      "tariff": "OPEN_DAY",
+      "minutes": 0,
+      "expect": { "charge": "100.00", "billable_minutes": 0, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "open day — eight hours, same flat fee",
+      "tariff": "OPEN_DAY",
+      "minutes": 480,
+      "expect": { "charge": "100.00", "billable_minutes": 480, "blocks": 0, "capped": false }
+    },
+
+    {
+      "name": "rounding up_to_block — 52 min",
+      "tariff": "HOUR_METER",
+      "minutes": 52,
+      "rounding": "up_to_block",
+      "expect": { "charge": "55.00", "billable_minutes": 60, "blocks": 2, "capped": false }
+    },
+    {
+      "name": "rounding nearest_block — 52 min rounds down to one block",
+      "tariff": "HOUR_METER",
+      "minutes": 52,
+      "rounding": "nearest_block",
+      "expect": { "charge": "40.00", "billable_minutes": 45, "blocks": 1, "capped": false }
+    },
+    {
+      "name": "rounding nearest_block — 6 min overrun still charges one block",
+      "why": "Grace declined to forgive it; rounding to zero would quietly overrule that.",
+      "tariff": "HOUR_METER",
+      "minutes": 36,
+      "rounding": "nearest_block",
+      "expect": { "charge": "40.00", "billable_minutes": 45, "blocks": 1, "capped": false }
+    },
+    {
+      "name": "rounding exact_minutes — 52 min, pro-rata",
+      "why": "22 overrun minutes at 15 per 15 min = 22.00 exactly.",
+      "tariff": "HOUR_METER",
+      "minutes": 52,
+      "rounding": "exact_minutes",
+      "expect": { "charge": "47.00", "billable_minutes": 52, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "rounding exact_minutes — 36 min, six overrun minutes",
+      "tariff": "HOUR_METER",
+      "minutes": 36,
+      "rounding": "exact_minutes",
+      "expect": { "charge": "31.00", "billable_minutes": 36, "blocks": 0, "capped": false }
+    },
+
+    {
+      "name": "branch grace override widens the free overrun",
+      "why": "kids.grace_minutes is the branch default; a tariff may narrow it.",
+      "tariff": "HOUR_METER",
+      "minutes": 40,
+      "grace_minutes": 15,
+      "expect": { "charge": "25.00", "billable_minutes": 40, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "grace override of zero charges from the first minute over",
+      "tariff": "HOUR_METER",
+      "minutes": 31,
+      "grace_minutes": 0,
+      "expect": { "charge": "40.00", "billable_minutes": 45, "blocks": 1, "capped": false }
+    },
+
+    {
+      "name": "crossing midnight",
+      "why": "These are instants, not clock faces. 23:40 → 00:56 is 76 minutes.",
+      "tariff": "PLAY_HOUR",
+      "start": "2026-08-07T23:40:00+03:00",
+      "end": "2026-08-08T00:56:00+03:00",
+      "expect": { "charge": "55.00", "billable_minutes": 90, "blocks": 1, "capped": false }
+    },
+    {
+      "name": "seconds are floored, never rounded up into a charge",
+      "why": "34:59 is 34 minutes. Rounding it to 35 would start a dispute over a second.",
+      "tariff": "HOUR_METER",
+      "start": "2026-08-07T14:32:00+03:00",
+      "end": "2026-08-07T15:06:59+03:00",
+      "expect": { "charge": "25.00", "billable_minutes": 34, "blocks": 0, "capped": false }
+    },
+    {
+      "name": "a clock that went backwards yields zero, not a credit",
+      "tariff": "HOUR_METER",
+      "start": "2026-08-07T15:00:00+03:00",
+      "end": "2026-08-07T14:50:00+03:00",
+      "expect": { "charge": "25.00", "billable_minutes": 0, "blocks": 0, "capped": false }
+    }
+  ]
+}

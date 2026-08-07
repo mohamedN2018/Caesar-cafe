@@ -336,6 +336,50 @@ def _order_fired(order: Order, payload: dict, *, actor=None) -> None:
         order.save(update_fields=["status", "updated_at"])
 
 
+@handles(EventType.PLAY_SESSION_CHARGED)
+def _play_session_charged(order: Order, payload: dict, *, actor=None) -> None:
+    """
+    A closed play session becomes one ordinary order line.
+
+    The price is the session's, not the variant's — a play visit is priced by
+    duration, and the variant exists only to give the sale a place in the
+    catalog so play revenue reports beside the coffee instead of in a parallel
+    universe of its own.
+
+    Deliberately an event like any other: VAT, service charge, discounts, split
+    payment, refunds and shift reconciliation then work unmodified, which is the
+    entire reason a session converts at checkout rather than metering into the
+    financial core (docs/12, C12).
+    """
+    from apps.kids import services as kids_services
+    from apps.kids.models import PlaySession, SessionStatus
+
+    session = (
+        PlaySession.objects.select_related("area", "child", "guardian")
+        .filter(id=payload["session_id"], branch_id=order.branch_id)
+        .first()
+    )
+    if session is None:
+        raise NotFoundError("جلسة اللعب غير موجودة", code="PLAY_SESSION_NOT_FOUND")
+    if session.status != SessionStatus.CHECKED_OUT:
+        raise EventRejected("الجلسة لم تُغلق بعد", code="SESSION_NOT_CLOSED")
+
+    variant = kids_services.billing_variant_for(session.area)
+
+    OrderItem.objects.create(
+        order=order,
+        line_id=payload.get("line_id") or uuid.uuid4(),
+        variant=variant,
+        station=None,  # Nothing to make. The kitchen must never see this line.
+        name_snapshot=kids_services.line_description(session),
+        unit_price_snapshot=session.payable,
+        cost_snapshot=Decimal("0"),
+        tax_exempt_snapshot=variant.product.is_tax_exempt,
+        quantity=Decimal("1"),
+        created_by=actor,
+    )
+
+
 @handles(EventType.TABLE_ASSIGNED)
 def _table_assigned(order: Order, payload: dict, *, actor=None) -> None:
     from apps.floor.models import TableSession

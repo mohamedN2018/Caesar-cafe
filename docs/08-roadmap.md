@@ -413,10 +413,59 @@ Exit criteria:
 
 ---
 
-## Phase 6B — Kids Area & Time-Based Billing
+## Phase 6B — Kids Area & Time-Based Billing ✅ DOMAIN COMPLETE
 
-Placed here so Phase 7's offline engine covers play sessions in the same pass instead of requiring
-a second one. Full detail in [12](12-kids-area.md).
+**Verified on 2026-08-07:** ruff + format clean · **606 tests passing** (60 new: 42 tariff golden
+cases + 18 domain/API) · migrations clean · `spectacular --fail-on-warn` clean · vendored modules
+in sync · frontend typecheck and build clean.
+
+Delivered: `apps/core/play_pricing.py` (the Django-free tariff engine the Desktop vendors) with
+its own golden fixture, the `kids` app (PlayArea, PlayTariff, Guardian, Child, PlaySession,
+PlayIncident), check-in/out with capacity and age enforcement, the `PLAY_SESSION_CHARGED` order
+event, the Z-report's outstanding-liability line, ten new `kids.*` settings, and three Web Admin
+screens (live board, session history with occupancy-by-hour, tariffs with server-computed
+worked examples).
+
+Exit criteria met:
+
+- **A session is a running meter, not a sale.** It converts into exactly one ordinary order line
+  at checkout and not a moment before, so VAT, service, discounts, split payment, refunds, shift
+  reconciliation and the sales reports all work unmodified. That is the whole reason for
+  converting at checkout rather than metering into the financial core (C12).
+- The full golden fixture agrees to the piaster, including **crossing midnight**, a window that
+  **wraps past midnight**, a **zero-minute** session, a **backwards clock**, all three rounding
+  modes, and the cap.
+- **Capacity cannot be exceeded**, proven under a race: four simultaneous check-ins against a
+  capacity of two admit exactly two. The lock is on the *area* row — locking sessions that do not
+  exist yet locks nothing, and an empty area is exactly when two check-ins collide.
+- **Checkout is impossible without guardian verification** when required, and a failed handover
+  leaves the session open rather than half-closed. Releasing to someone other than the registering
+  guardian needs a step-up approval, and **who actually collected the child is recorded**.
+- **Overriding a charge preserves `computed_charge`**, requires a reason, and is refused once the
+  line is on an invoice.
+- A tariff edited mid-visit does not re-price the session already running — the same snapshot
+  discipline as the VAT rate on an open bill.
+- Open sessions appear on the Z-report as outstanding liability with their running charge.
+
+Three decisions worth recording, because each went against the convenient option:
+
+1. **Age limits warn rather than block by default.** The staff member can see the child; the
+   software is working from a number a parent said out loud.
+2. **There is no auto-checkout at any duration.** An automatic checkout would record a child as
+   collected when nobody collected them. `kids.max_session_hours` raises an alert for a human to
+   go and look, and nothing else.
+3. **The tariff builder's worked examples are a server round-trip.** Computing them in the browser
+   would be a second pricing implementation, and a second implementation is how the number an
+   admin sees while designing a rule drifts from the number a parent is charged under it.
+
+And one bug the tests found: `bill_session` returned the caller's in-memory order, whose totals
+predate the line `apply_events` had just folded in — a caller could have taken payment for the
+wrong amount. It now returns the refreshed row.
+
+**Still outstanding:** the Desktop kids screens (live board, check-in, check-out, incident log),
+and the Web guardians/incidents admin pages — deferred with the rest of the Desktop surface.
+
+Original plan:
 
 Deliverables:
 - `kids`: PlayArea, PlayTariff, Guardian, Child, PlaySession, PlayIncident

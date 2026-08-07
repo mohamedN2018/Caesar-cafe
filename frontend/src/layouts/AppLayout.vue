@@ -42,6 +42,14 @@ const groups: NavGroup[] = [
     ],
   },
   {
+    label: 'صالة الأطفال',
+    items: [
+      { label: 'اللوحة المباشرة', to: '/kids', icon: '🧸', permission: 'kids.view' },
+      { label: 'الجلسات', to: '/kids/sessions', icon: '⏱️', permission: 'kids.view' },
+      { label: 'التعريفات', to: '/kids/tariffs', icon: '🎟️', permission: 'kids.view' },
+    ],
+  },
+  {
     label: 'المنتجات والمخزون',
     items: [
       { label: 'المنتجات', to: '/products', icon: '☕', permission: 'catalog.view' },

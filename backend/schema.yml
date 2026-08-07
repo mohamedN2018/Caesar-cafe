@@ -2988,6 +2988,1562 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/kids/areas/:
+    get:
+      operationId: kids_areas_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlayArea'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: kids_areas_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayAreaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlayAreaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlayAreaRequest'
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayArea'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/areas/{area_id}/board/:
+    get:
+      operationId: kids_areas_board_retrieve
+      summary: Live kids-area board
+      parameters:
+      - in: path
+        name: area_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Board'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/areas/{id}/:
+    get:
+      operationId: kids_areas_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play area.
+        required: true
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayArea'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: kids_areas_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play area.
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayAreaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlayAreaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlayAreaRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayArea'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: kids_areas_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play area.
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPlayAreaRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPlayAreaRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPlayAreaRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayArea'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: kids_areas_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play area.
+        required: true
+      tags:
+      - kids
+      responses:
+        '204':
+          description: No response body
+  /api/v1/kids/children/:
+    get:
+      operationId: kids_children_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedChildList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: kids_children_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChildRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChildRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChildRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Child'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/children/{id}/:
+    get:
+      operationId: kids_children_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا child.
+        required: true
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Child'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: kids_children_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا child.
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChildRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChildRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChildRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Child'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: kids_children_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا child.
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedChildRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedChildRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedChildRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Child'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: kids_children_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا child.
+        required: true
+      tags:
+      - kids
+      responses:
+        '204':
+          description: No response body
+  /api/v1/kids/guardians/:
+    get:
+      operationId: kids_guardians_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedGuardianList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: kids_guardians_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuardianRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GuardianRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GuardianRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Guardian'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/guardians/{id}/:
+    get:
+      operationId: kids_guardians_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا guardian.
+        required: true
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Guardian'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: kids_guardians_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا guardian.
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GuardianRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GuardianRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GuardianRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Guardian'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: kids_guardians_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا guardian.
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGuardianRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGuardianRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGuardianRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Guardian'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: kids_guardians_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا guardian.
+        required: true
+      tags:
+      - kids
+      responses:
+        '204':
+          description: No response body
+  /api/v1/kids/incidents/:
+    get:
+      operationId: kids_incidents_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedPlayIncidentList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: kids_incidents_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayIncidentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlayIncidentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlayIncidentRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayIncident'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/incidents/{id}/:
+    get:
+      operationId: kids_incidents_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play incident.
+        required: true
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayIncident'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/incidents/log/:
+    post:
+      operationId: kids_incidents_log_create
+      summary: Log a play-area incident
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IncidentCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IncidentCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayIncident'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/reports/:
+    get:
+      operationId: kids_reports_retrieve
+      summary: Kids-area revenue and occupancy
+      tags:
+      - kids
+      responses:
+        '200':
+          description: No response body
+  /api/v1/kids/sessions/:
+    get:
+      operationId: kids_sessions_list
+      summary: Play sessions
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlaySession'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/sessions/{id}/check-out/:
+    post:
+      operationId: kids_sessions_check_out_create
+      summary: Check a child out and bill the session
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckOutRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckOutRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckOutRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/CheckOutResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/sessions/{id}/override/:
+    post:
+      operationId: kids_sessions_override_create
+      summary: Override a session charge
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OverrideChargeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/OverrideChargeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/OverrideChargeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlaySession'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/sessions/{id}/tariff/:
+    post:
+      operationId: kids_sessions_tariff_create
+      summary: Move a running session to another tariff
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeTariffRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangeTariffRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangeTariffRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlaySession'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/sessions/check-in/:
+    post:
+      operationId: kids_sessions_check_in_create
+      summary: Check a child in
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CheckInRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/CheckInResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/tariffs/:
+    get:
+      operationId: kids_tariffs_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PlayTariff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: kids_tariffs_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayTariffRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlayTariffRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlayTariffRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayTariff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/kids/tariffs/{id}/:
+    get:
+      operationId: kids_tariffs_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play tariff.
+        required: true
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayTariff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: kids_tariffs_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play tariff.
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayTariffRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PlayTariffRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PlayTariffRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayTariff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: kids_tariffs_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play tariff.
+        required: true
+      tags:
+      - kids
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPlayTariffRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPlayTariffRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPlayTariffRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PlayTariff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: kids_tariffs_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا play tariff.
+        required: true
+      tags:
+      - kids
+      responses:
+        '204':
+          description: No response body
+  /api/v1/kids/tariffs/{id}/preview/:
+    get:
+      operationId: kids_tariffs_preview_list
+      description: |-
+        Worked examples for the tariff builder.
+
+        Runs the same `compute_charge` a real checkout runs, so what an admin sees
+        while designing a rule is what a parent will be charged under it.
+      summary: Preview what a tariff charges
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - kids
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TariffPreview'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/kitchen/performance/:
     get:
       operationId: kitchen_performance_retrieve
@@ -5345,6 +6901,28 @@ components:
           type: boolean
       required:
       - name_ar
+    Board:
+      type: object
+      properties:
+        area_id:
+          type: string
+          format: uuid
+        area_name:
+          type: string
+        occupancy:
+          type: integer
+        capacity:
+          type: integer
+        sessions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlaySession'
+      required:
+      - area_id
+      - area_name
+      - capacity
+      - occupancy
+      - sessions
     CashMovement:
       type: object
       properties:
@@ -5480,6 +7058,179 @@ components:
       required:
       - current_password
       - new_password
+    ChangeTariffRequest:
+      type: object
+      properties:
+        tariff:
+          type: string
+          format: uuid
+      required:
+      - tariff
+    CheckInRequest:
+      type: object
+      description: |-
+        Deliberately short. A parent with a restless child will not tolerate a long
+        form, and every optional field here is one the staff can fill in later.
+      properties:
+        area:
+          type: string
+          format: uuid
+        child_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        guardian_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        guardian_phone:
+          type: string
+          maxLength: 32
+        guardian_id:
+          type: string
+          format: uuid
+          nullable: true
+        age_months:
+          type: integer
+          minimum: 0
+          nullable: true
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        tariff:
+          type: string
+          format: uuid
+          nullable: true
+        tag_number:
+          type: string
+          minLength: 1
+          maxLength: 16
+        order:
+          type: string
+          format: uuid
+          nullable: true
+        session_id:
+          type: string
+          format: uuid
+          nullable: true
+          description: Client-minted, so an offline check-in keeps its identity.
+        medical_notes:
+          type: string
+      required:
+      - area
+      - child_name
+      - guardian_name
+      - tag_number
+    CheckInResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/PlaySession'
+        warnings:
+          type: array
+          items:
+            type: string
+          description: Non-blocking problems the staff member must see, e.g. an age
+            outside limits.
+      required:
+      - session
+      - warnings
+    CheckOutRequest:
+      type: object
+      properties:
+        verified:
+          type: boolean
+          default: false
+          description: The staff member confirmed the recipient's identity. Not a
+            formality.
+        released_to_guardian:
+          type: string
+          format: uuid
+          nullable: true
+        approval_token:
+          type: string
+          writeOnly: true
+          description: Step-up token for kids.release_to_other, from POST /auth/approve.
+        bill_to_order:
+          type: string
+          format: uuid
+          nullable: true
+          description: Append to this order; omit to open a new one.
+        bill:
+          type: boolean
+          default: true
+    CheckOutResponse:
+      type: object
+      properties:
+        session:
+          $ref: '#/components/schemas/PlaySession'
+        order_id:
+          type: string
+          format: uuid
+          nullable: true
+        charge:
+          type: string
+      required:
+      - charge
+      - order_id
+      - session
+    Child:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        guardian:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+          maxLength: 100
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        age_months_snapshot:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        medical_notes:
+          type: string
+          description: Allergies, conditions staff must know about.
+        consent_recorded:
+          type: boolean
+      required:
+      - first_name
+      - guardian
+      - id
+    ChildRequest:
+      type: object
+      properties:
+        guardian:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        age_months_snapshot:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        medical_notes:
+          type: string
+          description: Allergies, conditions staff must know about.
+        consent_recorded:
+          type: boolean
+      required:
+      - first_name
+      - guardian
     CloseShiftRequest:
       type: object
       properties:
@@ -5768,6 +7519,48 @@ components:
       - table_id
       - total_due
       - waiter
+    Guardian:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        full_name:
+          type: string
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 32
+        national_id:
+          type: string
+          maxLength: 32
+        visit_count:
+          type: integer
+          readOnly: true
+        notes:
+          type: string
+      required:
+      - full_name
+      - id
+      - visit_count
+    GuardianRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 32
+        national_id:
+          type: string
+          maxLength: 32
+        notes:
+          type: string
+      required:
+      - full_name
     Health:
       type: object
       properties:
@@ -5841,6 +7634,29 @@ components:
       - offline_token
       - server_time
       - stage
+    IncidentCreateRequest:
+      type: object
+      properties:
+        area:
+          type: string
+          format: uuid
+        session:
+          type: string
+          format: uuid
+          nullable: true
+        incident_type:
+          $ref: '#/components/schemas/PlayIncidentTypeEnum'
+        description:
+          type: string
+          minLength: 1
+        occurred_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - area
+      - description
+      - incident_type
     InventoryItem:
       type: object
       properties:
@@ -6743,6 +8559,7 @@ components:
       - ITEM_NOTE_SET
       - DISCOUNT_APPLIED
       - ORDER_FIRED
+      - PLAY_SESSION_CHARGED
       - TABLE_ASSIGNED
       - CUSTOMER_ASSIGNED
       - PAYMENT_TAKEN
@@ -6757,6 +8574,7 @@ components:
         * `ITEM_NOTE_SET` - ITEM_NOTE_SET
         * `DISCOUNT_APPLIED` - DISCOUNT_APPLIED
         * `ORDER_FIRED` - ORDER_FIRED
+        * `PLAY_SESSION_CHARGED` - PLAY_SESSION_CHARGED
         * `TABLE_ASSIGNED` - TABLE_ASSIGNED
         * `CUSTOMER_ASSIGNED` - CUSTOMER_ASSIGNED
         * `PAYMENT_TAKEN` - PAYMENT_TAKEN
@@ -6984,6 +8802,58 @@ components:
         * `DEVICE` - DEVICE
         * `ROLE` - ROLE
         * `DEFAULT` - DEFAULT
+    OverrideChargeRequest:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+      required:
+      - amount
+      - reason
+    PaginatedChildList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Child'
+    PaginatedGuardianList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Guardian'
     PaginatedInventoryItemList:
       type: object
       required:
@@ -7003,6 +8873,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/InventoryItem'
+    PaginatedPlayIncidentList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayIncident'
     PaginatedProductList:
       type: object
       required:
@@ -7098,6 +8987,44 @@ components:
           minimum: 0
         is_active:
           type: boolean
+    PatchedChildRequest:
+      type: object
+      properties:
+        guardian:
+          type: string
+          format: uuid
+        first_name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        birth_date:
+          type: string
+          format: date
+          nullable: true
+        age_months_snapshot:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        medical_notes:
+          type: string
+          description: Allergies, conditions staff must know about.
+        consent_recorded:
+          type: boolean
+    PatchedGuardianRequest:
+      type: object
+      properties:
+        full_name:
+          type: string
+          minLength: 1
+          maxLength: 150
+        phone:
+          type: string
+          maxLength: 32
+        national_id:
+          type: string
+          maxLength: 32
+        notes:
+          type: string
     PatchedInventoryItemRequest:
       type: object
       properties:
@@ -7182,6 +9109,107 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+    PatchedPlayAreaRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        max_capacity:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        min_age_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        max_age_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        requires_socks:
+          type: boolean
+        billing_variant:
+          type: string
+          format: uuid
+          nullable: true
+          description: The service product a session is billed as. Overrides `kids.billing_product`.
+            The price comes from the tariff, never from the variant — this only gives
+            the sale a place in the catalog.
+        socks_variant:
+          type: string
+          format: uuid
+          nullable: true
+          description: Added to the order at check-in when socks are required.
+        notes:
+          type: string
+        is_active:
+          type: boolean
+    PatchedPlayTariffRequest:
+      type: object
+      properties:
+        area:
+          type: string
+          format: uuid
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        mode:
+          $ref: '#/components/schemas/PlayTariffModeEnum'
+        entry_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        included_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: 'TIMED: what the entry fee covers.'
+        package_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: 'PACKAGE: the fixed duration the flat fee buys.'
+        block_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        block_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        grace_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+          description: Null = use the branch's kids.grace_minutes.
+        daily_cap:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: 0 = uncapped.
+        applies_days:
+          description: Monday=0. Empty = every day.
+        applies_from:
+          type: string
+          format: time
+          nullable: true
+        applies_to:
+          type: string
+          format: time
+          nullable: true
+        priority:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Highest matching priority wins at check-in.
+        is_default:
+          type: boolean
+        is_active:
+          type: boolean
     PatchedProductRequest:
       type: object
       properties:
@@ -7454,6 +9482,392 @@ components:
       - amount
       - method
       - order
+    PlayArea:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name_ar:
+          type: string
+          maxLength: 100
+        max_capacity:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        min_age_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        max_age_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        requires_socks:
+          type: boolean
+        billing_variant:
+          type: string
+          format: uuid
+          nullable: true
+          description: The service product a session is billed as. Overrides `kids.billing_product`.
+            The price comes from the tariff, never from the variant — this only gives
+            the sale a place in the catalog.
+        socks_variant:
+          type: string
+          format: uuid
+          nullable: true
+          description: Added to the order at check-in when socks are required.
+        notes:
+          type: string
+        is_active:
+          type: boolean
+        occupancy:
+          type: integer
+          readOnly: true
+      required:
+      - id
+      - occupancy
+    PlayAreaRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        max_capacity:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        min_age_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        max_age_months:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        requires_socks:
+          type: boolean
+        billing_variant:
+          type: string
+          format: uuid
+          nullable: true
+          description: The service product a session is billed as. Overrides `kids.billing_product`.
+            The price comes from the tariff, never from the variant — this only gives
+            the sale a place in the catalog.
+        socks_variant:
+          type: string
+          format: uuid
+          nullable: true
+          description: Added to the order at check-in when socks are required.
+        notes:
+          type: string
+        is_active:
+          type: boolean
+    PlayIncident:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        area:
+          type: string
+          format: uuid
+        session:
+          type: string
+          format: uuid
+          nullable: true
+        incident_type:
+          $ref: '#/components/schemas/PlayIncidentTypeEnum'
+        description:
+          type: string
+        occurred_at:
+          type: string
+          format: date-time
+        reported_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - area
+      - description
+      - id
+      - reported_by
+    PlayIncidentRequest:
+      type: object
+      properties:
+        area:
+          type: string
+          format: uuid
+        session:
+          type: string
+          format: uuid
+          nullable: true
+        incident_type:
+          $ref: '#/components/schemas/PlayIncidentTypeEnum'
+        description:
+          type: string
+          minLength: 1
+        occurred_at:
+          type: string
+          format: date-time
+      required:
+      - area
+      - description
+    PlayIncidentTypeEnum:
+      enum:
+      - INJURY
+      - DISPUTE
+      - LOST_ITEM
+      - CAPACITY
+      - OTHER
+      type: string
+      description: |-
+        * `INJURY` - INJURY
+        * `DISPUTE` - DISPUTE
+        * `LOST_ITEM` - LOST_ITEM
+        * `CAPACITY` - CAPACITY
+        * `OTHER` - OTHER
+    PlaySession:
+      type: object
+      description: |-
+        Documents the shape produced by `services.serialize_session` — the one
+        payload the live board, the check-out screen and the Z-report all read.
+      properties:
+        id:
+          type: string
+          format: uuid
+        tag_number:
+          type: string
+        status:
+          type: string
+        child_name:
+          type: string
+        age_months:
+          type: integer
+        guardian_name:
+          type: string
+        guardian_phone:
+          type: string
+        area_id:
+          type: string
+          format: uuid
+        tariff_name:
+          type: string
+        checked_in_at:
+          type: string
+          format: date-time
+        expected_end_at:
+          type: string
+          format: date-time
+          nullable: true
+        checked_out_at:
+          type: string
+          format: date-time
+          nullable: true
+        elapsed_minutes:
+          type: integer
+        remaining_minutes:
+          type: integer
+          nullable: true
+        is_overdue:
+          type: boolean
+        running_charge:
+          type: string
+        capped:
+          type: boolean
+        billable_minutes:
+          type: integer
+        computed_charge:
+          type: string
+        override_charge:
+          type: string
+          nullable: true
+        payable:
+          type: string
+        order_id:
+          type: string
+          format: uuid
+          nullable: true
+        medical_notes:
+          type: string
+      required:
+      - age_months
+      - area_id
+      - billable_minutes
+      - capped
+      - checked_in_at
+      - checked_out_at
+      - child_name
+      - computed_charge
+      - elapsed_minutes
+      - expected_end_at
+      - guardian_name
+      - guardian_phone
+      - id
+      - is_overdue
+      - medical_notes
+      - order_id
+      - override_charge
+      - payable
+      - remaining_minutes
+      - running_charge
+      - status
+      - tag_number
+      - tariff_name
+    PlayTariff:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        area:
+          type: string
+          format: uuid
+        name_ar:
+          type: string
+          maxLength: 100
+        mode:
+          $ref: '#/components/schemas/PlayTariffModeEnum'
+        entry_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        included_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: 'TIMED: what the entry fee covers.'
+        package_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: 'PACKAGE: the fixed duration the flat fee buys.'
+        block_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        block_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        grace_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+          description: Null = use the branch's kids.grace_minutes.
+        daily_cap:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: 0 = uncapped.
+        applies_days:
+          description: Monday=0. Empty = every day.
+        applies_from:
+          type: string
+          format: time
+          nullable: true
+        applies_to:
+          type: string
+          format: time
+          nullable: true
+        priority:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Highest matching priority wins at check-in.
+        is_default:
+          type: boolean
+        is_active:
+          type: boolean
+      required:
+      - area
+      - entry_fee
+      - id
+      - name_ar
+    PlayTariffModeEnum:
+      enum:
+      - TIMED
+      - PACKAGE
+      - OPEN_DAY
+      type: string
+      description: |-
+        * `TIMED` - TIMED
+        * `PACKAGE` - PACKAGE
+        * `OPEN_DAY` - OPEN_DAY
+    PlayTariffRequest:
+      type: object
+      properties:
+        area:
+          type: string
+          format: uuid
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        mode:
+          $ref: '#/components/schemas/PlayTariffModeEnum'
+        entry_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        included_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: 'TIMED: what the entry fee covers.'
+        package_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          description: 'PACKAGE: the fixed duration the flat fee buys.'
+        block_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        block_rate:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        grace_minutes:
+          type: integer
+          maximum: 32767
+          minimum: 0
+          nullable: true
+          description: Null = use the branch's kids.grace_minutes.
+        daily_cap:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: 0 = uncapped.
+        applies_days:
+          description: Monday=0. Empty = every day.
+        applies_from:
+          type: string
+          format: time
+          nullable: true
+        applies_to:
+          type: string
+          format: time
+          nullable: true
+        priority:
+          type: integer
+          maximum: 32767
+          minimum: -32768
+          description: Highest matching priority wins at check-in.
+        is_default:
+          type: boolean
+        is_active:
+          type: boolean
+      required:
+      - area
+      - entry_fee
+      - name_ar
     PriceChangeRequest:
       type: object
       properties:
@@ -8471,6 +10885,32 @@ components:
         * `OCCUPIED` - OCCUPIED
         * `RESERVED` - RESERVED
         * `CLEANING` - CLEANING
+    TariffPreview:
+      type: object
+      description: |-
+        One worked example, computed by the authoritative engine.
+
+        The tariff builder shows these so an admin sees what a rule actually costs
+        before saving it. Deliberately a server round-trip: a preview calculated in
+        the browser would be a second pricing implementation, and a second
+        implementation is how the displayed number and the charged number drift.
+      properties:
+        minutes:
+          type: integer
+        charge:
+          type: string
+        billable_minutes:
+          type: integer
+        blocks:
+          type: integer
+        capped:
+          type: boolean
+      required:
+      - billable_minutes
+      - blocks
+      - capped
+      - charge
+      - minutes
     Ticket:
       type: object
       description: |-

@@ -46,6 +46,24 @@ const router = createRouter({
           meta: { permission: 'shifts.view_all' },
         },
         {
+          path: 'kids',
+          name: 'kids-board',
+          component: () => import('@/views/kids/KidsBoardView.vue'),
+          meta: { permission: 'kids.view' },
+        },
+        {
+          path: 'kids/sessions',
+          name: 'kids-sessions',
+          component: () => import('@/views/kids/KidsSessionListView.vue'),
+          meta: { permission: 'kids.view' },
+        },
+        {
+          path: 'kids/tariffs',
+          name: 'kids-tariffs',
+          component: () => import('@/views/kids/KidsTariffView.vue'),
+          meta: { permission: 'kids.view' },
+        },
+        {
           path: 'products',
           name: 'products',
           component: () => import('@/views/catalog/ProductListView.vue'),

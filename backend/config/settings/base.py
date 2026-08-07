@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     "apps.shifts",
     "apps.orders",
     "apps.payments",
+    "apps.kids",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -244,6 +245,9 @@ SPECTACULAR_SETTINGS = {
         "TableStatusEnum": "apps.floor.models.TableStatus.choices",
         "POStatusEnum": "apps.purchasing.models.POStatus.choices",
         "LedgerEntryTypeEnum": "apps.suppliers.models.LedgerEntryType.choices",
+        "PlaySessionStatusEnum": "apps.kids.models.SessionStatus.choices",
+        "PlayTariffModeEnum": "apps.kids.models.TariffMode.choices",
+        "PlayIncidentTypeEnum": "apps.kids.models.IncidentType.choices",
     },
     # Every response is enveloped by the renderer, so the schema must say so —
     # otherwise the generated TypeScript types describe a payload that never
