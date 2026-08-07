@@ -20,6 +20,8 @@ api_v1 = [
     path("system/", include("apps.core.urls")),
     path("auth/", include("apps.accounts.urls")),
     path("licensing/", include("apps.licensing.urls")),
+    path("catalog/", include("apps.catalog.urls")),
+    path("inventory/", include("apps.inventory.urls")),
     path("settings/", include("apps.configuration.urls")),
 ]
 

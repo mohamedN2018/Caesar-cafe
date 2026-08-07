@@ -230,7 +230,43 @@ Exit criteria:
 
 ---
 
-## Phase 4 — Catalog, Inventory & Purchasing
+## Phase 4 — Catalog, Inventory & Purchasing ✅ BACKEND COMPLETE
+
+**Verified on 2026-08-07:** ruff + format clean · **390 tests passing** · migrations clean ·
+`spectacular --fail-on-warn` clean across 48 endpoints.
+
+Delivered: `catalog` (categories, products, variants, modifiers, price history), `recipes`
+(bill of materials, cost rollup, sale consumption), `inventory` (units and conversion, items,
+the stock ledger, adjustments, waste, counts, reconciliation), `suppliers` (ledger-backed
+balances), `purchasing` (PO → goods receipt → stock + supplier billing, returns, reorder
+suggestions, valuation), and `kitchen.Station` so products can route.
+
+The governing rule, enforced everywhere: **`StockLevel` is a projection; `StockMovement` is the
+truth.** `apply_movement` is the single write path, and `reconcile()` replays the ledger to prove
+no code path bypassed it.
+
+Exit criteria met:
+
+- **50 parallel sales of one item deduct exactly**, with the ledger reconciling clean afterwards.
+  Without `select_for_update` on the level row, two simultaneous cappuccinos both read 500g and
+  both write 482g — losing 18g silently, every time it races.
+- A purchase order moves **no** stock; only a goods receipt does.
+- Weighted-average cost matches a hand-computed fixture (1000g @ 0.30 + 500g @ 0.45 → 0.3500),
+  and receiving converts both quantity **and unit cost** into base units — a 5kg sack at 350/kg
+  is 0.35 per gram, not 350.
+- Reconciliation detects an intentionally introduced drift.
+- A goods receipt re-costs every recipe containing the received ingredient.
+
+One real bug found: `suppliers.reconcile()` compared the ledger against a possibly-stale
+in-memory balance, because `record_ledger_entry` updates a row-locked copy. A reconciliation that
+trusts a stale value is not reconciling anything; both sides now read fresh from the database.
+
+**Still outstanding for this phase:** the Web Admin screens for these resources. The API and the
+domain rules they will drive are complete and tested.
+
+---
+
+## Phase 4 — Catalog, Inventory & Purchasing (original plan)
 
 Deliverables:
 - `catalog`: Category tree, Product, Variant, ModifierGroup, Modifier, PriceHistory, image pipeline

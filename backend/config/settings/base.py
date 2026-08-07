@@ -71,6 +71,12 @@ INSTALLED_APPS = [
     "apps.authz",
     "apps.configuration",
     "apps.licensing",
+    "apps.kitchen",
+    "apps.inventory",
+    "apps.catalog",
+    "apps.recipes",
+    "apps.suppliers",
+    "apps.purchasing",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

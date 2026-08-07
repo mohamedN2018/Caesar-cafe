@@ -446,6 +446,1865 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/catalog/categories/:
+    get:
+      operationId: catalog_categories_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - catalog
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Category'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: catalog_categories_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Category'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/catalog/categories/{id}/:
+    get:
+      operationId: catalog_categories_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا category.
+        required: true
+      tags:
+      - catalog
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Category'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: catalog_categories_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا category.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CategoryRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Category'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: catalog_categories_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا category.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedCategoryRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Category'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: catalog_categories_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا category.
+        required: true
+      tags:
+      - catalog
+      responses:
+        '204':
+          description: No response body
+  /api/v1/catalog/modifier-groups/:
+    get:
+      operationId: catalog_modifier_groups_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - catalog
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ModifierGroup'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: catalog_modifier_groups_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModifierGroupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ModifierGroupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ModifierGroupRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ModifierGroup'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/catalog/modifier-groups/{id}/:
+    get:
+      operationId: catalog_modifier_groups_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا modifier group.
+        required: true
+      tags:
+      - catalog
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ModifierGroup'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: catalog_modifier_groups_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا modifier group.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModifierGroupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ModifierGroupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ModifierGroupRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ModifierGroup'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: catalog_modifier_groups_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا modifier group.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedModifierGroupRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedModifierGroupRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedModifierGroupRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ModifierGroup'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: catalog_modifier_groups_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا modifier group.
+        required: true
+      tags:
+      - catalog
+      responses:
+        '204':
+          description: No response body
+  /api/v1/catalog/products/:
+    get:
+      operationId: catalog_products_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: query
+        name: category
+        schema:
+          type: string
+          format: uuid
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: is_sellable
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      - in: query
+        name: station
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - catalog
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedProductList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: catalog_products_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Product'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/catalog/products/{id}/:
+    get:
+      operationId: catalog_products_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product.
+        required: true
+      tags:
+      - catalog
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Product'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: catalog_products_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Product'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: catalog_products_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Product'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: catalog_products_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product.
+        required: true
+      tags:
+      - catalog
+      responses:
+        '204':
+          description: No response body
+  /api/v1/catalog/products/{id}/variants/:
+    post:
+      operationId: catalog_products_variants_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: Add a variant
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ProductVariant'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/catalog/variants/:
+    get:
+      operationId: catalog_variants_list
+      description: |-
+        Price changes, always recorded.
+
+        A receipt is a legal record of what was sold at what price, so every change
+        leaves a trail that explains why last Monday's total differs from today's.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - catalog
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedProductVariantList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: catalog_variants_create
+      description: |-
+        Price changes, always recorded.
+
+        A receipt is a legal record of what was sold at what price, so every change
+        leaves a trail that explains why last Monday's total differs from today's.
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ProductVariant'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/catalog/variants/{id}/:
+    get:
+      operationId: catalog_variants_retrieve
+      description: |-
+        Price changes, always recorded.
+
+        A receipt is a legal record of what was sold at what price, so every change
+        leaves a trail that explains why last Monday's total differs from today's.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product variant.
+        required: true
+      tags:
+      - catalog
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ProductVariant'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/catalog/variants/change/:
+    post:
+      operationId: catalog_variants_change_create
+      description: |-
+        Price changes, always recorded.
+
+        A receipt is a legal record of what was sold at what price, so every change
+        leaves a trail that explains why last Monday's total differs from today's.
+      summary: Change a variant's price
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PriceChangeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PriceChangeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PriceChangeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ProductVariant'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/inventory/adjustments/:
+    post:
+      operationId: inventory_adjustments_create
+      summary: Set stock to an absolute quantity
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdjustmentRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/StockMovement'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/inventory/counts/:
+    get:
+      operationId: inventory_counts_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedStockCountList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: inventory_counts_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockCountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StockCountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StockCountRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/StockCount'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/inventory/counts/{id}/:
+    get:
+      operationId: inventory_counts_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا stock count.
+        required: true
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/StockCount'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: inventory_counts_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا stock count.
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StockCountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StockCountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StockCountRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/StockCount'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: inventory_counts_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا stock count.
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStockCountRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStockCountRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStockCountRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/StockCount'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: inventory_counts_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا stock count.
+        required: true
+      tags:
+      - inventory
+      responses:
+        '204':
+          description: No response body
+  /api/v1/inventory/counts/{id}/post/:
+    post:
+      operationId: inventory_counts_post_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: Post a count, turning variances into movements
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا stock count.
+        required: true
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/StockCount'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/inventory/items/:
+    get:
+      operationId: inventory_items_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - in: query
+        name: default_supplier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: item_type
+        schema:
+          type: string
+          enum:
+          - CONSUMABLE
+          - FINISHED
+          - PACKAGING
+          - RAW
+        description: |-
+          * `RAW` - RAW
+          * `CONSUMABLE` - CONSUMABLE
+          * `PACKAGING` - PACKAGING
+          * `FINISHED` - FINISHED
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedInventoryItemList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: inventory_items_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItemRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryItemRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryItemRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/InventoryItem'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/inventory/items/{id}/:
+    get:
+      operationId: inventory_items_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا inventory item.
+        required: true
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/InventoryItem'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: inventory_items_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا inventory item.
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryItemRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/InventoryItemRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/InventoryItemRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/InventoryItem'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: inventory_items_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا inventory item.
+        required: true
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedInventoryItemRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/InventoryItem'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: inventory_items_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا inventory item.
+        required: true
+      tags:
+      - inventory
+      responses:
+        '204':
+          description: No response body
+  /api/v1/inventory/levels/:
+    get:
+      operationId: inventory_levels_list
+      description: Current stock. `?low_stock=true` for the reorder list.
+      summary: Current stock levels
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockLevel'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/inventory/movements/:
+    get:
+      operationId: inventory_movements_list
+      description: The ledger. Read-only by design — movements are written by services.
+      summary: Stock ledger
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/StockMovement'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/inventory/reconcile/:
+    get:
+      operationId: inventory_reconcile_list
+      description: |-
+        Replay the ledger and report any drift.
+
+        A clean result proves the projection still matches the ledger; a drift is a
+        bug in a write path, not a stock problem.
+      summary: Reconcile levels against the ledger
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Drift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/inventory/waste/:
+    post:
+      operationId: inventory_waste_create
+      summary: Record waste
+      tags:
+      - inventory
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WasteRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WasteRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WasteRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/StockMovement'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/licensing/activate/:
     post:
       operationId: licensing_activate_create
@@ -1265,6 +3124,24 @@ components:
       - license_status
       - mode
       - offline_token
+    AdjustmentRequest:
+      type: object
+      properties:
+        item:
+          type: string
+          format: uuid
+        new_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - item
+      - new_quantity
+      - reason
     ApprovalToken:
       type: object
       properties:
@@ -1281,6 +3158,67 @@ components:
       - approved_by
       - expires_in
       - permission
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        name_ar:
+          type: string
+          maxLength: 100
+        name_en:
+          type: string
+          maxLength: 100
+        color:
+          type: string
+          description: '#RRGGBB for the POS grid.'
+          maxLength: 9
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+        product_count:
+          type: integer
+          readOnly: true
+          default: 0
+      required:
+      - id
+      - name_ar
+      - product_count
+    CategoryRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        name_en:
+          type: string
+          maxLength: 100
+        color:
+          type: string
+          description: '#RRGGBB for the POS grid.'
+          maxLength: 9
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - name_ar
     ChangePasswordRequest:
       type: object
       properties:
@@ -1295,6 +3233,14 @@ components:
       required:
       - current_password
       - new_password
+    CostingMethodEnum:
+      enum:
+      - WEIGHTED_AVG
+      - FIFO
+      type: string
+      description: |-
+        * `WEIGHTED_AVG` - WEIGHTED_AVG
+        * `FIFO` - FIFO
     Detail:
       type: object
       description: |-
@@ -1416,6 +3362,31 @@ components:
       required:
       - device_id
       - device_secret
+    Drift:
+      type: object
+      properties:
+        item_code:
+          type: string
+        item_name:
+          type: string
+        level_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        ledger_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        difference:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+      required:
+      - difference
+      - item_code
+      - item_name
+      - ledger_quantity
+      - level_quantity
     EventEnum:
       enum:
       - CREATED
@@ -1517,6 +3488,111 @@ components:
       - offline_token
       - server_time
       - stage
+    InventoryItem:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 32
+        name_ar:
+          type: string
+          maxLength: 200
+        name_en:
+          type: string
+          maxLength: 200
+        item_type:
+          $ref: '#/components/schemas/ItemTypeEnum'
+        base_unit:
+          type: string
+          format: uuid
+        base_unit_code:
+          type: string
+          readOnly: true
+        default_supplier:
+          type: string
+          format: uuid
+          nullable: true
+        minimum_stock:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        costing_method:
+          $ref: '#/components/schemas/CostingMethodEnum'
+        is_active:
+          type: boolean
+        quantity_on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        weighted_avg_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          readOnly: true
+      required:
+      - base_unit
+      - base_unit_code
+      - code
+      - id
+      - name_ar
+      - quantity_on_hand
+      - weighted_avg_cost
+    InventoryItemRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 200
+        name_en:
+          type: string
+          maxLength: 200
+        item_type:
+          $ref: '#/components/schemas/ItemTypeEnum'
+        base_unit:
+          type: string
+          format: uuid
+        default_supplier:
+          type: string
+          format: uuid
+          nullable: true
+        minimum_stock:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        costing_method:
+          $ref: '#/components/schemas/CostingMethodEnum'
+        is_active:
+          type: boolean
+      required:
+      - base_unit
+      - code
+      - name_ar
     IssueLicenseRequest:
       type: object
       properties:
@@ -1651,6 +3727,18 @@ components:
       - starts_at
       - status
       - warning_ar
+    ItemTypeEnum:
+      enum:
+      - RAW
+      - CONSUMABLE
+      - PACKAGING
+      - FINISHED
+      type: string
+      description: |-
+        * `RAW` - RAW
+        * `CONSUMABLE` - CONSUMABLE
+        * `PACKAGING` - PACKAGING
+        * `FINISHED` - FINISHED
     License:
       type: object
       properties:
@@ -1907,6 +3995,142 @@ components:
       - organization_id
       - permissions
       - roles
+    Modifier:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name_ar:
+          type: string
+          maxLength: 100
+        price_delta:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        inventory_item:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set when the modifier consumes stock, e.g. an extra shot.
+        quantity_consumed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - id
+      - name_ar
+    ModifierGroup:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name_ar:
+          type: string
+          maxLength: 100
+        min_select:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        max_select:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        is_required:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        modifiers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Modifier'
+          readOnly: true
+      required:
+      - id
+      - modifiers
+      - name_ar
+    ModifierGroupRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        min_select:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        max_select:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        is_required:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - name_ar
+    ModifierRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        price_delta:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        inventory_item:
+          type: string
+          format: uuid
+          nullable: true
+          description: Set when the modifier consumes stock, e.g. an extra shot.
+        quantity_consumed:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - name_ar
+    MovementTypeEnum:
+      enum:
+      - OPENING
+      - PURCHASE
+      - SALE
+      - WASTE
+      - ADJUSTMENT
+      - RETURN
+      - TRANSFER
+      - COUNT
+      type: string
+      description: |-
+        * `OPENING` - OPENING
+        * `PURCHASE` - PURCHASE
+        * `SALE` - SALE
+        * `WASTE` - WASTE
+        * `ADJUSTMENT` - ADJUSTMENT
+        * `RETURN` - RETURN
+        * `TRANSFER` - TRANSFER
+        * `COUNT` - COUNT
     OriginEnum:
       enum:
       - ORGANIZATION
@@ -1921,6 +4145,216 @@ components:
         * `DEVICE` - DEVICE
         * `ROLE` - ROLE
         * `DEFAULT` - DEFAULT
+    PaginatedInventoryItemList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryItem'
+    PaginatedProductList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Product'
+    PaginatedProductVariantList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+    PaginatedStockCountList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockCount'
+    PatchedCategoryRequest:
+      type: object
+      properties:
+        parent:
+          type: string
+          format: uuid
+          nullable: true
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        name_en:
+          type: string
+          maxLength: 100
+        color:
+          type: string
+          description: '#RRGGBB for the POS grid.'
+          maxLength: 9
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+    PatchedInventoryItemRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 32
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 200
+        name_en:
+          type: string
+          maxLength: 200
+        item_type:
+          $ref: '#/components/schemas/ItemTypeEnum'
+        base_unit:
+          type: string
+          format: uuid
+        default_supplier:
+          type: string
+          format: uuid
+          nullable: true
+        minimum_stock:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        costing_method:
+          $ref: '#/components/schemas/CostingMethodEnum'
+        is_active:
+          type: boolean
+    PatchedModifierGroupRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        min_select:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        max_select:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        is_required:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+    PatchedProductRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          format: uuid
+        station:
+          type: string
+          format: uuid
+          nullable: true
+          description: Where this is prepared. Drives kitchen ticket routing.
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 32
+        barcode:
+          type: string
+          maxLength: 64
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 200
+        name_en:
+          type: string
+          maxLength: 200
+        description_ar:
+          type: string
+        image:
+          type: string
+          format: binary
+          nullable: true
+        tax_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+          description: Null = use the branch VAT rate.
+        is_tax_exempt:
+          type: boolean
+        track_inventory:
+          type: boolean
+          description: False for items with no recipe, e.g. a bought-in bottle.
+        is_sellable:
+          type: boolean
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
     PatchedSettingWriteRequestRequest:
       type: object
       properties:
@@ -1933,6 +4367,235 @@ components:
           type: object
           additionalProperties: {}
           description: Setting key → new value. Each is validated independently.
+    PatchedStockCountRequest:
+      type: object
+      properties:
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 32
+        notes:
+          type: string
+        counted_at:
+          type: string
+          format: date-time
+          nullable: true
+    PriceChangeRequest:
+      type: object
+      properties:
+        variant:
+          type: string
+          format: uuid
+        new_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        reason:
+          type: string
+          maxLength: 200
+      required:
+      - new_price
+      - variant
+    Product:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        category:
+          type: string
+          format: uuid
+        category_name:
+          type: string
+          readOnly: true
+        station:
+          type: string
+          format: uuid
+          nullable: true
+          description: Where this is prepared. Drives kitchen ticket routing.
+        station_name:
+          type: string
+          readOnly: true
+        sku:
+          type: string
+          maxLength: 32
+        barcode:
+          type: string
+          maxLength: 64
+        name_ar:
+          type: string
+          maxLength: 200
+        name_en:
+          type: string
+          maxLength: 200
+        description_ar:
+          type: string
+        image:
+          type: string
+          format: uri
+          nullable: true
+        tax_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+          description: Null = use the branch VAT rate.
+        is_tax_exempt:
+          type: boolean
+        track_inventory:
+          type: boolean
+          description: False for items with no recipe, e.g. a bought-in bottle.
+        is_sellable:
+          type: boolean
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductVariant'
+          readOnly: true
+      required:
+      - category
+      - category_name
+      - id
+      - name_ar
+      - sku
+      - station_name
+      - variants
+    ProductRequest:
+      type: object
+      properties:
+        category:
+          type: string
+          format: uuid
+        station:
+          type: string
+          format: uuid
+          nullable: true
+          description: Where this is prepared. Drives kitchen ticket routing.
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 32
+        barcode:
+          type: string
+          maxLength: 64
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 200
+        name_en:
+          type: string
+          maxLength: 200
+        description_ar:
+          type: string
+        image:
+          type: string
+          format: binary
+          nullable: true
+        tax_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+          description: Null = use the branch VAT rate.
+        is_tax_exempt:
+          type: boolean
+        track_inventory:
+          type: boolean
+          description: False for items with no recipe, e.g. a bought-in bottle.
+        is_sellable:
+          type: boolean
+        is_active:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+      required:
+      - category
+      - name_ar
+      - sku
+    ProductVariant:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name_ar:
+          type: string
+          description: وسط / كبير. Blank if sole.
+          maxLength: 100
+        sku:
+          type: string
+          maxLength: 32
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+          description: Computed from the recipe. Never entered by hand.
+        margin:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        margin_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          readOnly: true
+        is_default:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - cost
+      - id
+      - margin
+      - margin_percent
+      - price
+      - sku
+    ProductVariantRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          description: وسط / كبير. Blank if sole.
+          maxLength: 100
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 32
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        is_default:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
+      required:
+      - price
+      - sku
     RefreshRequestRequest:
       type: object
       properties:
@@ -2113,6 +4776,208 @@ components:
       required:
       - applied
       - errors
+    StockCount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        reference:
+          type: string
+          maxLength: 32
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StockCountStatusEnum'
+          readOnly: true
+        notes:
+          type: string
+        counted_at:
+          type: string
+          format: date-time
+          nullable: true
+        posted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - posted_at
+      - reference
+      - status
+    StockCountRequest:
+      type: object
+      properties:
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 32
+        notes:
+          type: string
+        counted_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - reference
+    StockCountStatusEnum:
+      enum:
+      - DRAFT
+      - COUNTING
+      - REVIEW
+      - POSTED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - DRAFT
+        * `COUNTING` - COUNTING
+        * `REVIEW` - REVIEW
+        * `POSTED` - POSTED
+        * `CANCELLED` - CANCELLED
+    StockLevel:
+      type: object
+      properties:
+        item:
+          type: string
+          format: uuid
+          readOnly: true
+        item_code:
+          type: string
+          readOnly: true
+        item_name:
+          type: string
+          readOnly: true
+        unit_code:
+          type: string
+          readOnly: true
+        quantity_on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        quantity_reserved:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Committed to open, unpaid orders — so low-stock alerts reflect
+            reality.
+        quantity_available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        weighted_avg_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          readOnly: true
+        total_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        is_low:
+          type: boolean
+          readOnly: true
+        last_movement_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - is_low
+      - item
+      - item_code
+      - item_name
+      - last_movement_at
+      - quantity_available
+      - quantity_on_hand
+      - quantity_reserved
+      - total_value
+      - unit_code
+      - weighted_avg_cost
+    StockMovement:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        item:
+          type: string
+          format: uuid
+          readOnly: true
+        item_code:
+          type: string
+          readOnly: true
+        item_name:
+          type: string
+          readOnly: true
+        movement_type:
+          allOf:
+          - $ref: '#/components/schemas/MovementTypeEnum'
+          readOnly: true
+        quantity_delta:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          description: 'Signed: negative consumes stock.'
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          readOnly: true
+        balance_after:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        value_delta:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        ref_type:
+          type: string
+          readOnly: true
+        ref_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        user_name:
+          type: string
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - balance_after
+      - id
+      - item
+      - item_code
+      - item_name
+      - movement_type
+      - occurred_at
+      - quantity_delta
+      - reason
+      - ref_id
+      - ref_type
+      - unit_cost
+      - user_name
+      - value_delta
     SystemInfo:
       type: object
       properties:
@@ -2166,6 +5031,24 @@ components:
       - permission
       - pin
       - user_id
+    WasteRequest:
+      type: object
+      properties:
+        item:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+      required:
+      - item
+      - quantity
+      - reason
     ErrorEnvelope:
       type: object
       properties:
