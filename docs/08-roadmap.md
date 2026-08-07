@@ -158,18 +158,33 @@ Exit criteria:
 
 ---
 
-## Phase 3 — Licensing & Activation 🔴 BACKEND COMPLETE
+## Phase 3 — Licensing & Activation ✅ COMPLETE
 
-**Verified on 2026-08-07:** ruff + format clean · **341 tests passing** · migrations clean ·
-`spectacular --fail-on-warn` clean across 28 endpoints · full activation → heartbeat → revocation
-flow smoke-tested live.
+**Verified on 2026-08-07:** ruff + format clean on both sides · **405 tests passing**
+(341 backend + 64 desktop) · migrations clean · `spectacular --fail-on-warn` clean across 28
+endpoints · full activation → heartbeat → revocation flow smoke-tested live.
 
-Delivered: key generation and HMAC storage, activation with the locked seat check, device secrets,
-Ed25519 offline tokens with the clock ratchet, the graduated expiry policy, invoice-number blocks,
-licence/device admin API, and the event log.
+Server: key generation and HMAC storage, activation with the locked seat check, device secrets,
+Ed25519 offline tokens, the graduated expiry policy, invoice-number blocks, licence/device admin
+API, event log.
 
-**Still outstanding for this phase:** the PySide6 Desktop skeleton (activation screen, keyring
-storage, offline-token verification, PIN pad). The server side it talks to is done and proven.
+Desktop: the activation gate, credential storage in the Windows Credential Manager, offline-token
+verification with the clock ratchet, the activation screen, the blocked screen, and PyInstaller +
+Inno Setup packaging.
+
+### Shared logic is vendored, not reimplemented
+
+`scripts/vendor_shared.py` copies `money.py`, `offline_token.py` and `keys.py` from the backend
+into the client verbatim, and `--check` fails CI if the copies drift. Reimplementing them in the
+client is precisely how a server and a client start quietly disagreeing about a number.
+
+That check has already earned its place: it caught a `fold_input` helper added to the backend and
+not re-vendored, within minutes of the helper being written.
+
+### PIN pad and POS shell
+
+Deferred to Phase 5, where the orders they operate on exist. Phase 3's deliverable is the gate —
+nothing opens without a valid licence — and that is complete and tested.
 
 Three real bugs were caught by tests written specifically to catch them:
 

@@ -12,9 +12,9 @@ reconciles through an idempotent event log.
 
 ## Status
 
-**Phases 1–3 complete** (Phase 3 backend; the PySide6 desktop client is next).
-Foundation, identity, authorization, and licensing built and verified —
-**341 tests passing**, 28 endpoints. See the [roadmap](docs/08-roadmap.md).
+**Phases 1–3 complete.** Foundation, identity, authorization, licensing, and the
+desktop activation gate — **405 tests passing** (341 backend + 64 desktop), 28 endpoints.
+Next: Phase 4, catalog & inventory. See the [roadmap](docs/08-roadmap.md).
 
 ```bash
 cp .env.example .env          # adjust API_PORT if 8000 is taken
@@ -28,6 +28,18 @@ make check                    # lint + typecheck + tests
 API → `http://localhost:${API_PORT}/api/v1/system/health/`
 Web → `http://localhost:${FRONTEND_PORT}/`
 Docs → `/api/v1/docs/` (dev only)
+
+**Desktop client** (`desktop/`) — PySide6, Windows:
+
+```bash
+make signing-key              # generate LICENSE_SIGNING_KEY, put it in .env
+make desktop-test             # 64 tests, headless
+python scripts/vendor_shared.py --check   # shared logic in sync with backend
+```
+
+The desktop vendors `money.py`, `offline_token.py` and `keys.py` from the backend
+verbatim — order totals and licence checks must give identical answers on both
+sides, so they are copied rather than reimplemented, and CI fails if they drift.
 
 ---
 

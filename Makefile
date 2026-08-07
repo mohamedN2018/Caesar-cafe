@@ -66,3 +66,24 @@ seed:  ## Load demo data (Phase 2+)
 
 clean:  ## Remove containers and volumes — DESTROYS LOCAL DATA
 	$(COMPOSE) down -v
+
+# ── Desktop client ───────────────────────────────────────────────────────────
+.PHONY: vendor vendor-check desktop-build desktop-test desktop-lint signing-key
+
+vendor:  ## Copy shared logic modules from backend into the desktop client
+	python scripts/vendor_shared.py
+
+vendor-check:  ## Fail if the vendored copies have drifted (CI runs this)
+	python scripts/vendor_shared.py --check
+
+desktop-build:  ## Build the desktop test image
+	docker build -f desktop/Dockerfile.test -t caesar-desktop-test desktop
+
+desktop-test: desktop-build  ## Run the desktop suite headless
+	docker run --rm -v "$(CURDIR):/repo" -w /repo/desktop caesar-desktop-test pytest -q
+
+desktop-lint: desktop-build  ## Lint the desktop client
+	docker run --rm -v "$(CURDIR):/repo" -w /repo/desktop caesar-desktop-test ruff check .
+
+signing-key:  ## Generate the Ed25519 keypair for offline licence tokens
+	$(COMPOSE) run --rm api python manage.py generate_signing_key
