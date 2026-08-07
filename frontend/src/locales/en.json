@@ -1,0 +1,19 @@
+{
+  "app": {
+    "title": "Caesar Cafe",
+    "subtitle": "Central management system",
+    "phase": "Phase 1 — Foundation"
+  },
+  "health": {
+    "title": "System health",
+    "status": "Status",
+    "version": "Version",
+    "database": "Database"
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "reset": "Reset to default"
+  }
+}

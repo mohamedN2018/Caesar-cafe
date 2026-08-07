@@ -1,0 +1,14 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Arabic-first typography. Use logical properties (ms-/me-/ps-/pe-) throughout
+   rather than left/right, so English mode mirrors correctly without an audit. */
+@layer base {
+  html {
+    font-feature-settings: 'kern' 1;
+  }
+  body {
+    @apply font-sans antialiased;
+  }
+}

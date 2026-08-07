@@ -1,0 +1,1250 @@
+openapi: 3.0.3
+info:
+  title: Caesar Cafe API
+  version: 1.0.0
+  description: POS, kitchen, inventory and management API for كافيه القيصر.
+paths:
+  /api/v1/auth/change-password/:
+    post:
+      operationId: auth_change_password_create
+      summary: Change your own password
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SimpleResult'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: Web login. Rate-limited per IP and per account (threat D1).
+      summary: Log in with email and password
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LoginRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/TokenPair'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      summary: Log out
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/LogoutRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/LogoutRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SimpleResult'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/me/:
+    get:
+      operationId: auth_me_retrieve
+      description: Profile plus the effective permission set the UI uses to shape
+        itself.
+      summary: Current principal
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Me'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/mfa/confirm/:
+    post:
+      operationId: auth_mfa_confirm_create
+      summary: Confirm MFA enrolment
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MFAConfirmRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MFAConfirmRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MFAConfirmRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SimpleResult'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/mfa/disable/:
+    post:
+      operationId: auth_mfa_disable_create
+      summary: Disable MFA
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ChangePasswordRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SimpleResult'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+        '403':
+          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/mfa/setup/:
+    post:
+      operationId: auth_mfa_setup_create
+      summary: Begin MFA enrolment
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/MFASetup'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: Rotate a refresh token. Reuse revokes every session for the account.
+      summary: Rotate the refresh token
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RefreshRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RefreshRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/TokenPair'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/sessions/:
+    get:
+      operationId: auth_sessions_retrieve
+      description: Active sessions, so a user can spot a login they do not recognise.
+      summary: List your active sessions
+      tags:
+      - auth
+      responses:
+        '200':
+          description: No response body
+    delete:
+      operationId: auth_sessions_destroy
+      description: Active sessions, so a user can spot a login they do not recognise.
+      summary: Revoke all your other sessions
+      tags:
+      - auth
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SimpleResult'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/set-pin/:
+    post:
+      operationId: auth_set_pin_create
+      description: Setting a POS PIN requires the account password, not just a session.
+      summary: Set your POS PIN
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetPinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetPinRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SimpleResult'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/auth/verify-pin/:
+    post:
+      operationId: auth_verify_pin_create
+      description: |-
+        Step-up approval (docs/05).
+
+        A manager enters their PIN to authorize ONE action for the cashier who is
+        already logged in. The cashier is never logged out, and both identities are
+        recorded against the resulting operation.
+      summary: Manager step-up approval
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerifyPinRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerifyPinRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerifyPinRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ApprovalToken'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - ar
+          - en
+      tags:
+      - schema
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/yaml:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/settings/:
+    get:
+      operationId: settings_retrieve
+      description: Resolved values for a scope, each tagged with where it came from.
+      summary: Resolved settings for a scope
+      tags:
+      - settings
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SettingListResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: settings_partial_update
+      description: Resolved values for a scope, each tagged with where it came from.
+      summary: Write setting overrides
+      tags:
+      - settings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingWriteRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingWriteRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSettingWriteRequestRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SettingWriteResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+        '207':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SettingWriteResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/settings/{key}/:
+    delete:
+      operationId: settings_destroy
+      summary: Reset a setting to its inherited or default value
+      parameters:
+      - in: path
+        name: key
+        schema:
+          type: string
+        required: true
+      tags:
+      - settings
+      responses:
+        '204':
+          description: No response body
+  /api/v1/settings/history/:
+    get:
+      operationId: settings_history_retrieve
+      summary: Who changed what, and when
+      tags:
+      - settings
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SettingHistoryResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/settings/schema/:
+    get:
+      operationId: settings_schema_retrieve
+      description: |-
+        The registry, as data.
+
+        The Web Admin renders its entire settings UI from this — grouped, typed,
+        validated, with Arabic labels and help. A new setting appears in the UI
+        with no frontend change.
+      summary: Settings registry schema
+      tags:
+      - settings
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SettingSchemaResponse'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/system/health/:
+    get:
+      operationId: system_health_retrieve
+      description: Reports API liveness and database reachability.
+      summary: Health check
+      tags:
+      - system
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Health'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+        '503':
+          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/system/info/:
+    get:
+      operationId: system_info_retrieve
+      description: |-
+        Version negotiation for Desktop clients (§61).
+
+        A client below `min_supported_client_version` is refused everything except
+        the heartbeat — one that predates a breaking sync change must not be allowed
+        to corrupt data by guessing at the new contract.
+      summary: Server and client version information
+      tags:
+      - system
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SystemInfo'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+components:
+  schemas:
+    ApprovalToken:
+      type: object
+      properties:
+        approval_token:
+          type: string
+        expires_in:
+          type: integer
+        permission:
+          type: string
+        approved_by:
+          type: string
+      required:
+      - approval_token
+      - approved_by
+      - expires_in
+      - permission
+    ChangePasswordRequest:
+      type: object
+      properties:
+        current_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 10
+      required:
+      - current_password
+      - new_password
+    Health:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/StatusEnum'
+        version:
+          type: string
+        checks:
+          $ref: '#/components/schemas/HealthChecks'
+      required:
+      - checks
+      - status
+      - version
+    HealthChecks:
+      type: object
+      properties:
+        database:
+          type: boolean
+      required:
+      - database
+    LoginRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+        mfa_code:
+          type: string
+        recovery_code:
+          type: string
+      required:
+      - email
+      - password
+    LogoutRequestRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    MFAConfirmRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          pattern: ^\d{6}$
+      required:
+      - code
+    MFASetup:
+      type: object
+      properties:
+        secret:
+          type: string
+        provisioning_uri:
+          type: string
+        recovery_codes:
+          type: array
+          items:
+            type: string
+      required:
+      - provisioning_uri
+      - recovery_codes
+      - secret
+    Me:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        full_name_ar:
+          type: string
+        full_name_en:
+          type: string
+        organization_id:
+          type: string
+          format: uuid
+          nullable: true
+        branch_id:
+          type: string
+          format: uuid
+          nullable: true
+        kind:
+          type: string
+        is_superuser:
+          type: boolean
+        mfa_enabled:
+          type: boolean
+        has_pin:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            type: string
+        roles:
+          type: array
+          items:
+            type: string
+      required:
+      - branch_id
+      - email
+      - full_name_ar
+      - full_name_en
+      - has_pin
+      - id
+      - is_superuser
+      - kind
+      - mfa_enabled
+      - organization_id
+      - permissions
+      - roles
+    OriginEnum:
+      enum:
+      - ORGANIZATION
+      - BRANCH
+      - DEVICE
+      - ROLE
+      - DEFAULT
+      type: string
+      description: |-
+        * `ORGANIZATION` - ORGANIZATION
+        * `BRANCH` - BRANCH
+        * `DEVICE` - DEVICE
+        * `ROLE` - ROLE
+        * `DEFAULT` - DEFAULT
+    PatchedSettingWriteRequestRequest:
+      type: object
+      properties:
+        scope:
+          $ref: '#/components/schemas/ScopeEnum'
+        scope_id:
+          type: string
+          format: uuid
+        values:
+          type: object
+          additionalProperties: {}
+          description: Setting key → new value. Each is validated independently.
+    RefreshRequestRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+      required:
+      - refresh
+    ResolvedSetting:
+      type: object
+      properties:
+        value:
+          nullable: true
+        origin:
+          $ref: '#/components/schemas/OriginEnum'
+        is_default:
+          type: boolean
+      required:
+      - is_default
+      - origin
+      - value
+    ScopeEnum:
+      enum:
+      - ORGANIZATION
+      - BRANCH
+      - DEVICE
+      - ROLE
+      type: string
+      description: |-
+        * `ORGANIZATION` - ORGANIZATION
+        * `BRANCH` - BRANCH
+        * `DEVICE` - DEVICE
+        * `ROLE` - ROLE
+    SetPinRequest:
+      type: object
+      properties:
+        pin:
+          type: string
+          writeOnly: true
+          minLength: 1
+          pattern: ^\d{4,6}$
+        current_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+      required:
+      - current_password
+      - pin
+    SettingDefinition:
+      type: object
+      properties:
+        key:
+          type: string
+        type:
+          type: string
+        scope:
+          type: string
+        default:
+          nullable: true
+        label_ar:
+          type: string
+        label_en:
+          type: string
+        help_ar:
+          type: string
+        choices:
+          type: array
+          items:
+            type: string
+        permission:
+          type: string
+        high_impact:
+          type: boolean
+          description: Financial, security or licensing — the UI confirms before saving.
+        affects_open_orders:
+          type: boolean
+          description: Applies only to orders opened after the change.
+        pushes_to_desktop:
+          type: boolean
+      required:
+      - affects_open_orders
+      - choices
+      - default
+      - help_ar
+      - high_impact
+      - key
+      - label_ar
+      - label_en
+      - permission
+      - pushes_to_desktop
+      - scope
+      - type
+    SettingHistoryEntry:
+      type: object
+      properties:
+        key:
+          type: string
+        scope_type:
+          type: string
+        scope_id:
+          type: string
+          format: uuid
+        old_value:
+          nullable: true
+        new_value:
+          nullable: true
+        changed_by:
+          type: string
+          nullable: true
+        ip_address:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - changed_by
+      - created_at
+      - ip_address
+      - key
+      - new_value
+      - old_value
+      - scope_id
+      - scope_type
+    SettingHistoryResponse:
+      type: object
+      properties:
+        history:
+          type: array
+          items:
+            $ref: '#/components/schemas/SettingHistoryEntry'
+      required:
+      - history
+    SettingListResponse:
+      type: object
+      properties:
+        settings:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ResolvedSetting'
+      required:
+      - settings
+    SettingSchemaResponse:
+      type: object
+      properties:
+        groups:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/SettingDefinition'
+        count:
+          type: integer
+      required:
+      - count
+      - groups
+    SettingWriteResponse:
+      type: object
+      properties:
+        applied:
+          type: object
+          additionalProperties: {}
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Keys that failed validation. A 207 means the write was partial.
+      required:
+      - applied
+      - errors
+    SimpleResult:
+      type: object
+      properties:
+        detail:
+          type: string
+      required:
+      - detail
+    StatusEnum:
+      enum:
+      - healthy
+      - degraded
+      type: string
+      description: |-
+        * `healthy` - healthy
+        * `degraded` - degraded
+    SystemInfo:
+      type: object
+      properties:
+        server_version:
+          type: string
+        min_supported_client_version:
+          type: string
+          description: Clients below this are refused everything except the heartbeat.
+        api_version:
+          type: string
+      required:
+      - api_version
+      - min_supported_client_version
+      - server_version
+    TokenPair:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        access_expires_in:
+          type: integer
+        refresh_expires_in:
+          type: integer
+      required:
+      - access
+      - access_expires_in
+      - refresh
+      - refresh_expires_in
+    VerifyPinRequestRequest:
+      type: object
+      description: 'Step-up approval: a manager authorizes one action for one target.'
+      properties:
+        user_id:
+          type: string
+          format: uuid
+          description: The approver — the person entering their PIN.
+        pin:
+          type: string
+          writeOnly: true
+          minLength: 1
+        permission:
+          type: string
+          minLength: 1
+        target:
+          type: string
+        amount:
+          type: string
+      required:
+      - permission
+      - pin
+      - user_id
+    ErrorEnvelope:
+      type: object
+      properties:
+        success:
+          type: boolean
+          enum:
+          - false
+        message:
+          type: string
+          description: Localized, safe to display.
+        code:
+          type: string
+          description: Stable machine-readable code. Never localized.
+          example: VALIDATION_ERROR
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          description: Per-field messages, for form binding.
+        meta:
+          type: object
+          properties:
+            request_id:
+              type: string
+              description: Correlates this response with server logs.
+      required:
+      - success
+      - message
+      - code
