@@ -379,6 +379,29 @@ class TestCatalogueCoverage:
         order_services.void_order(order, reason="إلغاء كامل", actor=user)
         self._assert("order.voided")
 
+    def test_a_reprint_is_recorded(self, branch, menu, cash, make_user, authed) -> None:
+        """
+        A duplicate copy of a paid receipt is the paperwork a refund fraud needs,
+        so who asked for one and when is part of the trail.
+        """
+        import uuid
+
+        user = make_user(email="reprint@caesar.test", role="BRANCH_MANAGER")
+        order, _ = order_with_item(branch, menu, user)
+        payment_services.take_payment(
+            order=order,
+            method=cash,
+            amount=order.grand_total,
+            idempotency_key=str(uuid.uuid4()),
+            user=user,
+        )
+
+        client = authed(user, branch=branch)
+        assert client.get(f"/api/v1/orders/{order.id}/receipt/?reprint=true").status_code == 200
+
+        row = self._assert("order.receipt_reprinted")
+        assert row.object_label
+
     def test_payments_and_a_reopen_attempt(self, branch, menu, cash, make_user) -> None:
         import uuid
 

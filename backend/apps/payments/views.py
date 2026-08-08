@@ -145,6 +145,16 @@ class PaymentView(APIView):
         if method is None:
             raise NotFoundError("طريقة الدفع غير موجودة", code="METHOD_NOT_FOUND")
 
+        # Paying less than the balance IS a split payment — the second tender is
+        # simply the rest of it. Charging it to `payments.take` alone would give
+        # every role that can settle a bill the ability to leave one half-paid,
+        # which is the state a walk-out hides in. A waiter has `payments.take`
+        # and not `payments.split`, and docs/05 means that.
+        if data["amount"] < order.balance_due and not principal.has("payments.split"):
+            from apps.core.exceptions import PermissionDeniedError
+
+            raise PermissionDeniedError("ليس لديك صلاحية: payments.split")
+
         payment = services.take_payment(
             order=order,
             method=method,

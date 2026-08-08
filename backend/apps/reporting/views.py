@@ -30,7 +30,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.authz.drf import HasPermission, IsAuthenticatedPrincipal, auth_context
-from apps.core.exceptions import AppError
+from apps.core.exceptions import AppError, PermissionDeniedError
 from apps.organizations.models import Branch
 
 from . import business_day, exports, reports, rollups
@@ -112,6 +112,15 @@ class ReportView(APIView):
         payload = self.compute(branch, date_from, date_to)
 
         if request.query_params.get("export") == "csv":
+            # An export is not a lesser form of access — it needs the report's
+            # own permission, checked above like any other request. It is a
+            # BROADER one: a file leaves the building. `reports.export` is the
+            # difference between reading the day's takings on a screen in the
+            # office and walking out with them, and docs/05 gives it to
+            # managers and the accountant, not to whoever can open the page.
+            if not auth_context(request).has("reports.export"):
+                raise PermissionDeniedError("ليس لديك صلاحية: reports.export")
+
             response = HttpResponse(
                 exports.to_csv(self.report_key, payload),
                 content_type="text/csv; charset=utf-8",

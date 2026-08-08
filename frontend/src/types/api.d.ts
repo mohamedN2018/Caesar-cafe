@@ -2033,6 +2033,12 @@ export interface paths {
          *
          *     Rendered identically to a thermal printer, a PDF or a preview pane — so
          *     what the cashier sees is what the customer receives.
+         *
+         *     Reading the document is `orders.view`. Asking for a **duplicate copy** of an
+         *     already-issued invoice is `orders.reprint`, and it writes an audit row.
+         *     Reprinting is a known loss-prevention concern — a second copy of a paid
+         *     receipt is the paperwork a refund fraud needs — so the matrix in docs/05
+         *     separates the two, and this is where that separation is enforced.
          */
         get: operations["orders_receipt_retrieve"];
         put?: never;
@@ -10964,7 +10970,10 @@ export interface operations {
     };
     orders_receipt_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                /** @description Request a duplicate of an already-issued invoice. Requires `orders.reprint` and is audited. */
+                reprint?: boolean;
+            };
             header?: never;
             path: {
                 id: string;

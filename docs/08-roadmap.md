@@ -953,6 +953,39 @@ Exit criteria:
 
 ---
 
+### Three rules the matrix promised and nothing checked ✅ FIXED (2026-08-08)
+
+**Verified:** ruff + format clean · **883 tests passing** (16 new) ·
+`spectacular --fail-on-warn` clean.
+
+Twice in one day a permission code turned out to exist in the catalogue with no
+route enforcing it. That prompted a scan of all 74, and it found three more —
+this time not missing features but **missing checks on endpoints that already
+existed**:
+
+| code | what was wrong |
+|---|---|
+| `orders.reprint` | `GET /orders/{id}/receipt/` was gated on `orders.view`. Anyone who could see an order could take a duplicate of a paid invoice. |
+| `payments.split` | Paying less than the balance was charged to `payments.take` alone, so any role that could settle a bill could leave one half-paid. |
+| `reports.export` | `?export=csv` was gated identically to the JSON, so anybody who could read a report could walk out with the file. |
+
+All three are now enforced, and a reprint writes `order.receipt_reprinted` — a
+second copy of a paid receipt is the paperwork a refund fraud needs, so who
+asked and when is part of the trail. Reading a receipt on screen still needs
+only `orders.view`; the restriction is on the *copy*. Likewise removing
+`reports.export` takes away the file, not the screen.
+
+**The real fix is the guard.** `TestEveryCatalogCodeIsActuallyEnforced` now walks
+the catalogue in the reverse direction: every code must be declared on a route,
+checked inline, or listed in `NOT_YET_BUILT` with a written reason. A permission
+matrix describing rules the product does not have is worse than no matrix,
+because somebody staffs a cafe on the strength of it. Three entries remain on
+that list — printer configuration, table merge and per-line price override — all
+genuinely unbuilt features rather than unguarded ones, and a companion test
+fails if one of them quietly becomes enforced and is left behind.
+
+---
+
 ## Phase 9 — Audit & Security Hardening ✅ COMPLETE
 
 **Verified on 2026-08-08:** ruff + format clean · **743 tests passing** (40 new) · migrations

@@ -46,6 +46,7 @@ ACTIONS: tuple[ActionDef, ...] = (
     _a("order.discount_applied", "orders", "تطبيق خصم", Severity.NOTICE),
     _a("order.reopen_attempt", "orders", "محاولة إعادة فتح طلب مدفوع", Severity.WARNING),
     # ── Payments ─────────────────────────────────────────────────────────────
+    _a("order.receipt_reprinted", "orders", "إعادة طباعة فاتورة", Severity.NOTICE),
     _a("payment.taken", "payments", "تحصيل دفعة"),
     _a("payment.refunded", "payments", "استرجاع مبلغ", Severity.WARNING),
     # ── Catalog ──────────────────────────────────────────────────────────────

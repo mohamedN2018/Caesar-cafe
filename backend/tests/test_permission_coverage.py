@@ -80,6 +80,105 @@ class TestEveryRouteDeclaresAPermission:
         assert not unknown, "Undefined permission codes:\n  " + "\n  ".join(unknown)
 
 
+class TestEveryCatalogCodeIsActuallyEnforced:
+    """
+    The reverse direction, which is the one that fails quietly.
+
+    `TestEveryRouteDeclaresAPermission` catches a route that forgot its code.
+    Nothing caught a *code* that no route enforces — and that is not cosmetic:
+    docs/05 tells an owner that a cashier cannot reprint a receipt, and if
+    nothing checks `orders.reprint` then the matrix is describing a rule the
+    product does not have.
+
+    Found the hard way twice. Eleven `purchasing.*` codes sat unenforced because
+    `apps/purchasing` had services and no views at all; four `staff.*` codes sat
+    unenforced because there was no way to administer staff. Both looked complete
+    from the role catalogue.
+
+    A code counts as enforced if a route declares it, if some module checks it
+    inline (`principal.has(...)`, `enforce_permission(...)`,
+    `consume_approval_token(permission=...)`), or if it gates a settings key.
+    Anything else must be listed below with the reason — which turns silent dead
+    code into a decision somebody reviewed.
+    """
+
+    #: code -> why nothing enforces it yet. Every entry is a feature the product
+    #: does not have, NOT an unguarded one. Delete the entry when it is built.
+    NOT_YET_BUILT = {
+        "branch.manage_printers": "Printer configuration is per-device on the Desktop; "
+        "there is no server-side printer registry yet.",
+        "floor.merge": "Merging two table sessions is not implemented. Transfer is "
+        "(`floor.transfer`); merge needs a rule for two open orders' events.",
+        "orders.change_price": "A per-line price override is not implemented. Discounts "
+        "cover the cases we have; an arbitrary price would need its own audit shape.",
+    }
+
+    def _declared_on_routes(self) -> set[str]:
+        codes: set[str] = set()
+        for _path, _name, view_class in _api_routes():
+            if single := getattr(view_class, "required_permission", None):
+                codes.add(single)
+            per_method = getattr(view_class, "required_permissions", None)
+            if isinstance(per_method, dict):
+                codes.update(v for v in per_method.values() if v)
+        return codes
+
+    def _checked_inline(self) -> set[str]:
+        """
+        Codes named in a literal anywhere under `apps/`, outside the catalogue
+        and the role definitions that merely list them.
+        """
+        import re
+        from pathlib import Path
+
+        apps_dir = Path(__file__).resolve().parents[1] / "apps"
+        found: set[str] = set()
+
+        for path in apps_dir.rglob("*.py"):
+            if path.name == "catalog.py" and path.parent.name == "authz":
+                continue
+            if "migrations" in path.parts:
+                continue
+            source = path.read_text(encoding="utf-8")
+            for code in catalog.PERMISSION_CODES:
+                if re.search(rf"""['"]{re.escape(code)}['"]""", source):
+                    found.add(code)
+        return found
+
+    def test_no_catalog_code_is_silently_unenforced(self) -> None:
+        enforced = self._declared_on_routes() | self._checked_inline()
+        orphans = sorted(set(catalog.PERMISSION_CODES) - enforced - set(self.NOT_YET_BUILT))
+
+        assert not orphans, (
+            "These permission codes exist in the catalogue and nothing enforces them. "
+            "docs/05 promises a rule the product does not have. Either wire them up, "
+            "or add them to NOT_YET_BUILT with the reason:\n  " + "\n  ".join(orphans)
+        )
+
+    def test_the_not_yet_built_list_stays_honest(self) -> None:
+        """
+        Every excuse must name a real code, and must still be an excuse — an
+        entry left behind after the feature ships would hide the next regression
+        in that area.
+        """
+        unknown = [code for code in self.NOT_YET_BUILT if not catalog.is_valid(code)]
+        assert not unknown, f"NOT_YET_BUILT names codes that do not exist: {unknown}"
+
+        enforced = self._declared_on_routes() | self._checked_inline()
+        stale = sorted(set(self.NOT_YET_BUILT) & enforced)
+        assert not stale, (
+            "These are enforced now — remove them from NOT_YET_BUILT so the guard "
+            f"protects them again: {stale}"
+        )
+
+    def test_the_guard_would_catch_a_regression(self) -> None:
+        """A guard that cannot fail is not a guard."""
+        enforced = self._declared_on_routes() | self._checked_inline()
+        assert "orders.view" in enforced
+        assert "purchasing.receive" in enforced, "the gap this guard was written for"
+        assert "staff.reset_pin" in enforced, "and the second one"
+
+
 class TestCatalogIntegrity:
     def test_no_duplicate_codes(self) -> None:
         codes = [p.code for p in catalog.PERMISSIONS]

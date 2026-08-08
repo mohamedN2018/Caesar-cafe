@@ -11,12 +11,14 @@ from __future__ import annotations
 import logging
 
 from django.db.models import Count, Q
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.audit import services as audit
 from apps.authz.drf import HasPermission, IsAuthenticatedPrincipal, RequiresHuman, auth_context
 from apps.core.exceptions import AppError, NotFoundError, PermissionDeniedError
 
@@ -320,21 +322,65 @@ class OrderReceiptView(APIView):
 
     Rendered identically to a thermal printer, a PDF or a preview pane — so
     what the cashier sees is what the customer receives.
+
+    Reading the document is `orders.view`. Asking for a **duplicate copy** of an
+    already-issued invoice is `orders.reprint`, and it writes an audit row.
+    Reprinting is a known loss-prevention concern — a second copy of a paid
+    receipt is the paperwork a refund fraud needs — so the matrix in docs/05
+    separates the two, and this is where that separation is enforced.
     """
 
     permission_classes = [IsAuthenticatedPrincipal, HasPermission]
     required_permission = "orders.view"
 
-    @extend_schema(summary="Receipt document", responses={200: None})
+    @extend_schema(
+        summary="Receipt document",
+        parameters=[
+            OpenApiParameter(
+                "reprint",
+                OpenApiTypes.BOOL,
+                description=(
+                    "Request a duplicate of an already-issued invoice. "
+                    "Requires `orders.reprint` and is audited."
+                ),
+            )
+        ],
+        responses={200: None},
+    )
     def get(self, request: Request, pk) -> Response:
         from apps.payments.services import build_receipt
 
         order = _get_order(request, pk)
         invoice = getattr(order, "invoice", None)
+        is_reprint = request.query_params.get("reprint") == "true"
+
+        if is_reprint:
+            principal = auth_context(request)
+            if not principal.has("orders.reprint"):
+                raise PermissionDeniedError("ليس لديك صلاحية: orders.reprint")
+            if invoice is None:
+                raise AppError(
+                    "لا توجد فاتورة نهائية لإعادة طباعتها",
+                    code="NO_FINAL_INVOICE",
+                    status_code=409,
+                )
+            audit.record(
+                "order.receipt_reprinted",
+                obj=order,
+                object_label=invoice.serial,
+                detail={"serial": invoice.serial},
+            )
 
         # A settled order returns its FROZEN snapshot, never a live rebuild:
         # that is what makes a reprint byte-identical years later.
         if invoice is not None:
-            return Response({**invoice.snapshot, "serial": invoice.serial, "is_final": True})
+            return Response(
+                {
+                    **invoice.snapshot,
+                    "serial": invoice.serial,
+                    "is_final": True,
+                    "is_reprint": is_reprint,
+                }
+            )
 
-        return Response({**build_receipt(order), "is_final": False})
+        return Response({**build_receipt(order), "is_final": False, "is_reprint": False})
