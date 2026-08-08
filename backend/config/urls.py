@@ -29,6 +29,7 @@ api_v1 = [
     path("kitchen/", include("apps.kitchen.urls")),
     path("kids/", include("apps.kids.urls")),
     path("sync/", include("apps.sync.urls")),
+    path("reports/", include("apps.reporting.urls")),
     path("settings/", include("apps.configuration.urls")),
 ]
 

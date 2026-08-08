@@ -46,6 +46,12 @@ const router = createRouter({
           meta: { permission: 'shifts.view_all' },
         },
         {
+          path: 'reports',
+          name: 'reports',
+          component: () => import('@/views/reports/ReportsView.vue'),
+          meta: { permission: 'reports.sales' },
+        },
+        {
           path: 'kids',
           name: 'kids-board',
           component: () => import('@/views/kids/KidsBoardView.vue'),

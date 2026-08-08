@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -83,6 +84,7 @@ INSTALLED_APPS = [
     "apps.payments",
     "apps.kids",
     "apps.sync",
+    "apps.reporting",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -149,6 +151,19 @@ CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", REDIS_URL)
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_TIME_LIMIT = 600
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# Nightly rollups. 05:00 local, comfortably after the default 04:00 business-day
+# boundary — a job that ran at the boundary itself would race the last order of
+# the night. `days=2` re-does the day before yesterday too, which is the cheap
+# self-healing: a worker that was down overnight catches up without anyone
+# noticing, because rebuilding an existing day costs the same as building it.
+CELERY_BEAT_SCHEDULE = {
+    "nightly-rollups": {
+        "task": "reporting.build_rollups",
+        "schedule": crontab(hour=5, minute=15),
+        "kwargs": {"days": 2},
+    },
+}
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 # Argon2id first: memory-hard, and the current recommendation for password storage.

@@ -39,6 +39,7 @@ const groups: NavGroup[] = [
     items: [
       { label: 'الطلبات', to: '/orders', icon: '🧾', permission: 'orders.view' },
       { label: 'الورديات', to: '/shifts', icon: '💵', permission: 'shifts.view_all' },
+      { label: 'التقارير', to: '/reports', icon: '📈', permission: 'reports.sales' },
     ],
   },
   {

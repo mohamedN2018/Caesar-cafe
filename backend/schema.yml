@@ -6097,6 +6097,554 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/reports/dashboard/:
+    get:
+      operationId: reports_dashboard_retrieve
+      summary: Home dashboard, in one call
+      tags:
+      - reports
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Dashboard'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/reports/employees/sales/:
+    get:
+      operationId: reports_employees_sales_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Sales by employee
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/employees/voids/:
+    get:
+      operationId: reports_employees_voids_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Void and discount rates per user
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/financial/pnl/:
+    get:
+      operationId: reports_financial_pnl_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Net sales − COGS = gross profit
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/inventory/movements/:
+    get:
+      operationId: reports_inventory_movements_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Stock movements
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/inventory/variance/:
+    get:
+      operationId: reports_inventory_variance_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Variance — theoretical vs counted
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/inventory/waste/:
+    get:
+      operationId: reports_inventory_waste_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Waste
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/products/profitability/:
+    get:
+      operationId: reports_products_profitability_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Product profitability
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/products/top/:
+    get:
+      operationId: reports_products_top_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Best and worst sellers
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/purchases/summary/:
+    get:
+      operationId: reports_purchases_summary_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Purchases summary
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/rollups/rebuild/:
+    post:
+      operationId: reports_rollups_rebuild_create
+      description: |-
+        Force a rebuild.
+
+        Exists because a rollup is a cache of arithmetic, and a cache you cannot
+        rebuild on demand is a liability. Used after a fold fix, or to seed history
+        on a fresh deployment.
+      summary: Rebuild daily rollups for a range
+      tags:
+      - reports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RollupRebuildRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RollupRebuildRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RollupRebuildRequest'
+        required: true
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/sales/by-category/:
+    get:
+      operationId: reports_sales_by_category_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Sales by category
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/sales/by-hour/:
+    get:
+      operationId: reports_sales_by_hour_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Sales by hour
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/sales/by-payment-method/:
+    get:
+      operationId: reports_sales_by_payment_method_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Sales by payment method
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/sales/summary/:
+    get:
+      operationId: reports_sales_summary_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Sales summary
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SalesSummary'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/reports/shifts/variance/:
+    get:
+      operationId: reports_shifts_variance_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Cash variance by user
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/suppliers/balances/:
+    get:
+      operationId: reports_suppliers_balances_retrieve
+      description: Not dated — a balance is a position, not a period.
+      summary: Supplier balances
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
   /api/v1/schema/:
     get:
       operationId: schema_retrieve
@@ -7614,6 +8162,57 @@ components:
         * `REVIEW` - REVIEW
         * `POSTED` - POSTED
         * `CANCELLED` - CANCELLED
+    Dashboard:
+      type: object
+      description: One call, because the owner opens this on a phone over a mobile
+        connection.
+      properties:
+        business_date:
+          type: string
+          format: date
+        boundary:
+          type: string
+        today:
+          $ref: '#/components/schemas/SalesSummary'
+        yesterday_net:
+          type: string
+        change_percent:
+          type: string
+          nullable: true
+        week:
+          $ref: '#/components/schemas/Week'
+        open_orders:
+          type: integer
+        open_orders_value:
+          type: string
+        open_tickets:
+          type: integer
+        open_shifts:
+          type: integer
+        kids_inside:
+          type: integer
+        top_products:
+          type: array
+          items:
+            $ref: '#/components/schemas/TopProduct'
+        by_hour:
+          type: array
+          items:
+            $ref: '#/components/schemas/HourBucket'
+      required:
+      - boundary
+      - business_date
+      - by_hour
+      - change_percent
+      - kids_inside
+      - open_orders
+      - open_orders_value
+      - open_shifts
+      - open_tickets
+      - today
+      - top_products
+      - week
+      - yesterday_net
     Detail:
       type: object
       description: |-
@@ -8024,6 +8623,19 @@ components:
       - offline_token
       - server_time
       - stage
+    HourBucket:
+      type: object
+      properties:
+        hour:
+          type: integer
+        order_count:
+          type: integer
+        net_sales:
+          type: string
+      required:
+      - hour
+      - net_sales
+      - order_count
     IncidentCreateRequest:
       type: object
       properties:
@@ -10695,6 +11307,81 @@ components:
       - is_default
       - origin
       - value
+    RollupRebuildRequest:
+      type: object
+      properties:
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+      required:
+      - date_from
+      - date_to
+    SalesSummary:
+      type: object
+      description: |-
+        Money is a string here, as everywhere else in this API.
+
+        A JSON number would be a float on the way through, and a float is how a
+        total that reconciled yesterday stops reconciling today.
+      properties:
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        boundary:
+          type: string
+          description: The business-day start these numbers were cut on.
+        gross_sales:
+          type: string
+        discounts:
+          type: string
+        service:
+          type: string
+        tax:
+          type: string
+        refunds:
+          type: string
+        net_sales:
+          type: string
+        cash_sales:
+          type: string
+        non_cash_sales:
+          type: string
+        cogs:
+          type: string
+        gross_profit:
+          type: string
+        margin_percent:
+          type: string
+        order_count:
+          type: integer
+        void_count:
+          type: integer
+        average_ticket:
+          type: string
+      required:
+      - average_ticket
+      - boundary
+      - cash_sales
+      - cogs
+      - date_from
+      - date_to
+      - discounts
+      - gross_profit
+      - gross_sales
+      - margin_percent
+      - net_sales
+      - non_cash_sales
+      - order_count
+      - refunds
+      - service
+      - tax
+      - void_count
     ScopeEnum:
       enum:
       - ORGANIZATION
@@ -11684,6 +12371,32 @@ components:
       - access_expires_in
       - refresh
       - refresh_expires_in
+    TopProduct:
+      type: object
+      properties:
+        variant_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          type: string
+        quantity:
+          type: string
+        revenue:
+          type: string
+        profit:
+          type: string
+        void_count:
+          type: integer
+      required:
+      - category
+      - name
+      - profit
+      - quantity
+      - revenue
+      - variant_id
+      - void_count
     TransferRequest:
       type: object
       properties:
@@ -11742,6 +12455,19 @@ components:
       - item
       - quantity
       - reason
+    Week:
+      type: object
+      properties:
+        net_sales:
+          type: string
+        order_count:
+          type: integer
+        average_ticket:
+          type: string
+      required:
+      - average_ticket
+      - net_sales
+      - order_count
     ErrorEnvelope:
       type: object
       properties:

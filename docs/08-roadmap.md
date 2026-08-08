@@ -564,7 +564,55 @@ Exit criteria:
 
 ---
 
-## Phase 8 — Reporting & Analytics
+## Phase 8 — Reporting & Analytics ✅ COMPLETE
+
+**Verified on 2026-08-08:** ruff + format clean · **703 tests passing** (51 new) · migrations
+clean · `spectacular --fail-on-warn` clean · frontend typecheck and build clean.
+
+Delivered: `apps/reporting` — the business-day module, three daily rollups (`SalesDaily`,
+`ProductDaily`, `HourlyDaily`), the nightly Celery beat job, sixteen report endpoints, CSV export,
+the one-call dashboard, and two Web Admin screens (the rebuilt dashboard and a tabbed reports page).
+
+Exit criteria met:
+
+- **The rollups reconcile against the raw transactional tables.** `TestReconciliation` builds a
+  day, then asserts the row equals what the orders, payments and cost snapshots say — order count,
+  gross, net, COGS, and the cash/card split, to the piaster. A rollup is a cache of arithmetic; the
+  only thing that makes it trustworthy is that a rebuild reproduces the ledger.
+- **The business day is one definition, used everywhere.** 01:30 belongs to yesterday, the boundary
+  instant belongs to the new day (half-open, so no order lands on two days), the range is inclusive
+  of both ends, and a late-night sale reports on the right day. Off-by-one-day is the classic
+  reporting bug and it is invisible until somebody reconciles a month by hand.
+- **A twelve-month report reads rollups, not order lines.** Only the day still in progress touches
+  raw tables, and today is never rolled up — a cached row for an open day is wrong the moment the
+  next order lands.
+- **The variance report surfaces an injected discrepancy**: a count of 9,400 against a system
+  balance of 10,000 reports −600 and its value.
+- Rebuilding is idempotent, so a beat that fires twice or a backfill overlapping the nightly job
+  cannot double a day's revenue.
+
+Five decisions worth recording:
+
+1. **A rollup records the boundary it was computed under.** Changing `finance.business_day_start`
+   must not silently re-cut last month; existing rows keep their label and their meaning.
+2. **Refunds and payments land on the day they happened, not the day the order opened.** A refund
+   on Tuesday for Monday's sale reduces Tuesday — that is what came out of the drawer, and it
+   matches how the shift's Z-report already treats it. Back-dating it would rewrite a printed report.
+3. **The P&L stops at gross profit and says so in the payload.** The system knows what was sold and
+   what it cost to make; it knows nothing about rent, salaries or electricity. A number that looked
+   like net profit while omitting the largest costs would be worse than useless.
+4. **Void and discount reporting is a RATE, not a count.** Comparing raw counts points at the
+   busiest cashier rather than the interesting one. The report says so in its own payload.
+5. **The export parameter is `export=csv`, not `format=csv`.** DRF already owns `format` as its
+   renderer override, and `?format=csv` there resolves to a renderer that does not exist and 404s.
+   A CSV export is also permission-checked identically to the JSON — an export is not a side door.
+
+**Deliberately not built:** XLSX and PDF export, and the 202-plus-task async path. CSV covers the
+destination that actually matters (an accountant's spreadsheet or another system's import) and the
+400-day range cap keeps every report inside one request. The PWA and push notifications from C11
+are also outstanding — the mobile-first dashboard exists, the installability does not.
+
+Original plan:
 
 Deliverables:
 - Materialized daily rollups (sales, product, inventory valuation) via Celery Beat

@@ -2086,6 +2086,403 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reports/dashboard/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Home dashboard, in one call */
+        get: operations["reports_dashboard_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/employees/sales/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales by employee
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_employees_sales_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/employees/voids/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Void and discount rates per user
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_employees_voids_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/financial/pnl/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Net sales − COGS = gross profit
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_financial_pnl_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/inventory/movements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Stock movements
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_inventory_movements_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/inventory/variance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Variance — theoretical vs counted
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_inventory_variance_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/inventory/waste/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Waste
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_inventory_waste_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/products/profitability/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Product profitability
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_products_profitability_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/products/top/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Best and worst sellers
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_products_top_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/purchases/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Purchases summary
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_purchases_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/rollups/rebuild/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rebuild daily rollups for a range
+         * @description Force a rebuild.
+         *
+         *     Exists because a rollup is a cache of arithmetic, and a cache you cannot
+         *     rebuild on demand is a liability. Used after a fold fix, or to seed history
+         *     on a fresh deployment.
+         */
+        post: operations["reports_rollups_rebuild_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/sales/by-category/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales by category
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_sales_by_category_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/sales/by-hour/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales by hour
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_sales_by_hour_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/sales/by-payment-method/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales by payment method
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_sales_by_payment_method_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/sales/summary/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales summary
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_sales_summary_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/shifts/variance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cash variance by user
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_shifts_variance_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/suppliers/balances/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Supplier balances
+         * @description Not dated — a balance is a position, not a period.
+         */
+        get: operations["reports_suppliers_balances_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/schema/": {
         parameters: {
             query?: never;
@@ -2742,6 +3139,23 @@ export interface components {
          * @enum {string}
          */
         CountStatusEnum: "DRAFT" | "COUNTING" | "REVIEW" | "POSTED" | "CANCELLED";
+        /** @description One call, because the owner opens this on a phone over a mobile connection. */
+        Dashboard: {
+            /** Format: date */
+            business_date: string;
+            boundary: string;
+            today: components["schemas"]["SalesSummary"];
+            yesterday_net: string;
+            change_percent: string | null;
+            week: components["schemas"]["Week"];
+            open_orders: number;
+            open_orders_value: string;
+            open_tickets: number;
+            open_shifts: number;
+            kids_inside: number;
+            top_products: components["schemas"]["TopProduct"][];
+            by_hour: components["schemas"]["HourBucket"][];
+        };
         /**
          * @description A single human-readable result message.
          *
@@ -2919,6 +3333,11 @@ export interface components {
             offline_token: string;
             min_supported_client_version: string;
             latest_version: string;
+        };
+        HourBucket: {
+            hour: number;
+            order_count: number;
+            net_sales: string;
         };
         IncidentCreateRequest: {
             /** Format: uuid */
@@ -4103,6 +4522,40 @@ export interface components {
             origin: components["schemas"]["OriginEnum"];
             is_default: boolean;
         };
+        RollupRebuildRequest: {
+            /** Format: date */
+            date_from: string;
+            /** Format: date */
+            date_to: string;
+        };
+        /**
+         * @description Money is a string here, as everywhere else in this API.
+         *
+         *     A JSON number would be a float on the way through, and a float is how a
+         *     total that reconciled yesterday stops reconciling today.
+         */
+        SalesSummary: {
+            /** Format: date */
+            date_from: string;
+            /** Format: date */
+            date_to: string;
+            /** @description The business-day start these numbers were cut on. */
+            boundary: string;
+            gross_sales: string;
+            discounts: string;
+            service: string;
+            tax: string;
+            refunds: string;
+            net_sales: string;
+            cash_sales: string;
+            non_cash_sales: string;
+            cogs: string;
+            gross_profit: string;
+            margin_percent: string;
+            order_count: number;
+            void_count: number;
+            average_ticket: string;
+        };
         /**
          * @description * `ORGANIZATION` - ORGANIZATION
          *     * `BRANCH` - BRANCH
@@ -4506,6 +4959,16 @@ export interface components {
             access_expires_in: number;
             refresh_expires_in: number;
         };
+        TopProduct: {
+            /** Format: uuid */
+            variant_id: string;
+            name: string;
+            category: string;
+            quantity: string;
+            revenue: string;
+            profit: string;
+            void_count: number;
+        };
         TransferRequest: {
             /** Format: uuid */
             target_table: string;
@@ -4531,6 +4994,11 @@ export interface components {
             /** Format: decimal */
             quantity: string;
             reason: string;
+        };
+        Week: {
+            net_sales: string;
+            order_count: number;
+            average_ticket: string;
         };
         ErrorEnvelope: {
             /** @enum {boolean} */
@@ -9102,6 +9570,434 @@ export interface operations {
                         };
                     };
                 };
+            };
+        };
+    };
+    reports_dashboard_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Dashboard"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    reports_employees_sales_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_employees_voids_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_financial_pnl_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_inventory_movements_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_inventory_variance_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_inventory_waste_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_products_profitability_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_products_top_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_purchases_summary_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_rollups_rebuild_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RollupRebuildRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RollupRebuildRequest"];
+                "multipart/form-data": components["schemas"]["RollupRebuildRequest"];
+            };
+        };
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_sales_by_category_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_sales_by_hour_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_sales_by_payment_method_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_sales_summary_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["SalesSummary"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    reports_shifts_variance_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_suppliers_balances_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };
