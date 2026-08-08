@@ -671,8 +671,70 @@ One gap the tests found: `m_variants` had no `sort_order`, so the size chooser f
 alphabetical and put "كبير" before "وسط" — reversing the admin's intent. Added to the schema and to
 the puller's column list.
 
-**Still outstanding on the Desktop:** the floor map, the KDS, the kids board, and receipt printing
-with the Arabic rasterizer.
+### Desktop printing, boards and the shell ✅ COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **335 desktop tests passing** (91 new) · vendored modules in
+sync.
+
+Delivered: `printing/` (the Arabic rasterizer, the receipt builder, the print queue), `ui/floor/`,
+`ui/kitchen/`, `ui/kids/`, and `ui/shell.py` — the window that finally makes the pieces an
+application, wired into `app.py` behind the licence gate.
+
+**Arabic is rasterized, not sent as text.** Thermal printers have no shaping engine: send them
+"كابتشينو" as characters and the customer gets disconnected letters in the wrong order. So the
+receipt is reshaped, bidi-reordered, drawn with PIL and sent as a 1-bit bitmap. The cost is a slower
+print; the benefit is a receipt a customer can read.
+
+**A print failure never blocks a sale.** Printing inside the payment transaction means a paper jam
+stops the till — worse than a customer waiting ten seconds, every single time. The receipt is a row
+in SQLite, retried six times, then left for a human with a retry button. A crash mid-service loses
+no receipts.
+
+**The receipt takes its figures from the fold and never recomputes.** A receipt that added its own
+total would be the one place the customer's copy and the server's record disagree. Kitchen tickets
+carry no prices at all.
+
+**Colour never carries a meaning alone.** Every table state, every ticket state and every kids
+session is also words — for colour-blind staff, and for the washed-out screens these actually run
+on. The KDS shows age in minutes rather than clock time, sorts oldest-first always, and says whether
+it is live or polling: a display quietly showing five-minute-old tickets is worse than one that
+admits it.
+
+**The kids board shows the guardian's phone and any medical note on the card**, never behind a tap.
+An allergy one tap away is an allergy nobody reads. The running charge comes from the vendored
+`play_pricing` against the snapshotted tariff, so the figure on the board is the figure on the bill.
+
+**Three timers, three reasons.** Sync every 5s because an unsent payment is money the owner cannot
+see; printing every 3s separately, so a jammed printer never slows the till and a busy sync never
+delays a receipt; boards every 10s, and only the visible one. Every tick is logged-and-swallowed on
+failure: a POS that dies because one poll failed is worse than one that is briefly stale.
+
+**A RESTRICTED licence now reaches the till.** C5 says such a terminal opens and settles but starts
+nothing new — until this commit that verdict stopped at the gate and the shell ignored it. Both the
+till and the floor map refuse a new order and say why; settling an open table keeps working, because
+a cafe with money on its tables and no way to take it is a worse outcome than an expired
+subscription. Logging out reuses the *real* startup gate rather than re-running it, so a shift change
+neither hits the network nor becomes a way to upgrade a restricted terminal.
+
+Four bugs the tests found, three of them real gaps:
+
+1. **`m_tables` had no `pos_x`/`pos_y`.** The server sends the admin's drag-and-drop coordinates and
+   the mirror dropped them, so the floor map's whole premise — the screen matching the room — was
+   silently unbacked. The same class of bug as `m_variants.sort_order` in the previous batch.
+2. **`l_play_sessions` had no `medical_notes`.** The card read a column that did not exist, so the
+   "always visible, in a colour that interrupts" allergy banner could never fire.
+3. **`late_count` recomputed lateness from the wall clock** while the cards had decided it at render.
+   Two definitions of "late" drift apart within a second, and then the header says 3 while two cards
+   are red. Counted off the rendered cards now — one definition, decided once.
+4. **The shell died if config had not synced.** `settings_from_mirror` rightly refuses to guess a VAT
+   rate, but that refusal took the whole application down instead of the till. The kitchen and kids
+   boards work from local state; the till now says what is missing.
+
+Also fixed: `EscposPrinter` imported `Usb` under a `noqa` claiming it was used below. It was not.
+
+**Still outstanding on the Desktop:** nothing buildable from here. What remains needs the real
+cafe — the signed installer on clean Windows hardware, a real thermal printer to calibrate the
+raster width against, and the parallel run.
 
 Original plan:
 
@@ -883,8 +945,9 @@ Two bugs found, one of them a whole class:
 
 **Still outstanding — everything that needs the real cafe:**
 
-- **Desktop POS/KDS/kids screens and the offline SQLite half of Phase 7.** The server contract they
-  build against is fixed and tested; the client is not written.
+- ~~**Desktop POS/KDS/kids screens and the offline SQLite half of Phase 7.**~~ Delivered — see the
+  Desktop sections under Phase 7. What is left needs a real thermal printer to calibrate the raster
+  width against, and clean Windows hardware for the signed installer.
 - **WAL archiving.** The RPO is therefore 24 hours, not the 5 minutes docs/09 targets. Stated in the
   runbook in the words to use with the customer: *a host loss at 22:00 costs the whole trading day.*
 - **The rehearsed restore drill, the signed installer, the Arabic training material, and the

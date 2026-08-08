@@ -3,8 +3,21 @@ Application entry point.
 
     python -m caesar_pos
 
-Renders whatever `bootstrap.start()` decided. The decision logic lives there,
-UI-free, so it can be tested directly rather than through a window.
+Renders whatever `bootstrap.start()` decided, then owns exactly one thing the
+rest of the code deliberately does not: the transitions between screens.
+
+    activation ──▶ login ──▶ shell (POS · floor · kitchen · kids)
+         ▲           ▲                      │
+         └── blocked ┴──────── logout ──────┘
+
+The order of those screens is not cosmetic. **The desktop does not open until it
+is activated** (§2), and nothing behind the licence gate is even constructed
+until the gate has passed — so a build with a broken gate fails closed, with no
+window to fall back to.
+
+The database is opened once, after activation, and handed to everything. One
+connection per thread; the sync engine, the boards and the print queue all share
+this one because they all run on the Qt thread.
 """
 
 from __future__ import annotations
@@ -18,9 +31,15 @@ from PySide6.QtWidgets import QApplication
 from .api.client import ApiClient
 from .bootstrap import Screen, Startup, start
 from .config import APP_NAME, APP_VERSION, paths
+from .local.db import Database, connect
+from .printing.spooler import EscposPrinter
+from .security.session import Authenticator, settings_from_mirror
+from .sync.engine import SyncEngine
 from .ui import theme
 from .ui.activation import ActivationWindow
 from .ui.blocked.window import BlockedWindow
+from .ui.login.window import LoginWindow
+from .ui.shell import Shell
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +66,17 @@ class Application:
         self.qt = qt_app
         self.client = ApiClient(base_url=server_url() or "http://localhost:8000")
         self.window = None
+        self.db: Database | None = None
+        self.engine: SyncEngine | None = None
+        self.startup: Startup | None = None
 
     def run(self) -> int:
         self.show_for(start(self.client))
         return self.qt.exec()
 
     def show_for(self, startup: Startup) -> None:
+        self.startup = startup
+
         if self.window is not None:
             self.window.close()
             self.window.deleteLater()
@@ -69,21 +93,84 @@ class Application:
             window.reactivate_requested.connect(self._force_activation)
 
         else:
-            # Phase 5 replaces this with the PIN pad and the POS shell. The
-            # licence gate above is what Phase 3 delivers.
-            from PySide6.QtWidgets import QLabel
-
-            window = QLabel(
-                "✅ الترخيص صالح\n\n"
-                f"الحالة: {startup.gate.reason_code or 'ACTIVE'}\n"
-                f"{'متصل' if startup.online else 'غير متصل — يعمل بالترخيص المحفوظ'}\n\n"
-                "شاشة تسجيل الدخول تأتي في المرحلة ٥."
-            )
-            window.setMinimumSize(520, 320)
-            window.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
+            window = self._login_window(startup)
 
         self.window = window
         window.show()
+
+    # ── behind the gate ──────────────────────────────────────────────────────
+
+    def _login_window(self, startup: Startup) -> LoginWindow:
+        """
+        The first screen that touches local data.
+
+        The database and the sync engine are created HERE, not in `__init__`:
+        nothing behind the licence gate is constructed until the gate has passed,
+        so a build with a broken gate fails closed rather than falling through to
+        a usable till.
+        """
+        db = self._ensure_db()
+        engine = self._ensure_engine(db)
+
+        attempts, lockout = settings_from_mirror(db)
+        window = LoginWindow(
+            Authenticator(db, max_attempts=attempts, lockout_seconds=lockout),
+            sync_label=str(engine.status()),
+        )
+        window.logged_in.connect(self._on_logged_in)
+
+        if not startup.online:
+            logger.info("Starting offline on the cached licence")
+
+        return window
+
+    def _ensure_db(self) -> Database:
+        if self.db is None:
+            self.db = Database(connect())
+        return self.db
+
+    def _ensure_engine(self, db: Database) -> SyncEngine:
+        if self.engine is None:
+            self.engine = SyncEngine(db=db, client=self.client)
+        return self.engine
+
+    def _on_logged_in(self, session) -> None:
+        db = self._ensure_db()
+        gate = self.startup.gate if self.startup else None
+
+        shell = Shell(
+            db,
+            session,
+            self._ensure_engine(db),
+            printer=EscposPrinter(),
+            # A RESTRICTED terminal opens and settles, but starts nothing new.
+            can_open_new_orders=gate.can_open_new_orders if gate else True,
+        )
+        shell.logout_requested.connect(self._on_logout)
+
+        if self.window is not None:
+            self.window.close()
+            self.window.deleteLater()
+
+        self.window = shell
+        shell.show()
+
+    def _on_logout(self) -> None:
+        """
+        Back to the PIN pad on the SAME startup decision, not a restart.
+
+        Re-running the startup sequence would hit the network on every shift
+        change and could strand the next cashier behind a licence check during an
+        outage. The licence was verified when the terminal opened; a change of
+        person is not a change of device.
+
+        The gate that is reused is the real one, including a RESTRICTED verdict —
+        logging out must not be a way to upgrade a restricted terminal.
+        """
+        if self.startup is None:
+            self._restart()
+            return
+        self.show_for(self.startup)
 
     # ── transitions ──────────────────────────────────────────────────────────
 

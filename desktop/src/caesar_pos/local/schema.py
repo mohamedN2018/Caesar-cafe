@@ -89,6 +89,11 @@ MIGRATIONS: list[str] = [
         number   TEXT NOT NULL,
         seats    INTEGER NOT NULL DEFAULT 4,
         status   TEXT NOT NULL DEFAULT 'AVAILABLE',
+        -- The admin's drag-and-drop canvas coordinates. Without these the floor
+        -- map falls back to a flow layout, and a waiter loses the one thing that
+        -- makes a map faster than a list: the screen matching the room.
+        pos_x    INTEGER NOT NULL DEFAULT 0,
+        pos_y    INTEGER NOT NULL DEFAULT 0,
         payload  TEXT NOT NULL
     );
 
@@ -251,6 +256,11 @@ MIGRATIONS: list[str] = [
         child_name     TEXT NOT NULL,
         guardian_name  TEXT NOT NULL,
         guardian_phone TEXT NOT NULL DEFAULT '',
+        -- Allergies and conditions. Mirrored onto the SESSION rather than read
+        -- through a child record, because the board has to show them while
+        -- offline and with no network round-trip — an allergy that needs a
+        -- lookup is an allergy nobody reads.
+        medical_notes  TEXT NOT NULL DEFAULT '',
         age_months     INTEGER,
         tag_number     TEXT NOT NULL,
         status         TEXT NOT NULL DEFAULT 'ACTIVE',

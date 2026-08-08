@@ -60,12 +60,17 @@ class PosWindow(QWidget):
         session: Session,
         settings: service.Settings,
         *,
+        can_open_new_orders: bool = True,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.db = db
         self.session = session
         self.settings = settings
+        # A RESTRICTED licence (C5): the terminal opens and open tables can still
+        # be settled, but no new sale starts. Settling has to keep working — the
+        # alternative is a cafe with money on its tables and no way to take it.
+        self.can_open_new_orders = can_open_new_orders
         self.order_id: str | None = None
 
         self.setStyleSheet(STYLESHEET)
@@ -125,6 +130,10 @@ class PosWindow(QWidget):
     # ── the order ────────────────────────────────────────────────────────────
 
     def new_order(self) -> None:
+        if not self.can_open_new_orders:
+            self._refuse("الترخيص مقيّد — يمكن إنهاء الطلبات المفتوحة فقط. جدّد الاشتراك.")
+            return
+
         order = service.open_order(self.db, settings=self.settings)
         self.order_id = order.order_id
         self.panel.show_order(order)
@@ -140,6 +149,8 @@ class PosWindow(QWidget):
         """
         if self.order_id is None:
             self.new_order()
+            if self.order_id is None:  # refused — a restricted licence
+                return
 
         if tile.needs_variant_choice:
             tile = self._choose_variant(tile)
