@@ -3,6 +3,10 @@ Shared Qt styling.
 
 RTL and large touch targets are set here rather than per-window, so a new screen
 is correct by default instead of by remembering.
+
+Colours come from `palette.py`, which mirrors the Web's `brand.css` and is
+checked against it in CI. A hex literal in this file would be the fourth place
+the brand lives and the first one to drift.
 """
 
 from __future__ import annotations
@@ -11,85 +15,95 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QApplication
 
+from . import palette as p
+
 #: Minimum touch target. Assume a fingertip on a glossy screen, not a mouse.
 TOUCH_TARGET_PX = 64
 
-STYLESHEET = """
-QWidget {
-    background: #f8fafc;
-    color: #0f172a;
+STYLESHEET = f"""
+QWidget {{
+    background: {p.SURFACE_MUTED};
+    color: {p.INK};
     font-size: 15px;
-}
-QLabel#Title {
+}}
+QLabel#Title {{
     font-size: 26px;
     font-weight: 700;
-}
-QLabel#Subtitle {
-    color: #475569;
+    color: {p.BRAND_700};
+}}
+QLabel#Subtitle {{
+    color: {p.INK_MUTED};
     font-size: 14px;
-}
-QLabel#Error {
-    color: #b91c1c;
-    background: #fef2f2;
-    border: 1px solid #fecaca;
+}}
+QLabel#Error {{
+    color: {p.DANGER};
+    background: {p.DANGER_BG};
+    border: 1px solid {p.DANGER};
     border-radius: 8px;
     padding: 10px 12px;
-}
-QLabel#Warning {
-    color: #92400e;
-    background: #fffbeb;
-    border: 1px solid #fde68a;
+}}
+QLabel#Warning {{
+    color: {p.WARNING};
+    background: {p.WARNING_BG};
+    border: 1px solid {p.WARNING};
     border-radius: 8px;
     padding: 10px 12px;
-}
-QLineEdit {
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
+}}
+QLineEdit {{
+    background: {p.SURFACE};
+    border: 1px solid {p.BORDER_STRONG};
     border-radius: 8px;
     padding: 12px 14px;
     font-size: 16px;
     min-height: 24px;
-}
-QLineEdit:focus {
-    border: 2px solid #1d4e89;
-}
-QLineEdit#KeySegment {
+}}
+QLineEdit:focus {{
+    border: 2px solid {p.BRAND_700};
+}}
+QLineEdit#KeySegment {{
     font-family: "Consolas", "Courier New", monospace;
     font-size: 20px;
     letter-spacing: 3px;
     text-align: center;
-}
-QPushButton {
-    background: #1d4e89;
-    color: #ffffff;
+}}
+QPushButton {{
+    background: {p.BRAND_700};
+    color: {p.FG_ON_BRAND};
     border: none;
     border-radius: 8px;
     padding: 14px 22px;
     font-size: 16px;
     font-weight: 600;
     min-height: 28px;
-}
-QPushButton:hover  { background: #17406f; }
-QPushButton:pressed{ background: #123456; }
-QPushButton:disabled { background: #94a3b8; }
-QPushButton#Secondary {
-    background: #e2e8f0;
-    color: #0f172a;
-}
-QPushButton#Keypad {
-    background: #ffffff;
-    color: #0f172a;
-    border: 1px solid #cbd5e1;
+}}
+QPushButton:hover  {{ background: {p.BRAND_800}; }}
+QPushButton:pressed{{ background: {p.BRAND_900}; }}
+QPushButton:disabled {{ background: {p.BORDER_STRONG}; color: {p.INK_FAINT}; }}
+QPushButton#Secondary {{
+    background: {p.SURFACE_SUNKEN};
+    color: {p.INK};
+}}
+/* Gold is emphasis, never a whole surface — and it carries dark text, because
+   gold on white is unreadable at any weight. */
+QPushButton#Accent {{
+    background: {p.GOLD_500};
+    color: {p.FG_ON_GOLD};
+}}
+QPushButton#Accent:hover {{ background: {p.GOLD_600}; }}
+QPushButton#Keypad {{
+    background: {p.SURFACE};
+    color: {p.INK};
+    border: 1px solid {p.BORDER_STRONG};
     font-size: 24px;
-}
-QPushButton#Keypad:pressed { background: #e2e8f0; }
-QComboBox {
-    background: #ffffff;
-    border: 1px solid #cbd5e1;
+}}
+QPushButton#Keypad:pressed {{ background: {p.SURFACE_SUNKEN}; }}
+QComboBox {{
+    background: {p.SURFACE};
+    border: 1px solid {p.BORDER_STRONG};
     border-radius: 8px;
     padding: 12px 14px;
     min-height: 24px;
-}
+}}
 """
 
 

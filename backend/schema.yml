@@ -11480,11 +11480,22 @@ components:
           type: string
         seats:
           type: integer
+        seated_count:
+          type: integer
+          description: People at the table now, not its capacity.
         status:
           type: string
         pos_x:
           type: integer
         pos_y:
+          type: integer
+        shape:
+          type: string
+        span_x:
+          type: integer
+        span_y:
+          type: integer
+        rotation:
           type: integer
         session_id:
           type: string
@@ -11493,6 +11504,10 @@ components:
         guest_count:
           type: integer
           nullable: true
+        seated_minutes:
+          type: integer
+          nullable: true
+          description: How long this party has been sitting.
         opened_at:
           type: string
           format: date-time
@@ -11514,8 +11529,14 @@ components:
       - order_count
       - pos_x
       - pos_y
+      - rotation
+      - seated_count
+      - seated_minutes
       - seats
       - session_id
+      - shape
+      - span_x
+      - span_y
       - status
       - table_id
       - total_due
@@ -13945,6 +13966,20 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        shape:
+          $ref: '#/components/schemas/ShapeEnum'
+        span_x:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        span_y:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        rotation:
+          type: integer
+          maximum: 32767
+          minimum: 0
         is_active:
           type: boolean
     Payment:
@@ -15692,6 +15727,20 @@ components:
         * `INFO` - INFO
         * `NOTICE` - NOTICE
         * `WARNING` - WARNING
+    ShapeEnum:
+      enum:
+      - ROUND
+      - SQUARE
+      - RECT
+      - BOOTH
+      - BAR
+      type: string
+      description: |-
+        * `ROUND` - ROUND
+        * `SQUARE` - SQUARE
+        * `RECT` - RECT
+        * `BOOTH` - BOOTH
+        * `BAR` - BAR
     Shift:
       type: object
       properties:
@@ -16561,6 +16610,9 @@ components:
           type: integer
           maximum: 32767
           minimum: 0
+        seated_count:
+          type: integer
+          readOnly: true
         status:
           $ref: '#/components/schemas/TableStatusEnum'
         pos_x:
@@ -16571,6 +16623,20 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        shape:
+          $ref: '#/components/schemas/ShapeEnum'
+        span_x:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        span_y:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        rotation:
+          type: integer
+          maximum: 32767
+          minimum: 0
         is_active:
           type: boolean
       required:
@@ -16578,6 +16644,7 @@ components:
       - area_name
       - id
       - number
+      - seated_count
     TableRequest:
       type: object
       properties:
@@ -16603,6 +16670,20 @@ components:
           type: integer
           maximum: 2147483647
           minimum: -2147483648
+        shape:
+          $ref: '#/components/schemas/ShapeEnum'
+        span_x:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        span_y:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        rotation:
+          type: integer
+          maximum: 32767
+          minimum: 0
         is_active:
           type: boolean
       required:

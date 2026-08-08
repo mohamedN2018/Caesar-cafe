@@ -108,6 +108,12 @@ def table(obj) -> dict[str, Any]:
         "status": obj.status,
         "pos_x": obj.pos_x,
         "pos_y": obj.pos_y,
+        # The furniture itself. A round two-top and a rectangular eight-top drawn
+        # as identical squares is a map of a room nobody works in.
+        "shape": obj.shape,
+        "span_x": obj.span_x,
+        "span_y": obj.span_y,
+        "rotation": obj.rotation,
         "is_active": obj.is_active,
     }
 

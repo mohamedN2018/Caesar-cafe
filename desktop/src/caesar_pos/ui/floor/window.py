@@ -28,6 +28,8 @@ from PySide6.QtWidgets import (
 )
 
 from ...local.db import Database
+from . import geometry
+from .room import RoomWidget
 
 logger = logging.getLogger(__name__)
 
@@ -68,8 +70,9 @@ def tables(db: Database, *, area_id: str | None = None) -> list[dict]:
     rows = db.query(
         f"""
         SELECT t.id, t.number, t.seats, t.area_id, t.status,
-               t.pos_x, t.pos_y,
-               o.id AS order_id, o.status AS order_status, o.grand_total
+               t.pos_x, t.pos_y, t.shape, t.span_x, t.span_y, t.rotation,
+               o.id AS order_id, o.status AS order_status, o.grand_total,
+               o.guest_count AS guest_count
         FROM m_tables t
         LEFT JOIN l_orders o
                ON o.table_id = t.id
@@ -79,7 +82,17 @@ def tables(db: Database, *, area_id: str | None = None) -> list[dict]:
         """,  # noqa: S608 — `where` is a fixed fragment; the value is bound
         params,
     )
-    return [dict(row) for row in rows]
+
+    result = []
+    for row in rows:
+        table = dict(row)
+        # The party, not the furniture. A terminal that only knows "occupied"
+        # cannot tell a waiter that a six-top has four chairs free, which is the
+        # question they walked over to ask.
+        guests = table.pop("guest_count", None)
+        table["seated_count"] = min(int(guests or 0), table["seats"]) if table["order_id"] else 0
+        result.append(table)
+    return result
 
 
 def areas(db: Database) -> list[dict]:
@@ -111,18 +124,28 @@ class FloorWindow(QWidget):
         self.empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.empty)
 
-        self.grid = QGridLayout()
-        self.grid.setSpacing(12)
-        grid_holder = QWidget()
-        grid_holder.setLayout(self.grid)
+        # The room, painted. A grid of buttons only claims to be a map; a waiter
+        # matching the screen to what is in front of them needs the round table
+        # to be round.
+        self.room = RoomWidget()
+        self.room.table_clicked.connect(self._chosen)
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-        scroll.setWidget(grid_holder)
+        scroll.setWidget(self.room)
         scroll.setFrameShape(QScrollArea.Shape.NoFrame)
         layout.addWidget(scroll, stretch=1)
 
+        # Kept for the tests and for any caller that wants the flat list: the
+        # room is a rendering of `visible_tables`, not a second source of truth.
+        self.grid = QGridLayout()
+
         self.refresh()
+
+    def _chosen(self, table_id: str) -> None:
+        table = next((t for t in self.visible_tables if t["id"] == table_id), None)
+        if table is not None:
+            self.table_chosen.emit(table["id"], table["order_id"])
 
     # ── data ─────────────────────────────────────────────────────────────────
 
@@ -157,37 +180,25 @@ class FloorWindow(QWidget):
         self.tabs.addStretch(1)
 
     def _render_tables(self) -> None:
-        _clear(self.grid)
         rows = self.visible_tables
         self.empty.setVisible(not rows)
-
-        for index, table in enumerate(rows):
-            button = QPushButton(self._label(table))
-            button.setObjectName(self._style_for(table))
-            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-            button.clicked.connect(
-                lambda _=False, t=table: self.table_chosen.emit(t["id"], t["order_id"])
-            )
-            # Laid out by the admin's canvas coordinates when they exist, so the
-            # screen matches the room. Falls back to a flow when they do not.
-            row, column = (
-                (table["pos_y"], table["pos_x"])
-                if (table["pos_x"] or table["pos_y"])
-                else (index // 5, index % 5)
-            )
-            self.grid.addWidget(button, row, column)
+        self.room.show_tables(rows)
 
     @staticmethod
     def _label(table: dict) -> str:
-        parts = [f"طاولة {table['number']}", f"{table['seats']} أفراد"]
+        """
+        The table in words. Painted onto the room, and read aloud by a screen
+        reader — colour alone fails for colour-blind staff and on a washed-out
+        screen.
+        """
+        seated = table.get("seated_count") or 0
+        parts = [f"طاولة {table['number']}", f"{seated}/{table['seats']} كرسي"]
 
         if table["order_id"]:
-            # The state in words, next to the colour. Colour alone fails for
-            # colour-blind staff and on a washed-out screen.
             parts.append(_STATE_LABELS.get(table["order_status"], table["order_status"]))
             parts.append(f"{Decimal(table['grand_total'])} ج.م")
         else:
-            parts.append("متاحة")
+            parts.append(geometry.STATE_LABELS[geometry.FREE])
 
         return "\n".join(parts)
 

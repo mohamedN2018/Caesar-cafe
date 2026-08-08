@@ -162,12 +162,48 @@ export function idempotencyKey(): string {
   return crypto.randomUUID()
 }
 
+/**
+ * A GET whose absence is a normal outcome.
+ *
+ * Returns `null` instead of throwing when the server refuses for permission
+ * reasons. This exists because of a rule the product takes seriously: **a user
+ * is never shown a refusal for something they were never offered.** A screen
+ * that renders "ليس لديك صلاحية: inventory.view" is telling somebody off for a
+ * request the interface made on their behalf, and the honest answer is simply
+ * not to show that section.
+ *
+ * Use it for the secondary panels of a screen — the stock strip on the
+ * dashboard, the stations on the floor. The primary resource of a page belongs
+ * behind a route guard instead, so the page never opens at all.
+ *
+ * Every other failure still throws. An outage is not the same as a "no", and
+ * quietly blanking a section during one hides a problem worth showing.
+ */
+async function optional<T>(promise: Promise<T>): Promise<T | null> {
+  try {
+    return await promise
+  } catch (error) {
+    if (error instanceof ApiError && PERMISSION_CODES.has(error.code)) return null
+    throw error
+  }
+}
+
+const PERMISSION_CODES = new Set(['PERMISSION_DENIED', 'FORBIDDEN', 'NOT_AUTHENTICATED'])
+
 export const api = {
   get: <T>(url: string, params?: Record<string, unknown>) => unwrap<T>(http.get(url, { params })),
   post: <T>(url: string, body?: unknown, headers?: Record<string, string>) =>
     unwrap<T>(http.post(url, body, { headers })),
   patch: <T>(url: string, body?: unknown) => unwrap<T>(http.patch(url, body)),
   delete: <T>(url: string) => unwrap<T>(http.delete(url)),
+  /** `null` when the server says this caller may not see it. See above. */
+  optional: <T>(url: string, params?: Record<string, unknown>) =>
+    optional<T>(unwrap<T>(http.get(url, { params }))),
   /** Escape hatch for endpoints where `meta` matters (pagination cursors). */
   raw: http,
+}
+
+/** True when this error is the server declining, rather than failing. */
+export function isPermissionError(error: unknown): boolean {
+  return error instanceof ApiError && PERMISSION_CODES.has(error.code)
 }

@@ -112,6 +112,7 @@ def open_order(
     settings: Settings,
     order_type: str = "DINE_IN",
     table_id: str | None = None,
+    guest_count: int = 0,
     shift_id: str | None = None,
     device_code: str = "01",
     branch_code: str = "MB",
@@ -137,6 +138,7 @@ def open_order(
                 "order_type": order_type,
                 "status": OrderStatus.OPEN,
                 "table_id": table_id,
+                "guest_count": guest_count,
                 "shift_id": shift_id,
                 # Snapshotted now. A VAT change pulled mid-service must not
                 # rewrite a bill the customer is already looking at.
@@ -157,6 +159,7 @@ def open_order(
                 "order_type": order_type,
                 "local_number": local_number,
                 "table_id": table_id,
+                "guest_count": guest_count,
                 # The server attributes the sale to this drawer. Omitting it left
                 # every synced order with no shift, which empties the Z-report of
                 # exactly the terminal that made the sales.

@@ -1,0 +1,85 @@
+/*
+ * The brand, in one place.
+ *
+ * كافيه القيصر — Al-Salaha St, Shibin al-Qanatir. Burgundy and gold: the name
+ * is imperial and so is the room, and gold on deep red survives a washed-out
+ * screen far better than a mid-tone does.
+ *
+ * Every colour in the product resolves through a token here. That is not tidiness
+ * — §62 says nothing about the business is a code constant, and a brand is a
+ * business fact. When the owner repaints the cafe, this file changes and nothing
+ * else does. The Desktop reads the same values from `ui/theme.py`, which is
+ * generated from this list and checked against it in CI.
+ *
+ * Contrast: every `--fg-on-*` pairing below clears WCAG AA at body size. Staff
+ * read these screens in daylight through a window, so that is a floor, not a
+ * target.
+ */
+
+:root {
+  /* ── brand ─────────────────────────────────────────────────────────────── */
+  --brand-50: #fdf4f4;
+  --brand-100: #fae4e5;
+  --brand-200: #f3c4c7;
+  --brand-300: #e59aa0;
+  --brand-400: #d06a74;
+  --brand-500: #b3454f;
+  --brand-600: #94303a;
+  --brand-700: #7b1e28; /* the brand colour */
+  --brand-800: #611720;
+  --brand-900: #4a121a;
+
+  /* Gold. Used for emphasis and never for a whole surface: a gold background
+     with dark text is legible, but gold text on white is not, at any weight. */
+  --gold-100: #f7edcf;
+  --gold-200: #eeda9f;
+  --gold-300: #e0c268;
+  --gold-400: #d3ae3f;
+  --gold-500: #c9a227; /* the accent */
+  --gold-600: #a8851d;
+  --gold-700: #866818;
+
+  /* ── surfaces ──────────────────────────────────────────────────────────── */
+  /* Warm rather than blue-grey. Beside burgundy and gold, a cool grey reads as
+     dirty; the ivory keeps the room feeling like the room. */
+  --surface: #ffffff;
+  --surface-muted: #fbf7f0;
+  --surface-sunken: #f4ede1;
+  --border: #e7ddcc;
+  --border-strong: #d3c4ab;
+
+  --ink: #2a1a16;
+  --ink-muted: #6b5a52;
+  --ink-faint: #9a8b83;
+  --fg-on-brand: #ffffff;
+  --fg-on-gold: #2a1a16;
+
+  /* ── state ─────────────────────────────────────────────────────────────── */
+  /* Deliberately NOT brand-derived. A burgundy "danger" beside a burgundy
+     header is a warning nobody sees, and these three have to be unmistakable
+     from across a room. */
+  --success: #2e7d4f;
+  --success-bg: #eaf5ee;
+  --warning: #c77700;
+  --warning-bg: #fdf3e2;
+  --danger: #b3261e;
+  --danger-bg: #fceceb;
+  --info: #1f6f8b;
+  --info-bg: #e8f2f6;
+
+  /* ── the room ──────────────────────────────────────────────────────────── */
+  /* The floor view paints real materials: wood tables, a tiled floor, a rug on
+     the terrace. Tokens so the 3D view and the flat editor cannot drift. */
+  --floor-tile: #efe6d6;
+  --floor-tile-alt: #e8ddc9;
+  --wood: #a9713f;
+  --wood-dark: #7d5029;
+  --wood-edge: #6a421f;
+  --chair: #8a5a33;
+  --chair-occupied: #7b1e28;
+  --table-free: #ffffff;
+  --table-busy: #f3c4c7;
+  --table-ready: #cfe8da;
+  --table-late: #f7d4d1;
+  --shadow-room: rgba(42, 26, 22, 0.28);
+}

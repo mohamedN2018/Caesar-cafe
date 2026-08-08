@@ -8,6 +8,12 @@ import { useAuthStore } from '@/stores/auth'
  * This shapes navigation only. The server re-checks every request — a user who
  * types a URL they lack the permission for gets a 403 from the API even if the
  * guard were bypassed.
+ *
+ * A route the caller may not open sends them to the dashboard rather than to a
+ * "forbidden" page, and the sidebar never listed it in the first place. The
+ * principle across the whole product: **a user is never shown a refusal for
+ * something they were never offered.** A page that exists only to say no is a
+ * page that makes somebody feel watched for clicking a link the app drew.
  */
 const router = createRouter({
   history: createWebHistory(),

@@ -111,12 +111,25 @@ class FloorStatusView(APIView):
                     "number": table.number,
                     "area": table.area.name_ar,
                     "seats": table.seats,
+                    # The party, not the furniture. Two people at a six-top is a
+                    # table that looks busy on a board and is mostly empty in the
+                    # room, and only one of those numbers seats a walk-in.
+                    "seated_count": min(session.guest_count, table.seats) if session else 0,
                     "status": table.status,
                     "pos_x": table.pos_x,
                     "pos_y": table.pos_y,
+                    "shape": table.shape,
+                    "span_x": table.span_x,
+                    "span_y": table.span_y,
+                    "rotation": table.rotation,
                     "session_id": session.id if session else None,
                     "guest_count": session.guest_count if session else None,
                     "opened_at": session.opened_at if session else None,
+                    "seated_minutes": (
+                        int((timezone.now() - session.opened_at).total_seconds() // 60)
+                        if session
+                        else None
+                    ),
                     "order_count": len(orders),
                     "total_due": sum(
                         (o.grand_total - o.paid_total for o in orders), Decimal("0.00")

@@ -4298,12 +4298,20 @@ export interface components {
             number: string;
             area: string;
             seats: number;
+            /** @description People at the table now, not its capacity. */
+            seated_count: number;
             status: string;
             pos_x: number;
             pos_y: number;
+            shape: string;
+            span_x: number;
+            span_y: number;
+            rotation: number;
             /** Format: uuid */
             session_id: string | null;
             guest_count: number | null;
+            /** @description How long this party has been sitting. */
+            seated_minutes: number | null;
             /** Format: date-time */
             opened_at: string | null;
             order_count: number;
@@ -5407,6 +5415,10 @@ export interface components {
             status?: components["schemas"]["TableStatusEnum"];
             pos_x?: number;
             pos_y?: number;
+            shape?: components["schemas"]["ShapeEnum"];
+            span_x?: number;
+            span_y?: number;
+            rotation?: number;
             is_active?: boolean;
         };
         Payment: {
@@ -6164,6 +6176,15 @@ export interface components {
          * @enum {string}
          */
         SeverityEnum: "INFO" | "NOTICE" | "WARNING";
+        /**
+         * @description * `ROUND` - ROUND
+         *     * `SQUARE` - SQUARE
+         *     * `RECT` - RECT
+         *     * `BOOTH` - BOOTH
+         *     * `BAR` - BAR
+         * @enum {string}
+         */
+        ShapeEnum: "ROUND" | "SQUARE" | "RECT" | "BOOTH" | "BAR";
         Shift: {
             /** Format: uuid */
             readonly id: string;
@@ -6504,9 +6525,14 @@ export interface components {
             /** @description T-05 */
             number: string;
             seats?: number;
+            readonly seated_count: number;
             status?: components["schemas"]["TableStatusEnum"];
             pos_x?: number;
             pos_y?: number;
+            shape?: components["schemas"]["ShapeEnum"];
+            span_x?: number;
+            span_y?: number;
+            rotation?: number;
             is_active?: boolean;
         };
         TableRequest: {
@@ -6518,6 +6544,10 @@ export interface components {
             status?: components["schemas"]["TableStatusEnum"];
             pos_x?: number;
             pos_y?: number;
+            shape?: components["schemas"]["ShapeEnum"];
+            span_x?: number;
+            span_y?: number;
+            rotation?: number;
             is_active?: boolean;
         };
         TableSession: {

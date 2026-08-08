@@ -94,6 +94,12 @@ MIGRATIONS: list[str] = [
         -- makes a map faster than a list: the screen matching the room.
         pos_x    INTEGER NOT NULL DEFAULT 0,
         pos_y    INTEGER NOT NULL DEFAULT 0,
+        -- The actual furniture. A round two-top and a rectangular eight-top drawn
+        -- as identical squares is a map of a room nobody works in.
+        shape    TEXT NOT NULL DEFAULT 'SQUARE',
+        span_x   INTEGER NOT NULL DEFAULT 1,
+        span_y   INTEGER NOT NULL DEFAULT 1,
+        rotation INTEGER NOT NULL DEFAULT 0,
         payload  TEXT NOT NULL
     );
 
@@ -168,6 +174,10 @@ MIGRATIONS: list[str] = [
         order_type    TEXT NOT NULL DEFAULT 'DINE_IN',
         status        TEXT NOT NULL DEFAULT 'OPEN',
         table_id      TEXT,
+        -- How many people are actually at the table. `m_tables.seats` is the
+        -- furniture; this is the party, and only this one tells a waiter that a
+        -- six-top still has four chairs free.
+        guest_count   INTEGER NOT NULL DEFAULT 0,
         shift_id      TEXT,
         subtotal      TEXT NOT NULL DEFAULT '0.00',
         discount_total TEXT NOT NULL DEFAULT '0.00',

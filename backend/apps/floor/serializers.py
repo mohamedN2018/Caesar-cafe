@@ -14,6 +14,7 @@ class AreaSerializer(serializers.ModelSerializer):
 
 class TableSerializer(serializers.ModelSerializer):
     area_name = serializers.CharField(source="area.name_ar", read_only=True)
+    seated_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Table
@@ -23,12 +24,17 @@ class TableSerializer(serializers.ModelSerializer):
             "area_name",
             "number",
             "seats",
+            "seated_count",
             "status",
             "pos_x",
             "pos_y",
+            "shape",
+            "span_x",
+            "span_y",
+            "rotation",
             "is_active",
         ]
-        read_only_fields = ["id", "area_name"]
+        read_only_fields = ["id", "area_name", "seated_count"]
 
 
 class TableSessionSerializer(serializers.ModelSerializer):
@@ -66,11 +72,19 @@ class FloorStatusSerializer(serializers.Serializer):
     number = serializers.CharField()
     area = serializers.CharField()
     seats = serializers.IntegerField()
+    seated_count = serializers.IntegerField(help_text="People at the table now, not its capacity.")
     status = serializers.CharField()
     pos_x = serializers.IntegerField()
     pos_y = serializers.IntegerField()
+    shape = serializers.CharField()
+    span_x = serializers.IntegerField()
+    span_y = serializers.IntegerField()
+    rotation = serializers.IntegerField()
     session_id = serializers.UUIDField(allow_null=True)
     guest_count = serializers.IntegerField(allow_null=True)
+    seated_minutes = serializers.IntegerField(
+        allow_null=True, help_text="How long this party has been sitting."
+    )
     opened_at = serializers.DateTimeField(allow_null=True)
     order_count = serializers.IntegerField()
     total_due = serializers.DecimalField(max_digits=12, decimal_places=2)

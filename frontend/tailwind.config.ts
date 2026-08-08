@@ -1,5 +1,12 @@
 import type { Config } from 'tailwindcss'
 
+/**
+ * Every colour resolves to a CSS variable declared in `src/assets/brand.css`.
+ *
+ * Tailwind holds the scale names, the stylesheet holds the values, and the
+ * Desktop reads the same values from `ui/theme.py`. A hex literal in this file
+ * would be a fourth place the brand lives, and the one that drifts.
+ */
 export default {
   content: ['./index.html', './src/**/*.{vue,ts}'],
   darkMode: 'class',
@@ -11,20 +18,43 @@ export default {
         sans: ['Cairo', 'Tajawal', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // Deep blue, not the usual SaaS indigo: it has to stay legible on the
+        // كافيه القيصر: burgundy and gold. Deep enough to stay legible on the
         // cheap, washed-out screens these dashboards actually run on.
         brand: {
-          50: '#eef4fb',
-          100: '#d6e4f5',
-          200: '#adc9ea',
-          300: '#7ea9dc',
-          400: '#4f88cd',
-          500: '#2e6ab4',
-          600: '#245699',
-          700: '#1d4e89',
-          800: '#17406f',
-          900: '#123456',
+          50: 'var(--brand-50)',
+          100: 'var(--brand-100)',
+          200: 'var(--brand-200)',
+          300: 'var(--brand-300)',
+          400: 'var(--brand-400)',
+          500: 'var(--brand-500)',
+          600: 'var(--brand-600)',
+          700: 'var(--brand-700)',
+          800: 'var(--brand-800)',
+          900: 'var(--brand-900)',
         },
+        gold: {
+          100: 'var(--gold-100)',
+          200: 'var(--gold-200)',
+          300: 'var(--gold-300)',
+          400: 'var(--gold-400)',
+          500: 'var(--gold-500)',
+          600: 'var(--gold-600)',
+          700: 'var(--gold-700)',
+        },
+        surface: {
+          DEFAULT: 'var(--surface)',
+          muted: 'var(--surface-muted)',
+          sunken: 'var(--surface-sunken)',
+        },
+        ink: {
+          DEFAULT: 'var(--ink)',
+          muted: 'var(--ink-muted)',
+          faint: 'var(--ink-faint)',
+        },
+      },
+      borderColor: {
+        DEFAULT: 'var(--border)',
+        strong: 'var(--border-strong)',
       },
     },
   },

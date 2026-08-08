@@ -60,6 +60,7 @@ interface LowStock {
 
 const auth = useAuthStore()
 const loading = ref(true)
+const failed = ref(false)
 const board = ref<Dashboard | null>(null)
 const lowStock = ref<LowStock[]>([])
 
@@ -78,22 +79,27 @@ const busiestHours = computed(() =>
 )
 
 onMounted(async () => {
+  // Each panel is asked for only by somebody who may have it, and `optional`
+  // turns a refusal into an absent panel rather than a message. A user is never
+  // told off for a request the interface made on their behalf.
   const jobs: Promise<unknown>[] = []
 
   if (auth.can('reports.sales')) {
     jobs.push(
       api
-        .get<Dashboard>('/reports/dashboard/')
+        .optional<Dashboard>('/reports/dashboard/')
         .then((data) => (board.value = data))
-        .catch(() => undefined),
+        // An outage is not a "no". The numbers stay absent and the banner says
+        // why, rather than the screen pretending the day had no sales.
+        .catch(() => (failed.value = true)),
     )
   }
   if (auth.can('inventory.view')) {
     jobs.push(
       api
-        .get<LowStock[]>('/inventory/levels/', { low_stock: 'true' })
-        .then((rows) => (lowStock.value = rows))
-        .catch(() => undefined),
+        .optional<LowStock[]>('/inventory/levels/', { low_stock: 'true' })
+        .then((rows) => (lowStock.value = rows ?? []))
+        .catch(() => (failed.value = true)),
     )
   }
 
@@ -149,11 +155,16 @@ onMounted(async () => {
         </RouterLink>
       </UiCard>
 
-      <UiAlert v-if="!board" tone="info">
-        لوحة الأرقام تحتاج صلاحية تقارير المبيعات.
+      <!-- No "you lack permission" banner. Somebody without the reports code
+           simply has a dashboard without numbers on it, and it reads as a
+           complete screen rather than a locked one. An OUTAGE does get said
+           out loud — a blank panel that means "we could not reach the server"
+           must not look like a quiet day. -->
+      <UiAlert v-if="failed" tone="warning">
+        تعذّر تحميل بعض الأرقام — جرّب التحديث بعد قليل.
       </UiAlert>
 
-      <template v-else>
+      <template v-if="board">
         <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <UiCard>
             <p class="text-sm text-slate-500">صافي مبيعات اليوم</p>

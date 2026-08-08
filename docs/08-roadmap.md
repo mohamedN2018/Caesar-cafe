@@ -1184,6 +1184,86 @@ the drawer, we need it to be during a week when the old process is still the sou
 
 ---
 
+## The room, the brand, and something to look at ✅ COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **885 backend tests** · **431 desktop tests** (34 new) ·
+**22 frontend tests** (new) · migrations clean · `spectacular --fail-on-warn` clean · `vue-tsc`
+clean · `vite build` clean.
+
+### The cafe is real
+
+كافيه القيصر, Al-Salaha Street, north of Shibin al-Qanatir — the one with the kids' area, which is
+why this system has one. The palette is **burgundy and gold**: the name is imperial and so is the
+room, and gold on deep red survives a washed-out screen far better than a mid-tone does.
+
+Every colour in the product now resolves through a token in `frontend/src/assets/brand.css`. That is
+not tidiness — §62 says nothing about the business is a code constant, and a brand is a business
+fact. The Desktop mirrors the same values in `ui/palette.py`, and `test_brand_parity.py` reads the
+CSS across the monorepo and fails if one drifts. Two halves painting slightly different reds is the
+kind of thing a customer looking at both notices and a developer looking at one never does.
+
+### `seed_demo` — a whole cafe, populated
+
+Not fixtures. It drives the **real services** — `open_order`, `apply_events`, `take_payment`,
+`post_receipt`, `check_in` — so a fortnight of trading obeys every rule the product enforces. Rows
+inserted straight into tables would render fine and prove nothing: totals would not tie and stock
+would not move.
+
+    python manage.py seed_demo --days 14
+
+Leaves ~2,500 orders shaped like a real day (morning rush, dead afternoon, heavy evening, busier
+weekends), fourteen closed shifts with the occasional cash variance, half the room seated, tickets
+at every kitchen state including one deliberately late, four children mid-visit with one overdue,
+stock received through a real GRN, and ten staff with a PIN each.
+
+Two decisions: it **refuses to run against a database with orders** unless forced, because demo
+trading mixed into a real ledger cannot be separated afterwards; and it is **deterministic**, so the
+demo shown on Tuesday is the one debugged on Monday.
+
+### The floor is drawn, not tabulated
+
+`Table` gained `shape`, `span_x/span_y` and `rotation`, and the floor is now a picture of the room
+on both clients — CSS 3D on the Web, QPainter on the Desktop.
+
+**The chairs are real chairs.** Seat positions are computed, not decorative: round tables space
+theirs around the circle, rectangles fill the long sides before the ends (six around a 2×1 is 3+3,
+not 2+2+1+1, because nobody seats two people at the narrow end while the sides have room), booths
+never seat anyone against the wall, bars are one row facing the counter. **Occupied chairs are
+drawn burgundy and sit taller**, so a full table reads as full before anybody reads a number.
+
+That is the point of the whole exercise: `seats` is the furniture and `seated_count` is the party,
+and a four-top with two people is not "occupied" — it is half a table. A status grid cannot say
+that, and it is exactly what somebody seating a walk-in needs. There is a party-size box that dims
+every table that will not fit.
+
+The arithmetic exists twice (TypeScript for CSS, Python for QPainter) because there is no artefact
+to vendor between a browser and Qt. So it is tested twice, and `test_floor_geometry.py` reads the
+Web's source across the monorepo to prove the two still describe the same layouts — same discipline
+as the money modules.
+
+**No WebGL.** three.js would add ~600 kB to a bundle a cafe loads over Egyptian mobile data and put
+every table behind a canvas: unselectable, untabbable, invisible to a screen reader. A tilted plane
+with `<button>`s standing on it is all the depth this needs, and it degrades to flat under
+`prefers-reduced-motion`.
+
+### Nobody is told off for a link the app drew
+
+The rule, stated once and enforced: **a user is never shown a refusal for something they were never
+offered.** `ليس لديك صلاحية: inventory.view` on a screen the interface itself loaded is the app
+blaming somebody for its own request.
+
+- `api.optional()` returns `null` when the server declines, so a secondary panel is simply absent.
+  Every other failure still throws — **an outage is not a "no"**, and blanking a section during one
+  hides a problem worth showing. The dashboard now distinguishes the two.
+- `<Can permission="…">` renders nothing rather than a placeholder, and deliberately has no fallback
+  slot: a "you may not see this" box is the message this component exists to remove.
+- Primary resources stay behind the route guard, so the page never opens at all.
+
+None of this is a security boundary. The server re-checks everything, exactly as §62 requires — this
+makes the screen truthful, not the system safe.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

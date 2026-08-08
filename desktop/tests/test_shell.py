@@ -228,7 +228,7 @@ class TestNavigation:
         shell = make_shell(db, engine)
         qtbot.addWidget(shell)
         shell.show_board("floor")
-        shell.boards["floor"].grid.itemAt(0).widget().click()
+        shell.boards["floor"].room.table_clicked.emit("t-1")
 
         assert shell.current_board == "pos"
         assert shell.boards["pos"].order_id == order.order_id

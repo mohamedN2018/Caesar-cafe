@@ -147,9 +147,40 @@ class TestFloorMap:
 
         chosen = []
         window.table_chosen.connect(lambda tid, oid: chosen.append((tid, oid)))
-        window.grid.itemAtPosition(0, 0).widget().click()
+        # The room paints tables rather than laying out buttons, so a tap is the
+        # widget's own signal rather than a click on a child.
+        window.room.table_clicked.emit("t-1")
 
         assert chosen == [("t-1", order.order_id)]
+
+    def test_the_room_is_given_the_tables_to_paint(self, qtbot, db, floor) -> None:
+        window = FloorWindow(db)
+        qtbot.addWidget(window)
+
+        assert len(window.room.tables) == 3
+
+    def test_an_occupied_table_carries_its_party_into_the_room(
+        self, qtbot, db, floor, settings
+    ) -> None:
+        """
+        The furniture is `seats`; the party is `seated_count`. Only the second
+        tells a waiter that a four-top still has two chairs free.
+        """
+        order = service.open_order(db, settings=settings, table_id="t-1", guest_count=2)
+        service.add_item(db, order.order_id, variant_id="v1")
+
+        window = FloorWindow(db)
+        qtbot.addWidget(window)
+        table = next(t for t in window.room.tables if t["id"] == "t-1")
+
+        assert table["seats"] == 4
+        assert table["seated_count"] == 2
+
+    def test_a_free_table_seats_nobody(self, qtbot, db, floor) -> None:
+        window = FloorWindow(db)
+        qtbot.addWidget(window)
+
+        assert all(t["seated_count"] == 0 for t in window.room.tables)
 
     def test_an_unsynced_terminal_says_so(self, qtbot, db) -> None:
         window = FloorWindow(db)
