@@ -6303,6 +6303,44 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/permissions/:
+    get:
+      operationId: permissions_list
+      description: |-
+        The shipped permission catalogue, grouped.
+
+        Served rather than duplicated in the SPA: a role editor whose list of
+        permissions was written by hand in TypeScript would drift from the server's
+        the first time a code was added, and the drift would show up as a permission
+        nobody can grant.
+      summary: Every permission code the product defines
+      tags:
+      - permissions
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PermissionDef'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/purchasing/outstanding/:
     get:
       operationId: purchasing_outstanding_list
@@ -8372,6 +8410,232 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/roles/:
+    get:
+      operationId: roles_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - roles
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Role'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: roles_create
+      tags:
+      - roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Role'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/roles/{id}/:
+    get:
+      operationId: roles_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا role.
+        required: true
+      tags:
+      - roles
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Role'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: roles_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا role.
+        required: true
+      tags:
+      - roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoleRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Role'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: roles_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا role.
+        required: true
+      tags:
+      - roles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRoleRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Role'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: roles_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا role.
+        required: true
+      tags:
+      - roles
+      responses:
+        '204':
+          description: No response body
   /api/v1/schema/:
     get:
       operationId: schema_retrieve
@@ -8935,6 +9199,396 @@ paths:
                     - true
                   data:
                     $ref: '#/components/schemas/Shift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/staff/:
+    get:
+      operationId: staff_list
+      description: |-
+        People, not accounts. Read and edit; creation goes through `POST /staff/`
+        with its own serializer because it also mints a role assignment.
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - staff
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedStaffList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: staff_create
+      description: |-
+        People, not accounts. Read and edit; creation goes through `POST /staff/`
+        with its own serializer because it also mints a role assignment.
+      summary: Create a staff member and assign their role
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffCreateRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffCreateRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffCreateRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Staff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/staff/{id}/:
+    get:
+      operationId: staff_retrieve
+      description: |-
+        People, not accounts. Read and edit; creation goes through `POST /staff/`
+        with its own serializer because it also mints a role assignment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا user.
+        required: true
+      tags:
+      - staff
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Staff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: staff_partial_update
+      description: |-
+        People, not accounts. Read and edit; creation goes through `POST /staff/`
+        with its own serializer because it also mints a role assignment.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا user.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedStaffRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Staff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/staff/{id}/assign-role/:
+    post:
+      operationId: staff_assign_role_create
+      description: |-
+        People, not accounts. Read and edit; creation goes through `POST /staff/`
+        with its own serializer because it also mints a role assignment.
+      summary: Assign a role
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا user.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RoleAssignmentRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Staff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/staff/{id}/reset-pin/:
+    post:
+      operationId: staff_reset_pin_create
+      description: |-
+        People, not accounts. Read and edit; creation goes through `POST /staff/`
+        with its own serializer because it also mints a role assignment.
+      summary: Set a staff member's POS PIN administratively
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا user.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ResetPinRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ResetPinRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ResetPinRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Staff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/staff/{id}/revoke-role/{assignment_id}/:
+    post:
+      operationId: staff_revoke_role_create
+      description: |-
+        People, not accounts. Read and edit; creation goes through `POST /staff/`
+        with its own serializer because it also mints a role assignment.
+      summary: Remove a role assignment
+      parameters:
+      - in: path
+        name: assignment_id
+        schema:
+          type: string
+          format: uuid
+        description: The RoleAssignment to remove.
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا user.
+        required: true
+      tags:
+      - staff
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Staff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/staff/{id}/set-active/:
+    post:
+      operationId: staff_set_active_create
+      description: |-
+        People, not accounts. Read and edit; creation goes through `POST /staff/`
+        with its own serializer because it also mints a role assignment.
+      summary: Activate or deactivate a staff member
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا user.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetActiveRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetActiveRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetActiveRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Staff'
                   meta:
                     type: object
                     properties:
@@ -12670,6 +13324,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PurchaseReturn'
+    PaginatedStaffList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Staff'
     PaginatedStockCountList:
       type: object
       required:
@@ -13109,6 +13782,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RecipeLineRequest'
+    PatchedRoleRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        name_en:
+          type: string
+          maxLength: 100
+        description_ar:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          writeOnly: true
     PatchedSettingWriteRequestRequest:
       type: object
       properties:
@@ -13121,6 +13816,26 @@ components:
           type: object
           additionalProperties: {}
           description: Setting key → new value. Each is validated independently.
+    PatchedStaffRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 32
+        full_name_ar:
+          type: string
+          minLength: 1
+          maxLength: 200
+        full_name_en:
+          type: string
+          maxLength: 200
+        is_active:
+          type: boolean
     PatchedStationRequest:
       type: object
       properties:
@@ -13361,6 +14076,27 @@ components:
       - amount
       - method
       - order
+    PermissionDef:
+      type: object
+      description: The shipped catalogue, so the Web can render a picker it did not
+        invent.
+      properties:
+        code:
+          type: string
+        group:
+          type: string
+        label_ar:
+          type: string
+        description_ar:
+          type: string
+        sensitive:
+          type: boolean
+      required:
+      - code
+      - description_ar
+      - group
+      - label_ar
+      - sensitive
     PlayArea:
       type: object
       properties:
@@ -14543,6 +15279,24 @@ components:
       - suggested_quantity
       - supplier
       - supplier_id
+    ResetPinRequest:
+      type: object
+      description: |-
+        An administrative reset, distinct from `POST /auth/set-pin/`.
+
+        Self-service requires the account password because it proves the person at
+        the keyboard is the account holder. A manager resetting a cashier's PIN
+        cannot know that password — which is the whole reason the reset exists — so
+        the proof here is the manager's own permission, and the audit trail records
+        who did it to whom.
+      properties:
+        pin:
+          type: string
+          writeOnly: true
+          minLength: 4
+          maxLength: 8
+      required:
+      - pin
     ResolutionEnum:
       enum:
       - ACKNOWLEDGED
@@ -14576,6 +15330,113 @@ components:
       - is_default
       - origin
       - value
+    Role:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          maxLength: 50
+        name_ar:
+          type: string
+          maxLength: 100
+        name_en:
+          type: string
+          maxLength: 100
+        description_ar:
+          type: string
+        is_system:
+          type: boolean
+          readOnly: true
+          description: System roles may be edited but never deleted.
+        assignment_count:
+          type: integer
+          readOnly: true
+      required:
+      - assignment_count
+      - code
+      - id
+      - is_system
+      - name_ar
+    RoleAssignment:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+        role:
+          type: string
+          format: uuid
+        role_code:
+          type: string
+          readOnly: true
+        role_name:
+          type: string
+          readOnly: true
+        branch:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null = every branch in the organization.
+        branch_name:
+          type: string
+          readOnly: true
+      required:
+      - branch_name
+      - id
+      - role
+      - role_code
+      - role_name
+      - user
+    RoleAssignmentRequest:
+      type: object
+      properties:
+        user:
+          type: string
+          format: uuid
+        role:
+          type: string
+          format: uuid
+        branch:
+          type: string
+          format: uuid
+          nullable: true
+          description: Null = every branch in the organization.
+      required:
+      - role
+      - user
+    RoleRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        name_en:
+          type: string
+          maxLength: 100
+        description_ar:
+          type: string
+        permissions:
+          type: array
+          items:
+            type: string
+            minLength: 1
+          writeOnly: true
+      required:
+      - code
+      - name_ar
     RollupRebuildRequest:
       type: object
       properties:
@@ -14663,6 +15524,13 @@ components:
         * `BRANCH` - BRANCH
         * `DEVICE` - DEVICE
         * `ROLE` - ROLE
+    SetActiveRequest:
+      type: object
+      properties:
+        is_active:
+          type: boolean
+      required:
+      - is_active
     SetPinRequest:
       type: object
       properties:
@@ -14956,6 +15824,95 @@ components:
         * `OPEN` - OPEN
         * `CLOSING` - CLOSING
         * `CLOSED` - CLOSED
+    Staff:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 32
+        full_name_ar:
+          type: string
+          maxLength: 200
+        full_name_en:
+          type: string
+          maxLength: 200
+        is_active:
+          type: boolean
+        mfa_enabled:
+          type: boolean
+          readOnly: true
+        has_pin:
+          type: boolean
+          readOnly: true
+        pin_set_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_login:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          title: آخر دخول
+        job_title:
+          type: string
+          readOnly: true
+          default: ''
+        assignments:
+          type: array
+          items:
+            $ref: '#/components/schemas/RoleAssignment'
+          readOnly: true
+      required:
+      - assignments
+      - email
+      - full_name_ar
+      - has_pin
+      - id
+      - job_title
+      - last_login
+      - mfa_enabled
+      - pin_set_at
+    StaffCreateRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+        full_name_ar:
+          type: string
+          minLength: 1
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 32
+        password:
+          type: string
+          writeOnly: true
+          minLength: 12
+        role:
+          type: string
+          minLength: 1
+          description: A role code, e.g. CASHIER. Assigned to the caller's branch.
+        branch_scoped:
+          type: boolean
+          default: true
+          description: False assigns the role across every branch in the organization.
+      required:
+      - email
+      - full_name_ar
+      - password
+      - role
     Station:
       type: object
       properties:

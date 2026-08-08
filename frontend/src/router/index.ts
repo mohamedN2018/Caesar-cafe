@@ -142,6 +142,12 @@ const router = createRouter({
           meta: { permission: 'inventory.view' },
         },
         {
+          path: 'staff',
+          name: 'staff',
+          component: () => import('@/views/staff/StaffListView.vue'),
+          meta: { permission: 'staff.view' },
+        },
+        {
           path: 'licensing',
           name: 'licensing',
           component: () => import('@/views/licensing/LicenseListView.vue'),

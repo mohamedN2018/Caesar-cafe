@@ -80,6 +80,7 @@ const groups: NavGroup[] = [
   {
     label: 'النظام',
     items: [
+      { label: 'الموظفون', to: '/staff', icon: '👥', permission: 'staff.view' },
       { label: 'التراخيص', to: '/licensing', icon: '🔑', permission: 'licenses.view' },
       { label: 'الأجهزة', to: '/devices', icon: '🖥️', permission: 'devices.view' },
       { label: 'المزامنة', to: '/sync', icon: '🔄', permission: 'sync.view' },

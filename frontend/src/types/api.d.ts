@@ -2182,6 +2182,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/permissions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Every permission code the product defines
+         * @description The shipped permission catalogue, grouped.
+         *
+         *     Served rather than duplicated in the SPA: a role editor whose list of
+         *     permissions was written by hand in TypeScript would drift from the server's
+         *     the first time a code was added, and the drift would show up as a permission
+         *     nobody can grant.
+         */
+        get: operations["permissions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/purchasing/outstanding/": {
         parameters: {
             query?: never;
@@ -3103,6 +3128,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/roles/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["roles_list"];
+        put?: never;
+        post: operations["roles_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/roles/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["roles_retrieve"];
+        put: operations["roles_update"];
+        post?: never;
+        delete: operations["roles_destroy"];
+        options?: never;
+        head?: never;
+        patch: operations["roles_partial_update"];
+        trace?: never;
+    };
     "/api/v1/schema/": {
         parameters: {
             query?: never;
@@ -3328,6 +3385,139 @@ export interface paths {
         put?: never;
         /** Open a shift */
         post: operations["shifts_open_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description People, not accounts. Read and edit; creation goes through `POST /staff/`
+         *     with its own serializer because it also mints a role assignment.
+         */
+        get: operations["staff_list"];
+        put?: never;
+        /**
+         * Create a staff member and assign their role
+         * @description People, not accounts. Read and edit; creation goes through `POST /staff/`
+         *     with its own serializer because it also mints a role assignment.
+         */
+        post: operations["staff_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description People, not accounts. Read and edit; creation goes through `POST /staff/`
+         *     with its own serializer because it also mints a role assignment.
+         */
+        get: operations["staff_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description People, not accounts. Read and edit; creation goes through `POST /staff/`
+         *     with its own serializer because it also mints a role assignment.
+         */
+        patch: operations["staff_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/assign-role/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Assign a role
+         * @description People, not accounts. Read and edit; creation goes through `POST /staff/`
+         *     with its own serializer because it also mints a role assignment.
+         */
+        post: operations["staff_assign_role_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/reset-pin/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Set a staff member's POS PIN administratively
+         * @description People, not accounts. Read and edit; creation goes through `POST /staff/`
+         *     with its own serializer because it also mints a role assignment.
+         */
+        post: operations["staff_reset_pin_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/revoke-role/{assignment_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Remove a role assignment
+         * @description People, not accounts. Read and edit; creation goes through `POST /staff/`
+         *     with its own serializer because it also mints a role assignment.
+         */
+        post: operations["staff_revoke_role_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/set-active/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Activate or deactivate a staff member
+         * @description People, not accounts. Read and edit; creation goes through `POST /staff/`
+         *     with its own serializer because it also mints a role assignment.
+         */
+        post: operations["staff_set_active_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4922,6 +5112,19 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["PurchaseReturn"][];
         };
+        PaginatedStaffList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["Staff"][];
+        };
         PaginatedStockCountList: {
             /**
              * Format: uri
@@ -5138,6 +5341,13 @@ export interface components {
             is_active?: boolean;
             lines?: components["schemas"]["RecipeLineRequest"][];
         };
+        PatchedRoleRequest: {
+            code?: string;
+            name_ar?: string;
+            name_en?: string;
+            description_ar?: string;
+            permissions?: string[];
+        };
         PatchedSettingWriteRequestRequest: {
             scope?: components["schemas"]["ScopeEnum"];
             /** Format: uuid */
@@ -5146,6 +5356,14 @@ export interface components {
             values?: {
                 [key: string]: unknown;
             };
+        };
+        PatchedStaffRequest: {
+            /** Format: email */
+            email?: string;
+            phone?: string;
+            full_name_ar?: string;
+            full_name_en?: string;
+            is_active?: boolean;
         };
         PatchedStationRequest: {
             /** @description COFFEE, HOT, COLD, DESSERT, BAR */
@@ -5237,6 +5455,14 @@ export interface components {
             /** Format: decimal */
             tendered?: string | null;
             reference?: string;
+        };
+        /** @description The shipped catalogue, so the Web can render a picker it did not invent. */
+        PermissionDef: {
+            code: string;
+            group: string;
+            label_ar: string;
+            description_ar: string;
+            sensitive: boolean;
         };
         PlayArea: {
             /** Format: uuid */
@@ -5753,6 +5979,18 @@ export interface components {
             supplier_id: string | null;
         };
         /**
+         * @description An administrative reset, distinct from `POST /auth/set-pin/`.
+         *
+         *     Self-service requires the account password because it proves the person at
+         *     the keyboard is the account holder. A manager resetting a cashier's PIN
+         *     cannot know that password — which is the whole reason the reset exists — so
+         *     the proof here is the manager's own permission, and the audit trail records
+         *     who did it to whom.
+         */
+        ResetPinRequest: {
+            pin: string;
+        };
+        /**
          * @description * `ACKNOWLEDGED` - ACKNOWLEDGED
          *     * `RETRIED` - RETRIED
          *     * `DISCARDED` - DISCARDED
@@ -5767,6 +6005,51 @@ export interface components {
             value: unknown;
             origin: components["schemas"]["OriginEnum"];
             is_default: boolean;
+        };
+        Role: {
+            /** Format: uuid */
+            readonly id: string;
+            code: string;
+            name_ar: string;
+            name_en?: string;
+            description_ar?: string;
+            /** @description System roles may be edited but never deleted. */
+            readonly is_system: boolean;
+            readonly assignment_count: number;
+        };
+        RoleAssignment: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            user: string;
+            /** Format: uuid */
+            role: string;
+            readonly role_code: string;
+            readonly role_name: string;
+            /**
+             * Format: uuid
+             * @description Null = every branch in the organization.
+             */
+            branch?: string | null;
+            readonly branch_name: string;
+        };
+        RoleAssignmentRequest: {
+            /** Format: uuid */
+            user: string;
+            /** Format: uuid */
+            role: string;
+            /**
+             * Format: uuid
+             * @description Null = every branch in the organization.
+             */
+            branch?: string | null;
+        };
+        RoleRequest: {
+            code: string;
+            name_ar: string;
+            name_en?: string;
+            description_ar?: string;
+            permissions?: string[];
         };
         RollupRebuildRequest: {
             /** Format: date */
@@ -5810,6 +6093,9 @@ export interface components {
          * @enum {string}
          */
         ScopeEnum: "ORGANIZATION" | "BRANCH" | "DEVICE" | "ROLE";
+        SetActiveRequest: {
+            is_active: boolean;
+        };
         SetPinRequest: {
             pin: string;
             current_password: string;
@@ -5928,6 +6214,42 @@ export interface components {
          * @enum {string}
          */
         ShiftStatusEnum: "OPEN" | "CLOSING" | "CLOSED";
+        Staff: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: email */
+            email: string;
+            phone?: string;
+            full_name_ar: string;
+            full_name_en?: string;
+            is_active?: boolean;
+            readonly mfa_enabled: boolean;
+            readonly has_pin: boolean;
+            /** Format: date-time */
+            readonly pin_set_at: string | null;
+            /**
+             * آخر دخول
+             * Format: date-time
+             */
+            readonly last_login: string | null;
+            /** @default  */
+            readonly job_title: string;
+            readonly assignments: components["schemas"]["RoleAssignment"][];
+        };
+        StaffCreateRequest: {
+            /** Format: email */
+            email: string;
+            full_name_ar: string;
+            phone?: string;
+            password: string;
+            /** @description A role code, e.g. CASHIER. Assigned to the caller's branch. */
+            role: string;
+            /**
+             * @description False assigns the role across every branch in the organization.
+             * @default true
+             */
+            branch_scoped: boolean;
+        };
         Station: {
             /** Format: uuid */
             readonly id: string;
@@ -11065,6 +11387,33 @@ export interface operations {
             };
         };
     };
+    permissions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PermissionDef"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     purchasing_outstanding_list: {
         parameters: {
             query?: never;
@@ -12561,6 +12910,194 @@ export interface operations {
             };
         };
     };
+    roles_list: {
+        parameters: {
+            query?: {
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Role"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    roles_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RoleRequest"];
+                "multipart/form-data": components["schemas"]["RoleRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Role"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    roles_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Role"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    roles_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RoleRequest"];
+                "multipart/form-data": components["schemas"]["RoleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Role"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    roles_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    roles_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا role. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRoleRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedRoleRequest"];
+                "multipart/form-data": components["schemas"]["PatchedRoleRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Role"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     schema_retrieve: {
         parameters: {
             query?: {
@@ -13002,6 +13539,281 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["Shift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedStaffList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffCreateRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StaffCreateRequest"];
+                "multipart/form-data": components["schemas"]["StaffCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Staff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Staff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedStaffRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedStaffRequest"];
+                "multipart/form-data": components["schemas"]["PatchedStaffRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Staff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_assign_role_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RoleAssignmentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RoleAssignmentRequest"];
+                "multipart/form-data": components["schemas"]["RoleAssignmentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Staff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_reset_pin_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResetPinRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ResetPinRequest"];
+                "multipart/form-data": components["schemas"]["ResetPinRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Staff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_revoke_role_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description The RoleAssignment to remove. */
+                assignment_id: string;
+                /** @description نوع نص UUID يحدد هذا user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Staff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_set_active_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SetActiveRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SetActiveRequest"];
+                "multipart/form-data": components["schemas"]["SetActiveRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Staff"];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

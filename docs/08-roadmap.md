@@ -132,6 +132,48 @@ Notable outcomes:
   `DJANGO_SETTINGS_MODULE` outranks pytest's ini setting. Fixed with `--ds` in `addopts`; tests had
   been using real throttle rates, Redis, and `DEBUG=True` throughout Phase 1.
 
+### Staff and role administration ✅ COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **867 tests passing** (36 new) · `spectacular --fail-on-warn`
+clean · `vue-tsc` clean · `vite build` clean.
+
+A second gap of the same kind Phase 4 had: the authorization *engine* was complete and tested, and
+there was **no way to administer it**. `staff.view`, `staff.manage_users`, `staff.manage_roles` and
+`staff.reset_pin` were four codes in the catalogue that no route declared. `apps/accounts` offered
+login, self-service password and self-service PIN — and nothing for creating a person. An owner
+could not add a cashier, which meant nobody could stand at the till.
+
+Now built: `/staff/`, `/roles/`, `/permissions/`, and the Web screen over them. Four rules:
+
+1. **Nothing returns a secret.** `pin_hash` and `password` are absent from every serializer, and a
+   test asserts the actual stored hash does not appear in the response body. A staff screen that
+   could read either would turn one compromised manager session into every terminal in the branch.
+   What it shows instead is *whether* a PIN is set — the fact a manager needs, because a cashier
+   without one cannot log in during an outage.
+2. **A person is deactivated, never deleted** — their name is on last quarter's voids and shift
+   closures — and `DELETE` is not in `http_method_names` at all rather than being caught in a
+   handler. You also cannot deactivate yourself: that is a support call which cannot be resolved
+   from inside the product.
+3. **A system role is edited, never deleted.** An owner who does not want cashiers voiding items
+   should be able to say so; deleting the CASHIER role instead would orphan every assignment
+   pointing at it. Custom roles delete only when unassigned.
+4. **Somebody's last role cannot be revoked.** An account that can log in and do nothing is a
+   support call that looks like a broken system rather than a configuration mistake.
+
+Two details worth keeping. The role editor renders the permission catalogue **served by the
+server** — a hand-maintained copy in TypeScript would drift the first time a code was added, and
+the drift would surface as a permission nobody can grant. And a role edit calls
+`services.invalidate_all()`: permission sets are cached on the hot path of every request, so an
+edit that skipped this would take effect whenever the cache happened to expire, which is
+indistinguishable from a bug. A test proves a cashier loses `orders.view` on the next request, not
+the next cache cycle.
+
+`staff.reset_pin` stays separate from `staff.manage_users` because they answer to different risks.
+Self-service PIN change requires the account password, which proves the person at the keyboard is
+the account holder; a manager cannot know that password — which is the whole reason the
+administrative reset exists — so the proof there is the manager's own permission, and the audit
+trail records who did it to whom, never the value.
+
 ---
 
 ## Phase 2 — Identity & Authorization (original plan)
