@@ -30,6 +30,7 @@ api_v1 = [
     path("kids/", include("apps.kids.urls")),
     path("sync/", include("apps.sync.urls")),
     path("reports/", include("apps.reporting.urls")),
+    path("audit/", include("apps.audit.urls")),
     path("settings/", include("apps.configuration.urls")),
 ]
 

@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     "apps.kids",
     "apps.sync",
     "apps.reporting",
+    "apps.audit",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -100,6 +101,10 @@ MIDDLEWARE = [
     # Resolves the principal before any view builds a queryset, so there is no
     # window in which data could be read before we know who is asking.
     "apps.authz.middleware.AuthContextMiddleware",
+    # After AuthContextMiddleware: it reads the resolved principal. A reorder
+    # would produce audit rows with no actor — the shape you notice only during
+    # a dispute. tests/test_audit.py asserts the order.
+    "apps.audit.middleware.AuditContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]

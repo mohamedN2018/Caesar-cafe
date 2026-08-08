@@ -63,7 +63,7 @@ def open_shift(
         if existing is not None:
             raise ShiftAlreadyOpen(extra={"shift_id": str(existing.id)})
 
-    return Shift.objects.create(
+    shift = Shift.objects.create(
         **({"id": shift_id} if shift_id else {}),
         organization=branch.organization,
         branch=branch,
@@ -72,6 +72,20 @@ def open_shift(
         opening_cash=Decimal(opening_cash).quantize(Decimal("0.01")),
         created_by=user,
     )
+
+    from apps.audit import services as audit
+
+    audit.record(
+        "shift.opened",
+        branch=branch,
+        actor=user,
+        obj=shift,
+        detail={
+            "opening_cash": shift.opening_cash,
+            "device": str(device_id) if device_id else None,
+        },
+    )
+    return shift
 
 
 def record_cash_movement(
@@ -82,7 +96,7 @@ def record_cash_movement(
     if amount <= 0:
         raise AppError("المبلغ يجب أن يكون أكبر من صفر", code="INVALID_AMOUNT")
 
-    return CashMovement.objects.create(
+    movement = CashMovement.objects.create(
         shift=shift,
         movement_type=movement_type,
         amount=Decimal(amount).quantize(Decimal("0.01")),
@@ -90,6 +104,17 @@ def record_cash_movement(
         user=user,
         created_by=user,
     )
+
+    from apps.audit import services as audit
+
+    audit.record(
+        "shift.cash_movement",
+        branch=shift.branch,
+        actor=user,
+        obj=shift,
+        detail={"type": movement_type, "amount": movement.amount, "reason": movement.reason},
+    )
+    return movement
 
 
 def compute_totals(shift: Shift) -> ShiftTotals:
@@ -240,6 +265,33 @@ def close_shift(
         "approved_by": approved_by.full_name_ar if approved_by else None,
     }
     locked.save()
+
+    from apps.audit import services as audit
+
+    audit.record(
+        "shift.closed",
+        branch=locked.branch,
+        actor=user,
+        approved_by=approved_by,
+        obj=locked,
+        detail={
+            "expected_cash": totals.expected_cash,
+            "counted_cash": counted,
+            "variance": variance,
+            "order_count": totals.order_count,
+        },
+    )
+    if variance != 0:
+        # Separate from the close itself: a variance is the loss-prevention
+        # signal, and it should be findable without reading every shift close.
+        audit.record(
+            "shift.variance_recorded",
+            branch=locked.branch,
+            actor=user,
+            approved_by=approved_by,
+            obj=locked,
+            detail={"variance": variance, "reason": reason, "limit": limit},
+        )
 
     if locked.z_report.get("open_play_sessions"):
         logger.warning(

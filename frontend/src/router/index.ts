@@ -106,6 +106,12 @@ const router = createRouter({
           meta: { permission: 'devices.view' },
         },
         {
+          path: 'audit',
+          name: 'audit',
+          component: () => import('@/views/audit/AuditLogView.vue'),
+          meta: { permission: 'audit.view' },
+        },
+        {
           path: 'sync',
           name: 'sync',
           component: () => import('@/views/sync/SyncStatusView.vue'),

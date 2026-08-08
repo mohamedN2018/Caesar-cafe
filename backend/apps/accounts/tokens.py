@@ -203,6 +203,16 @@ def rotate(refresh_token: str, *, ip_address: str | None = None) -> dict[str, An
                 "ip": ip_address,
             },
         )
+        from apps.audit import services as audit
+
+        audit.record(
+            "auth.refresh_reuse_detected",
+            organization=getattr(family.user, "organization", None),
+            actor=family.user,
+            object_type="token_family",
+            object_id=str(family.id),
+            detail={"families_revoked": revoked, "rotations": family.rotation_count},
+        )
         raise TokenReuseDetected()
 
     if family.user is not None and not family.user.is_active:

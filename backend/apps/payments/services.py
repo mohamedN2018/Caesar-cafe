@@ -122,6 +122,21 @@ def take_payment(
     if locked.status == OrderStatus.PAID:
         _on_settled(locked, user=user)
 
+    from apps.audit import services as audit
+
+    audit.record(
+        "payment.taken",
+        branch=locked.branch,
+        actor=user,
+        obj=locked,
+        object_label=locked.local_number,
+        detail={
+            "amount": amount,
+            "method": method.code,
+            "reference": reference,
+            "order_status": locked.status,
+        },
+    )
     return payment
 
 
@@ -307,6 +322,17 @@ def refund(
         locked.status = OrderStatus.REFUNDED
         locked.save(update_fields=["status", "updated_at"])
 
+    from apps.audit import services as audit
+
+    audit.record(
+        "payment.refunded",
+        branch=locked.branch,
+        actor=user,
+        approved_by=approved_by,
+        obj=locked,
+        object_label=locked.local_number,
+        detail={"amount": amount, "reason": reason, "paid_total": locked.paid_total},
+    )
     logger.warning(
         "Refund issued",
         extra={

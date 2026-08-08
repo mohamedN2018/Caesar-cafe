@@ -4,6 +4,60 @@
  */
 
 export interface paths {
+    "/api/v1/audit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Audit log */
+        get: operations["audit_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** One audit entry */
+        get: operations["audit_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/audit/actions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Audited action catalogue
+         * @description The catalogue, so the UI's filter is generated rather than hardcoded.
+         */
+        get: operations["audit_actions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/change-password/": {
         parameters: {
             query?: never;
@@ -2952,6 +3006,43 @@ export interface components {
             sort_order?: number;
             is_active?: boolean;
         };
+        /** @description The catalogue, so the UI can build its filter without hardcoding codes. */
+        AuditAction: {
+            code: string;
+            domain: string;
+            label_ar: string;
+            severity: string;
+        };
+        AuditLog: {
+            readonly id: number;
+            readonly action: string;
+            readonly label_ar: string;
+            readonly domain: string;
+            readonly severity: components["schemas"]["SeverityEnum"];
+            /** Format: uuid */
+            readonly branch: string | null;
+            /** Format: uuid */
+            readonly actor: string | null;
+            /** @description Snapshotted — a deleted user must still be nameable. */
+            readonly actor_name: string;
+            readonly approved_by_name: string;
+            /** Format: uuid */
+            readonly device_id: string | null;
+            readonly object_type: string;
+            readonly object_id: string;
+            /** @description Human-readable, snapshotted: 'MB-01-0042'. */
+            readonly object_label: string;
+            readonly before: unknown;
+            readonly after: unknown;
+            /** @description Only the fields that moved: {field: [old, new]}. */
+            readonly changes: unknown;
+            /** @description Context that is not a field change — a reason, an amount. */
+            readonly detail: unknown;
+            readonly ip_address: string | null;
+            readonly request_id: string;
+            /** Format: date-time */
+            readonly occurred_at: string;
+        };
         Board: {
             /** Format: uuid */
             area_id: string;
@@ -4619,6 +4710,13 @@ export interface components {
                 [key: string]: string[];
             };
         };
+        /**
+         * @description * `INFO` - INFO
+         *     * `NOTICE` - NOTICE
+         *     * `WARNING` - WARNING
+         * @enum {string}
+         */
+        SeverityEnum: "INFO" | "NOTICE" | "WARNING";
         Shift: {
             /** Format: uuid */
             readonly id: string;
@@ -5028,6 +5126,97 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    audit_list: {
+        parameters: {
+            query?: {
+                action?: string;
+                actor?: string;
+                domain?: string;
+                object_id?: string;
+                severity?: "INFO" | "NOTICE" | "WARNING";
+                /** @description ISO-8601. Defaults to 30 days ago. */
+                since?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["AuditLog"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    audit_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["AuditLog"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    audit_actions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["AuditAction"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     auth_change_password_create: {
         parameters: {
             query?: never;

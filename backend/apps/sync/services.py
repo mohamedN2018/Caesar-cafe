@@ -415,6 +415,21 @@ def resolve_conflict(conflict: SyncConflict, *, resolution: str, note: str = "",
         update_fields=["resolved_at", "resolved_by", "resolution", "resolution_note", "updated_at"]
     )
 
+    from apps.audit import services as audit
+
+    audit.record(
+        "sync.conflict_resolved",
+        branch=conflict.branch,
+        actor=user,
+        obj=conflict,
+        object_label=conflict.code,
+        detail={
+            "resolution": resolution,
+            "note": note,
+            "entity_type": operation.entity_type,
+            "op_uuid": str(operation.op_uuid),
+        },
+    )
     logger.info(
         "Sync conflict resolved",
         extra={"conflict": str(conflict.id), "code": conflict.code, "resolution": resolution},

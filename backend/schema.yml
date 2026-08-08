@@ -4,6 +4,134 @@ info:
   version: 1.0.0
   description: POS, kitchen, inventory and management API for كافيه القيصر.
 paths:
+  /api/v1/audit/:
+    get:
+      operationId: audit_list
+      summary: Audit log
+      parameters:
+      - in: query
+        name: action
+        schema:
+          type: string
+      - in: query
+        name: actor
+        schema:
+          type: string
+      - in: query
+        name: domain
+        schema:
+          type: string
+      - in: query
+        name: object_id
+        schema:
+          type: string
+      - in: query
+        name: severity
+        schema:
+          type: string
+          enum:
+          - INFO
+          - NOTICE
+          - WARNING
+      - in: query
+        name: since
+        schema:
+          type: string
+        description: ISO-8601. Defaults to 30 days ago.
+      tags:
+      - audit
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditLog'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/audit/{id}/:
+    get:
+      operationId: audit_retrieve
+      summary: One audit entry
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - audit
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/AuditLog'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/audit/actions/:
+    get:
+      operationId: audit_actions_list
+      description: The catalogue, so the UI's filter is generated rather than hardcoded.
+      summary: Audited action catalogue
+      tags:
+      - audit
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/AuditAction'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/auth/change-password/:
     post:
       operationId: auth_change_password_create
@@ -7752,6 +7880,117 @@ components:
           type: boolean
       required:
       - name_ar
+    AuditAction:
+      type: object
+      description: The catalogue, so the UI can build its filter without hardcoding
+        codes.
+      properties:
+        code:
+          type: string
+        domain:
+          type: string
+        label_ar:
+          type: string
+        severity:
+          type: string
+      required:
+      - code
+      - domain
+      - label_ar
+      - severity
+    AuditLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        action:
+          type: string
+          readOnly: true
+        label_ar:
+          type: string
+          readOnly: true
+        domain:
+          type: string
+          readOnly: true
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          readOnly: true
+        branch:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        actor:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        actor_name:
+          type: string
+          readOnly: true
+          description: Snapshotted — a deleted user must still be nameable.
+        approved_by_name:
+          type: string
+          readOnly: true
+        device_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        object_type:
+          type: string
+          readOnly: true
+        object_id:
+          type: string
+          readOnly: true
+        object_label:
+          type: string
+          readOnly: true
+          description: 'Human-readable, snapshotted: ''MB-01-0042''.'
+        before:
+          readOnly: true
+        after:
+          readOnly: true
+        changes:
+          readOnly: true
+          description: 'Only the fields that moved: {field: [old, new]}.'
+        detail:
+          readOnly: true
+          description: Context that is not a field change — a reason, an amount.
+        ip_address:
+          type: string
+          readOnly: true
+          nullable: true
+        request_id:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - action
+      - actor
+      - actor_name
+      - after
+      - approved_by_name
+      - before
+      - branch
+      - changes
+      - detail
+      - device_id
+      - domain
+      - id
+      - ip_address
+      - label_ar
+      - object_id
+      - object_label
+      - object_type
+      - occurred_at
+      - request_id
+      - severity
     Board:
       type: object
       properties:
@@ -11533,6 +11772,16 @@ components:
       required:
       - applied
       - errors
+    SeverityEnum:
+      enum:
+      - INFO
+      - NOTICE
+      - WARNING
+      type: string
+      description: |-
+        * `INFO` - INFO
+        * `NOTICE` - NOTICE
+        * `WARNING` - WARNING
     Shift:
       type: object
       properties:

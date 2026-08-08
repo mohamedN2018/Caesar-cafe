@@ -517,6 +517,24 @@ def check_out(
         ]
     )
 
+    if recipient.id != locked.guardian_id:
+        # The one audited event in this product whose failure is not financial.
+        from apps.audit import services as audit
+
+        audit.record(
+            "kids.released_to_other",
+            branch=locked.branch,
+            actor=user,
+            approved_by=approval,
+            obj=locked,
+            object_label=f"#{locked.tag_number} {locked.child.first_name}",
+            detail={
+                "registered_guardian": locked.guardian.full_name,
+                "released_to": recipient.full_name,
+                "released_to_phone": recipient.phone,
+            },
+        )
+
     logger.info(
         "Play session closed",
         extra={
@@ -554,6 +572,18 @@ def override_session_charge(
     session.override_by = user
     session.save(update_fields=["override_charge", "override_reason", "override_by", "updated_at"])
 
+    from apps.audit import services as audit
+
+    audit.record(
+        "kids.charge_overridden",
+        branch=session.branch,
+        actor=user,
+        obj=session,
+        object_label=f"#{session.tag_number} {session.child.first_name}",
+        before={"charge": session.computed_charge},
+        after={"charge": amount},
+        detail={"reason": reason, "computed": session.computed_charge},
+    )
     logger.warning(
         "Play charge overridden",
         extra={

@@ -24,6 +24,7 @@ Architecture Dossier — v0.1 (pre-implementation)
 | 10 | [Future Extensions](10-future.md) | Multi-branch, SaaS, mobile, loyalty, e-invoicing, deliberately deferred items |
 | 11 | [Configuration Framework](11-configuration.md) | Settings registry, scope resolution, the full ~180-setting catalog |
 | 12 | [Kids Area](12-kids-area.md) | Time-based billing, tariff engine, capacity & child-safety rules |
+| 13 | [Operations Runbook](13-operations.md) | Secret rotation, the restore drill, reading the audit trail during an incident |
 
 ---
 

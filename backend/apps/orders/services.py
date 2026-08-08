@@ -276,11 +276,28 @@ def _item_voided(order: Order, payload: dict, *, actor=None) -> None:
     an auditable decision, and the void rate per user is a loss-prevention
     signal (docs/03).
     """
+    from apps.audit import services as audit
+
     item = _get_line(order, payload["line_id"])
     item.status = ItemStatus.VOIDED
     item.voided_at = timezone.now()
     item.void_reason = payload.get("reason", "")[:200]
     item.save(update_fields=["status", "voided_at", "void_reason", "updated_at"])
+
+    audit.record(
+        "order.item_voided",
+        branch=order.branch,
+        actor=actor,
+        obj=order,
+        object_label=order.local_number,
+        detail={
+            "item": item.name_snapshot,
+            "quantity": item.quantity,
+            "value": item.line_total,
+            "reason": item.void_reason,
+            "after_fire": item.fired_at is not None,
+        },
+    )
 
 
 @handles(EventType.ITEM_NOTE_SET)
@@ -296,14 +313,27 @@ def _discount_applied(order: Order, payload: dict, *, actor=None) -> None:
     if not (Decimal("0") <= percent <= Decimal("100")):
         raise EventRejected("نسبة خصم غير صالحة", code="INVALID_DISCOUNT")
 
+    from apps.audit import services as audit
+
     if line_id := payload.get("line_id"):
         item = _get_line(order, line_id)
         item.discount_percent = percent
         item.save(update_fields=["discount_percent", "updated_at"])
+        scope = item.name_snapshot
     else:
         order.discount_percent = percent
         order.discount_reason = payload.get("reason", "")[:200]
         order.save(update_fields=["discount_percent", "discount_reason", "updated_at"])
+        scope = "الطلب"
+
+    audit.record(
+        "order.discount_applied",
+        branch=order.branch,
+        actor=actor,
+        obj=order,
+        object_label=order.local_number,
+        detail={"percent": percent, "scope": scope, "reason": payload.get("reason", "")},
+    )
 
 
 @handles(EventType.ORDER_FIRED)
@@ -475,20 +505,55 @@ def recalculate(order: Order) -> Order:
 # ── lifecycle ────────────────────────────────────────────────────────────────
 
 
-@transaction.atomic
 def void_order(order: Order, *, reason: str, actor=None, approval=None) -> Order:
+    """
+    Deliberately NOT decorated with `@transaction.atomic`.
+
+    The refusal path records an audit row and then raises. Inside one atomic
+    block that row would be rolled back by the very exception it exists to
+    explain, so the guard runs outside a transaction and only the mutation is
+    wrapped. (A caller that has already opened a transaction still loses the row
+    on rollback — unavoidable, and the reason `apply_push` gives each operation
+    its own savepoint rather than sharing one.)
+    """
+    from apps.audit import services as audit
+
     if order.status in state.TERMINAL:
+        # Recorded, not merely refused: an attempt to reopen a paid order is a
+        # loss-prevention signal even when the server says no (docs/09, T4).
+        audit.record(
+            "order.reopen_attempt",
+            branch=order.branch,
+            actor=actor,
+            obj=order,
+            object_label=order.local_number,
+            detail={"status": order.status, "reason": reason, "total": order.grand_total},
+        )
         raise state.InvalidStateTransition(
             f"لا يمكن إلغاء طلب في حالة {order.status}", extra={"current": order.status}
         )
     state.assert_transition(order.status, OrderStatus.CANCELLED)
 
-    order.status = OrderStatus.CANCELLED
-    order.void_reason = reason[:200]
-    order.closed_at = timezone.now()
-    order.save(update_fields=["status", "void_reason", "closed_at", "updated_at"])
+    before = audit.snapshot(order, ["status", "grand_total", "void_reason"])
 
-    _record(order, EventType.ORDER_VOIDED, payload={"reason": reason}, actor=actor)
+    with transaction.atomic():
+        order.status = OrderStatus.CANCELLED
+        order.void_reason = reason[:200]
+        order.closed_at = timezone.now()
+        order.save(update_fields=["status", "void_reason", "closed_at", "updated_at"])
+        _record(order, EventType.ORDER_VOIDED, payload={"reason": reason}, actor=actor)
+
+    audit.record(
+        "order.voided",
+        branch=order.branch,
+        actor=actor,
+        approved_by=approval,
+        obj=order,
+        object_label=order.local_number,
+        before=before,
+        after=audit.snapshot(order, ["status", "grand_total", "void_reason"]),
+        detail={"reason": reason, "total": order.grand_total},
+    )
     logger.warning(
         "Order voided",
         extra={"order": order.local_number, "reason": reason, "total": str(order.grand_total)},

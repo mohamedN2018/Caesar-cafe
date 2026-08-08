@@ -49,6 +49,19 @@ def submit_purchase_order(po: PurchaseOrder, *, user=None) -> PurchaseOrder:
     po.submitted_at = timezone.now()
     po.updated_by = user
     po.save(update_fields=["status", "submitted_at", "updated_by", "updated_at"])
+
+    from apps.audit import services as audit
+
+    audit.record(
+        "purchasing.po_approved",
+        branch=po.branch,
+        actor=user,
+        obj=po,
+        detail={
+            "supplier": po.supplier.name if po.supplier_id else None,
+            "lines": po.lines.count(),
+        },
+    )
     return po
 
 
@@ -117,6 +130,21 @@ def post_receipt(receipt: GoodsReceipt, *, user=None) -> GoodsReceipt:
     for item in touched_items:
         refresh_costs_for_item(item)
 
+    from apps.audit import services as audit
+
+    audit.record(
+        "purchasing.goods_received",
+        branch=receipt.branch,
+        actor=user,
+        obj=receipt,
+        object_label=receipt.grn_number,
+        detail={
+            "supplier": receipt.supplier.name,
+            "lines": len(lines),
+            "total": receipt.grand_total,
+            "supplier_invoice": receipt.supplier_invoice_no,
+        },
+    )
     logger.info(
         "Goods receipt posted",
         extra={"grn": receipt.grn_number, "lines": len(lines), "total": str(receipt.grand_total)},

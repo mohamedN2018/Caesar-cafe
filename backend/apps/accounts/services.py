@@ -88,7 +88,43 @@ def record_failure(scope: str, policy: LockoutPolicy) -> int:
             "Authentication scope locked out",
             extra={"scope": scope, "attempts": attempts},
         )
+        _audit_auth(
+            "auth.lockout", scope, {"attempts": attempts, "seconds": policy.lockout_seconds}
+        )
+    elif attempts > 3:
+        # Below the threshold, repeated failures are still worth finding — a run
+        # of three across several accounts is the shape of credential stuffing,
+        # and each one on its own looks like somebody who forgot their password.
+        _audit_auth("auth.login_failed", scope, {"attempts": attempts})
+
     return attempts
+
+
+def _audit_auth(action: str, scope: str, detail: dict) -> None:
+    """
+    Audit an auth event.
+
+    The tenant has to be resolved from the scope, because a failed login happens
+    BEFORE authentication — there is no principal for the middleware to have
+    filled in. A known address resolves to its organization, so the branch
+    manager whose staff account is being stuffed can see it. An unknown address
+    resolves to nothing and the row stays org-less, visible to a superuser: that
+    attempt is a platform-level signal, not one tenant's business.
+    """
+    from apps.audit import services as audit
+
+    organization = None
+    if scope.startswith("email:"):
+        user = User.objects.filter(email__iexact=scope.removeprefix("email:")).first()
+        organization = user.organization if user else None
+
+    audit.record(
+        action,
+        organization=organization,
+        object_type="auth_scope",
+        object_id=scope[:64],
+        detail=detail,
+    )
 
 
 def clear_failures(scope: str) -> None:

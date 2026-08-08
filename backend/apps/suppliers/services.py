@@ -51,15 +51,31 @@ def record_ledger_entry(
 
 def record_payment(*, supplier: Supplier, amount: Decimal, reference: str = "", user=None):
     """Paying a supplier reduces what we owe, so it is a negative entry."""
+    from apps.audit import services as audit
+
     if amount <= 0:
         raise AppError("قيمة السداد يجب أن تكون أكبر من صفر", code="INVALID_AMOUNT")
-    return record_ledger_entry(
+
+    entry = record_ledger_entry(
         supplier=supplier,
         entry_type=LedgerEntryType.PAYMENT,
         amount=-Decimal(amount),
         reference=reference,
         user=user,
     )
+    audit.record(
+        "purchasing.supplier_paid",
+        branch=supplier.branch,
+        actor=user,
+        obj=supplier,
+        object_label=supplier.name,
+        detail={
+            "amount": Decimal(amount),
+            "reference": reference,
+            "balance_after": entry.balance_after,
+        },
+    )
+    return entry
 
 
 def statement(supplier: Supplier, *, limit: int = 200) -> list[SupplierLedgerEntry]:

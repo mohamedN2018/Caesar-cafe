@@ -632,7 +632,50 @@ Exit criteria:
 
 ---
 
-## Phase 9 — Audit & Security Hardening
+## Phase 9 — Audit & Security Hardening ✅ COMPLETE
+
+**Verified on 2026-08-08:** ruff + format clean · **743 tests passing** (40 new) · migrations
+clean · `spectacular --fail-on-warn` clean · frontend build clean.
+
+Delivered: `apps/audit` — the append-only `AuditLog`, the action catalogue, before/after diffing
+with database-level redaction, the contextvar that carries request identity into services, model
+receivers for the changes that are a row edit, explicit `record()` calls at every sensitive service
+point, a read-only API, and the Web Admin audit screen. Plus
+[13 — Operations Runbook](13-operations.md): secret rotation with its blast radius per secret, the
+restore drill, and the `REVOKE DELETE` grant.
+
+Exit criteria met:
+
+- **Every action in the docs/09 table produces an entry**, proven mechanically rather than claimed:
+  `TestCatalogueCoverage` exercises each domain through real code paths and then asserts the union
+  covers the whole catalogue. Adding an action without producing it fails the build.
+- **No secret reaches the audit row.** The log redaction filter protects the logs; a second
+  redaction protects the database — which is the copy that gets backed up, shipped off-site and
+  read by whoever restores it. A PIN reset records that it happened, never the value.
+- **Rows cannot be deleted or edited**, at three levels: `delete()`/`save()` raise, there is no
+  write endpoint, and the runbook documents the `REVOKE DELETE ON audit_log` grant. The first two
+  are application guards and do not survive `manage.py shell`; the grant does.
+- Every threat in docs/09 now has a control or an explicitly accepted risk, and the two that do not
+  yet — automated backups and the measured restore drill — are named as gaps in the runbook rather
+  than assumed covered.
+
+Two bugs the tests found, both about records that existed and then vanished:
+
+1. **`void_order` was `@transaction.atomic`, so its reopen-attempt record was rolled back by the
+   very exception it exists to explain.** An attempt to reopen a paid order left no trace at all.
+   The guard now runs outside a transaction and only the mutation is wrapped.
+2. **A failed login produced no audit row.** `AuditLog.organization` was non-nullable and a failed
+   login happens *before* authentication, so there was no principal for the middleware to fill in —
+   every credential-stuffing attempt was silently dropped. The tenant is now resolved from the
+   email where possible, and the column is nullable so an attempt against an address belonging to no
+   tenant is still recorded, visible to a superuser.
+
+**Deliberately not built:** automated backups, the rehearsed restore drill, dependency scanning in
+CI, and the internal penetration pass. The first two are Phase 10's deliverables and the runbook
+states the accepted risk in the meantime, in the words to use with the customer:
+*a host loss costs everything since the last manual dump.*
+
+Original plan:
 
 > Because the system is internet-facing from Phase 1 (C11), the perimeter controls — TLS, rate
 > limiting, lockout, MFA, fail2ban — already shipped in Phases 1–3. Phase 9 is depth and

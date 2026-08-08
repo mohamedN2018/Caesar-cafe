@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.audit import services as audit
 from apps.authz.approval import issue_approval_token
 from apps.authz.catalog import is_valid as is_valid_permission
 from apps.authz.context import PrincipalKind
@@ -274,6 +275,16 @@ class SetPinView(APIView):
 
         user.set_pin(data["pin"])
         user.save(update_fields=["pin_hash", "pin_set_at"])
+
+        # The PIN itself is never in the record — only that it changed, and who
+        # changed it. That is the fact a dispute needs; the value is not.
+        audit.record(
+            "staff.pin_reset",
+            organization=user.organization,
+            actor=user,
+            obj=user,
+            object_label=user.full_name_ar or user.email,
+        )
         return Response({"detail": "تم تعيين رمز الدخول"})
 
 
@@ -345,6 +356,17 @@ class VerifyPinView(APIView):
             ttl_seconds=ttl,
         )
 
+        # BOTH identities, so neither can later disclaim it: the cashier
+        # performed the action, the manager authorized it (docs/09, R2).
+        audit.record(
+            "auth.step_up_approved",
+            organization=approver.organization,
+            approved_by=approver,
+            object_type="permission",
+            object_id=permission,
+            object_label=permission,
+            detail={"target": data.get("target"), "amount": data.get("amount")},
+        )
         logger.info(
             "Step-up approval issued",
             extra={
@@ -422,6 +444,14 @@ class MFAConfirmView(APIView):
         user.mfa_enabled = True
         user.mfa_confirmed_at = timezone.now()
         user.save(update_fields=["mfa_enabled", "mfa_confirmed_at"])
+
+        audit.record(
+            "auth.mfa_enrolled",
+            organization=user.organization,
+            actor=user,
+            obj=user,
+            object_label=user.full_name_ar or user.email,
+        )
         return Response({"detail": "تم تفعيل التحقق بخطوتين"})
 
 

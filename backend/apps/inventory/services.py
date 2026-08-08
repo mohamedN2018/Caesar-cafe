@@ -198,9 +198,12 @@ def _weighted_average(
 
 
 def record_waste(*, item, quantity: Decimal, reason: str, user=None, device_id=None):
+    from apps.audit import services as audit
+
     if quantity <= 0:
         raise AppError("كمية الهالك يجب أن تكون أكبر من صفر", code="INVALID_QUANTITY")
-    return apply_movement(
+
+    movement = apply_movement(
         item=item,
         quantity_delta=-abs(quantity),
         movement_type=MovementType.WASTE,
@@ -208,6 +211,19 @@ def record_waste(*, item, quantity: Decimal, reason: str, user=None, device_id=N
         device_id=device_id,
         reason=reason,
     )
+    audit.record(
+        "inventory.waste_recorded",
+        branch=item.branch,
+        actor=user,
+        obj=item,
+        object_label=f"{item.name_ar} ({item.code})",
+        detail={
+            "quantity": abs(quantity),
+            "value": (abs(quantity) * movement.movement.unit_cost).quantize(Decimal("0.01")),
+            "reason": reason,
+        },
+    )
+    return movement
 
 
 def adjust(*, item, new_quantity: Decimal, reason: str, user=None):
@@ -217,17 +233,31 @@ def adjust(*, item, new_quantity: Decimal, reason: str, user=None):
     Never writes the level directly — an adjustment that left no movement would
     be an unexplained change to a financial record.
     """
+    from apps.audit import services as audit
+
     level, _ = StockLevel.objects.get_or_create(item=item)
     delta = q(new_quantity) - level.quantity_on_hand
     if delta == 0:
         return None
-    return apply_movement(
+
+    movement = apply_movement(
         item=item,
         quantity_delta=delta,
         movement_type=MovementType.ADJUSTMENT,
         user=user,
         reason=reason,
     )
+    audit.record(
+        "inventory.adjusted",
+        branch=item.branch,
+        actor=user,
+        obj=item,
+        object_label=f"{item.name_ar} ({item.code})",
+        before={"quantity_on_hand": level.quantity_on_hand},
+        after={"quantity_on_hand": movement.movement.balance_after},
+        detail={"delta": delta, "reason": reason},
+    )
+    return movement
 
 
 def set_opening_balance(*, item, quantity: Decimal, unit_cost: Decimal, user=None):
@@ -276,6 +306,20 @@ def post_count(count, *, user=None):
     count.posted_at = timezone.now()
     count.posted_by = user
     count.save(update_fields=["status", "posted_at", "posted_by", "updated_at"])
+
+    from apps.audit import services as audit
+
+    audit.record(
+        "inventory.count_posted",
+        branch=count.branch,
+        actor=user,
+        obj=count,
+        object_label=count.reference,
+        detail={
+            "lines_adjusted": len(movements),
+            "net_variance": sum((m.movement.quantity_delta for m in movements), Decimal("0")),
+        },
+    )
     return movements
 
 
