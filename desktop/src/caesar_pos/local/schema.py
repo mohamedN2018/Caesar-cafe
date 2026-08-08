@@ -54,6 +54,9 @@ MIGRATIONS: list[str] = [
         price       TEXT NOT NULL,
         cost        TEXT NOT NULL DEFAULT '0',
         is_default  INTEGER NOT NULL DEFAULT 0,
+        -- The size chooser's order. "وسط" before "كبير" is the admin's decision,
+        -- and sorting it alphabetically would reverse it.
+        sort_order  INTEGER NOT NULL DEFAULT 0,
         is_active   INTEGER NOT NULL DEFAULT 1,
         payload     TEXT NOT NULL
     );

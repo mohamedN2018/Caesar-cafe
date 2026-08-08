@@ -54,7 +54,16 @@ ENTITY_TABLES: dict[str, tuple[str, tuple[str, ...]]] = {
     ),
     "variant": (
         "m_variants",
-        ("product_id", "name_ar", "sku", "price", "cost", "is_default", "is_active"),
+        (
+            "product_id",
+            "name_ar",
+            "sku",
+            "price",
+            "cost",
+            "is_default",
+            "sort_order",
+            "is_active",
+        ),
     ),
     "modifier_group": ("m_modifier_groups", ("name_ar",)),
     "modifier": ("m_modifiers", ("group_id", "name_ar", "price_delta", "is_active")),

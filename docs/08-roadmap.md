@@ -635,9 +635,44 @@ know they are on their last try is a cashier who locks the till mid-queue.
 An unreadable hash raises rather than reporting "wrong PIN" — telling somebody their PIN is wrong
 when the server upgraded its hasher would have them retyping until they lock themselves out.
 
-**Still outstanding on the Desktop:** the POS order screen, the floor map, the KDS, the kids board,
-and receipt printing with the Arabic rasterizer. Every one is now a view over a store, a fold, a
-sync engine and a session that exist and are tested.
+### Desktop POS screen ✅ COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **244 desktop tests passing** (35 new).
+
+Delivered: `ui/pos/` — the catalog queries, the product grid, the order panel, the payment dialog
+and the shell that ties them together.
+
+The decisions that shaped it are all about a cashier under pressure rather than about looks:
+
+- **A tap on a product opens an order implicitly.** Making someone press "new order" before the
+  first item is a step that exists only because the software wanted it.
+- **Tiles carry the price**, so "how much is that?" is answered without adding the item to find out.
+- **The panel never computes a total.** Every figure comes from the fold, which came from
+  `money.py`. A panel that added its own subtotal for display would eventually show a number the
+  receipt disagrees with.
+- **A voided line stays visible, struck through.** The cashier can see what was removed and so can
+  the customer facing the screen.
+- **Paying in full clears the till.** Leaving a paid order on screen is how the next customer's
+  coffee ends up on the last one's bill.
+- **The payment dialog pre-fills the balance and computes change as you type** — a cashier handed a
+  100 needs the figure before the drawer opens. Quick-tender buttons never offer a note below the
+  bill, because a button that can only produce an error should not be there.
+- **Split payment is not a special mode**: enter less than the balance and the remainder shows.
+- **Voiding after firing asks why; before firing it does not.** One is a loss-prevention event, the
+  other is routine.
+- **Service refusals are shown as the service wrote them.** They are already in Arabic and already
+  name the remedy; rewording them in the UI would produce two vocabularies for one rule.
+
+The permission checks in the window are a courtesy layer — the service refuses regardless, and a
+test asserts a cashier without `orders.discount` is stopped before the dialog opens *and* would be
+stopped after.
+
+One gap the tests found: `m_variants` had no `sort_order`, so the size chooser fell back to
+alphabetical and put "كبير" before "وسط" — reversing the admin's intent. Added to the schema and to
+the puller's column list.
+
+**Still outstanding on the Desktop:** the floor map, the KDS, the kids board, and receipt printing
+with the Arabic rasterizer.
 
 Original plan:
 
