@@ -211,6 +211,7 @@ class Command(BaseCommand):
 
         with transaction.atomic():
             org, branch = self._organization()
+            self._relax_mfa(org)
             roles = ensure_system_roles(org)
             staff = self._staff(org, branch, roles)
             stations = self._stations(org, branch)
@@ -257,6 +258,29 @@ class Command(BaseCommand):
             },
         )
         return org, branch
+
+    def _relax_mfa(self, org) -> None:
+        """
+        Turn off mandatory two-factor **for the demo organisation only**.
+
+        `security.require_mfa_for_roles` defaults to SUPER_ADMIN and
+        BRANCH_MANAGER, and it should: those accounts are reachable from the
+        internet and a password alone is not enough for them. But a demo where
+        the first thing anybody meets is an enrolment screen is a demo nobody
+        gets past, and typing a TOTP code to look at a floor plan teaches
+        nothing about the floor plan.
+
+        Written through the settings registry rather than around it, so the
+        change is validated, audited, and appears in the settings screen where
+        somebody can see that it was done. `bootstrap` — what a real cafe runs —
+        does not do this, and turning it back on is one switch in that screen.
+        """
+        from apps.configuration import resolver
+        from apps.configuration.registry import Scope
+
+        resolver.set_value(
+            "security.require_mfa_for_roles", [], scope=Scope.ORGANIZATION, scope_id=org.id
+        )
 
     def _staff(self, org, branch, roles) -> dict[str, User]:
         people: dict[str, User] = {}
@@ -855,7 +879,9 @@ class Command(BaseCommand):
         write("")
         write(
             self.style.WARNING(
-                "  These are demo credentials. `bootstrap` is what a real cafe runs."
+                "  These are demo credentials, and two-factor is OFF for this organisation\n"
+                "  (security.require_mfa_for_roles = []). `bootstrap` is what a real cafe\n"
+                "  runs, and it leaves MFA required for SUPER_ADMIN and BRANCH_MANAGER."
             )
         )
         write("")
