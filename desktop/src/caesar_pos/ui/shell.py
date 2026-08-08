@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..api.client import ApiError, NetworkUnavailable
+from ..kids import service as kids
 from ..local import outbox
 from ..local.db import Database
 from ..orders import service
@@ -51,6 +52,7 @@ from ..shifts import service as shifts
 from ..sync.engine import SyncEngine
 from .floor.window import FloorWindow
 from .history import HistoryDialog
+from .kids.checkin import CheckInDialog
 from .kids.window import KidsWindow
 from .kitchen.window import KitchenWindow
 from .pos.window import PosWindow
@@ -401,44 +403,55 @@ class Shell(QWidget):
 
     def _checkin_child(self) -> None:
         """
-        Check-in runs on the server, not offline.
+        Admit a child, online or not.
 
-        A child is physically present and the area has a hard capacity: two
-        terminals admitting the last place while disconnected would put a child
-        inside a room that is already full. Every other offline operation costs
-        money; this one costs supervision, so it is the one thing that waits for
-        the server.
+        This replaces a refusal. The shell used to insist check-in wait for the
+        server, on the grounds that capacity is a safety limit — but refusing
+        locally never prevented an over-admission, only the RECORD of one. A
+        child in the room with no session is worse in every way: nobody knows
+        the guardian, nothing is billed, the incident log is blank. The server
+        was already written for this and flags a genuine over-admission as a
+        conflict for a human.
         """
-        QMessageBox.information(
-            self,
-            "دخول جديد",
-            "الدخول يتم من لوحة الويب أو بعد الاتصال — السعة قاعدة سلامة ولا تُقدَّر محلياً.",
-        )
+        zones = kids.areas(self.db)
+        if not zones:
+            QMessageBox.warning(self, "لم تتم المزامنة", "صالة الأطفال لم تصل لهذا الجهاز بعد.")
+            return
+
+        dialog = CheckInDialog(self.db, zones[0].id, parent=self)
+        dialog.confirmed.connect(self._do_checkin)
+        dialog.exec()
+
+    def _do_checkin(self, payload: dict) -> None:
+        try:
+            kids.check_in(self.db, **payload)
+        except (kids.AreaFull, kids.AreaUnknown, ValueError) as exc:
+            QMessageBox.warning(self, "تعذّر الدخول", str(exc))
+            return
+
+        self.refresh_board("kids")
+        self.refresh_status()
 
     def _checkout_child(self, session_id: str) -> None:
         """
-        Check-out bills through the till, so the charge lands on an order like
-        anything else the customer pays for.
+        Recorded locally and queued; the CHARGE is the server's.
+
+        The board shows a running figure from the vendored engine, but what the
+        customer pays is computed once, on the server — one authority for money,
+        as everywhere else. A terminal that could not release a child during an
+        outage would leave a parent standing at a gate.
         """
         try:
-            data = self.engine.client.post(
-                f"/kids/sessions/{session_id}/check-out/", {"bill": True}
-            )
-        except NetworkUnavailable:
-            QMessageBox.warning(
-                self,
-                "غير متصل",
-                "الخروج يحتاج اتصالاً بالخادم — قيمة الجلسة تُحتسب هناك.",
-            )
-            return
-        except ApiError as exc:
-            QMessageBox.warning(self, "تعذّر التنفيذ", str(exc))
+            kids.check_out(self.db, session_id)
+        except ValueError as exc:
+            QMessageBox.warning(self, "تعذّر الخروج", str(exc))
             return
 
-        payable = (data or {}).get("session", {}).get("payable")
-        if payable:
-            QMessageBox.information(self, "خروج", f"المستحق {payable} ج.م — حصّله من نقطة البيع.")
         self.refresh_board("kids")
+        self.refresh_status()
+        QMessageBox.information(
+            self, "خروج", "تم تسجيل الخروج. قيمة الجلسة تُحتسب على الخادم وتظهر على الطلب."
+        )
 
     # ── the drawer ───────────────────────────────────────────────────────────
 

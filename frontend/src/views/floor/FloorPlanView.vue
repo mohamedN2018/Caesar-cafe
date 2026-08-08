@@ -47,6 +47,7 @@ interface LiveTable {
   table_id: string
   seated_count: number
   status: string
+  session_id: string | null
   order_count: number
   total_due: string
   waiter: string | null
@@ -77,6 +78,7 @@ const REFRESH_MS = 15_000
 
 const auth = useAuthStore()
 const mayEdit = computed(() => auth.can('branch.manage_tables'))
+const mayMerge = computed(() => auth.can('floor.merge'))
 
 const areas = ref<Area[]>([])
 const tables = ref<Table[]>([])
@@ -99,7 +101,12 @@ const creating = ref(false)
 const visible = computed(() =>
   tables.value
     .filter((t) => t.is_active && (!selectedArea.value || t.area === selectedArea.value))
-    .map((t) => ({ ...t, ...(live.value[t.id] ?? {}), table_id: t.id })),
+    .map((t) => ({
+      ...t,
+      ...(live.value[t.id] ?? {}),
+      table_id: t.id,
+      session_id: live.value[t.id]?.session_id ?? null,
+    })),
 )
 
 /**
@@ -278,6 +285,44 @@ function firstFreeCell(): { x: number; y: number } {
   return { x: 0, y: 0 }
 }
 
+// ── merging ─────────────────────────────────────────────────────────────────
+
+/**
+ * The party of eight who pushed two four-tops together and want one bill.
+ *
+ * Two taps rather than a dialog: pick the table to fold away, then the one that
+ * keeps the bill. The prompt states which is which, because getting them the
+ * wrong way round frees the wrong table — recoverable, but confusing at the
+ * moment somebody is trying to take payment.
+ */
+const mergingFrom = ref<string | null>(null)
+
+const mergeCandidates = computed(() =>
+  mergingFrom.value
+    ? visible.value.filter((t) => t.session_id && t.id !== mergingFrom.value)
+    : [],
+)
+
+function startMerge() {
+  mergingFrom.value = selectedId.value
+}
+
+async function mergeInto(targetTableId: string) {
+  const sourceSession = live.value[mergingFrom.value ?? '']?.session_id
+  const targetSession = live.value[targetTableId]?.session_id
+  if (!sourceSession || !targetSession) return
+
+  try {
+    await api.post(`/floor/sessions/${sourceSession}/merge/`, { into: targetSession })
+    mergingFrom.value = null
+    selectedId.value = targetTableId
+    error.value = ''
+    await refreshLive()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'تعذّر دمج الطاولتين.'
+  }
+}
+
 async function addTable() {
   if (!newTable.value.number.trim() || !selectedArea.value) return
   creating.value = true
@@ -408,6 +453,43 @@ onUnmounted(() => {
                 <dd class="font-semibold">{{ money(selectedLive.total_due) }}</dd>
               </div>
             </dl>
+
+            <!-- Merging: only offered on a table that actually has a party,
+                 because there is nothing to combine otherwise. -->
+            <template v-if="!editing && mayMerge && selectedLive?.session_id">
+              <div class="mt-4 border-t border-[var(--border)] pt-3">
+                <UiButton
+                  v-if="mergingFrom !== selected.id"
+                  size="sm"
+                  variant="secondary"
+                  @click="startMerge"
+                >
+                  دمج مع طاولة تانية
+                </UiButton>
+
+                <template v-else>
+                  <p class="text-sm font-medium text-ink">
+                    طاولة {{ selected.number }} هتتقفل، والحساب هيروح على:
+                  </p>
+                  <div class="mt-2 flex flex-wrap gap-1.5">
+                    <button
+                      v-for="candidate in mergeCandidates"
+                      :key="candidate.id"
+                      class="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-medium text-white"
+                      @click="mergeInto(candidate.id)"
+                    >
+                      طاولة {{ candidate.number }}
+                    </button>
+                  </div>
+                  <p v-if="!mergeCandidates.length" class="mt-2 text-xs text-ink-muted">
+                    مفيش طاولة تانية عليها زباين في نفس المنطقة.
+                  </p>
+                  <UiButton size="sm" variant="ghost" class="mt-2" @click="mergingFrom = null">
+                    إلغاء
+                  </UiButton>
+                </template>
+              </div>
+            </template>
 
             <template v-if="editing && mayEdit">
               <div class="mt-4 border-t border-[var(--border)] pt-3">

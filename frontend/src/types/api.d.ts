@@ -698,6 +698,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/floor/sessions/{id}/merge/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Merge this session into another
+         * @description Fold one open session into another: one party, one bill, one table freed.
+         *
+         *     Separately permissioned from `floor.transfer` because they are different
+         *     acts. Transferring moves a party to a different table; merging combines two
+         *     bills, and afterwards there is one payment where there would have been two.
+         */
+        post: operations["floor_sessions_merge_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/floor/sessions/{id}/transfer/": {
         parameters: {
             query?: never;
@@ -4686,6 +4710,14 @@ export interface components {
             permissions: string[];
             roles: string[];
         };
+        /** @description `into` survives; the session in the URL is folded into it and closes. */
+        MergeRequest: {
+            /**
+             * Format: uuid
+             * @description The session that keeps the combined bill.
+             */
+            into: string;
+        };
         Modifier: {
             /** Format: uuid */
             readonly id: string;
@@ -8149,6 +8181,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TableSession"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    floor_sessions_merge_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MergeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["MergeRequest"];
+                "multipart/form-data": components["schemas"]["MergeRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {

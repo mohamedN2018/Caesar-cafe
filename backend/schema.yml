@@ -1980,6 +1980,60 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/floor/sessions/{id}/merge/:
+    post:
+      operationId: floor_sessions_merge_create
+      description: |-
+        Fold one open session into another: one party, one bill, one table freed.
+
+        Separately permissioned from `floor.transfer` because they are different
+        acts. Transferring moves a party to a different table; merging combines two
+        bills, and afterwards there is one payment where there would have been two.
+      summary: Merge this session into another
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - floor
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MergeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MergeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/TableSession'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/floor/sessions/{id}/transfer/:
     post:
       operationId: floor_sessions_transfer_create
@@ -12430,6 +12484,17 @@ components:
       - organization_id
       - permissions
       - roles
+    MergeRequest:
+      type: object
+      description: '`into` survives; the session in the URL is folded into it and
+        closes.'
+      properties:
+        into:
+          type: string
+          format: uuid
+          description: The session that keeps the combined bill.
+      required:
+      - into
     Modifier:
       type: object
       properties:

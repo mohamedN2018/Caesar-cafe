@@ -47,6 +47,8 @@ ACTIONS: tuple[ActionDef, ...] = (
     _a("order.reopen_attempt", "orders", "محاولة إعادة فتح طلب مدفوع", Severity.WARNING),
     # ── Payments ─────────────────────────────────────────────────────────────
     _a("order.receipt_reprinted", "orders", "إعادة طباعة فاتورة", Severity.NOTICE),
+    # Merging moves orders between records — one bill where there were two.
+    _a("floor.sessions_merged", "orders", "دمج طاولتين", Severity.NOTICE),
     _a("payment.taken", "payments", "تحصيل دفعة"),
     _a("payment.refunded", "payments", "استرجاع مبلغ", Severity.WARNING),
     # ── Catalog ──────────────────────────────────────────────────────────────

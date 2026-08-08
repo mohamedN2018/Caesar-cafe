@@ -1264,6 +1264,62 @@ makes the screen truthful, not the system safe.
 
 ---
 
+## Table merge, and a decision reversed ✅ COMPLETE (2026-08-09)
+
+**Verified:** ruff + format clean · **898 backend tests** · **495 desktop tests** ·
+**25 frontend tests** · migrations clean · `spectacular --fail-on-warn` clean · `vue-tsc` clean ·
+`vite build` clean.
+
+### `floor.merge` — the last unbuilt permission a cafe actually needs
+
+A group of eight arrives, two four-tops are pushed together, and at the end they want one bill.
+Without merge a waiter either splits the party across two payments or re-rings every item onto one
+table — and re-ringing is how a round of drinks goes missing.
+
+Merging is a **money** operation: it moves orders between records, and afterwards there is one
+payment where there would have been two. So it has a row lock on both sessions, an audit entry, and
+its own permission — a role that may transfer a party is not thereby allowed to combine two bills.
+
+Three refusals worth naming. Tables in **different areas** cannot merge: they were not pushed
+together, so this is almost certainly the wrong pair picked from a list, and transfer is the
+operation for moving across the room. The freed table becomes **AVAILABLE, not CLEANING** — the
+party is still in the room and the crockery went with them, so marking it dirty sends somebody to
+wipe a table nobody left. And the surviving session's guest count becomes the **combined** party,
+because the floor view draws chairs from it.
+
+`NOT_YET_BUILT` in the permission guard is down to two: printer configuration and per-line price
+override.
+
+### Offline kids check-in — reversing an earlier decision
+
+The Desktop used to refuse check-in without a server, on the grounds that capacity is a safety
+limit and two disconnected terminals could both admit the last place.
+
+**That was wrong, and the server had already settled it.** `sync/handlers.py::play_check_in` is
+written for a child admitted during an outage, enforces capacity a second time on arrival, and
+raises a CONFLICT rather than a rejection — in its own words, "the child is already inside and
+nobody is going to remove them."
+
+Refusing locally never prevented the over-admission. It prevented the *record* of one. A child in
+the room with no session is worse in every way than a session the server later flags: nobody knows
+the guardian, nothing is billed, and the incident log is blank.
+
+So the terminal now admits and queues, with capacity checked hard locally, the tariff snapshotted
+the way the server snapshots it, and the tag checked for a clash — two children on tag 14 makes
+matching a child to a guardian a guess, which is the one thing the subsystem exists to prevent.
+Check-out is local and queued too; the **charge** stays the server's, as everywhere else.
+
+The check-in form asks for four things. Capacity is stated before a single field, because
+discovering the room is full after filling a form is how a queue forms at a door, and the medical
+note is on the form rather than behind "more details" — a guardian mentions an allergy once, and
+nowhere to put it in that moment means it is never recorded.
+
+**One test-design bug found by the change:** two shell tests drove handlers that now open modal
+dialogs, and the suite hung rather than failed. A modal in a headless test blocks forever; both are
+now driven through the non-modal path with the guard clauses tested separately.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

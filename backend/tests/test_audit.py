@@ -379,6 +379,31 @@ class TestCatalogueCoverage:
         order_services.void_order(order, reason="إلغاء كامل", actor=user)
         self._assert("order.voided")
 
+    def test_merging_two_tables_is_recorded(self, branch, make_user) -> None:
+        """
+        Merging moves orders between records — one bill where there were two.
+        Who combined them, and which tables, is the fact a dispute needs.
+        """
+        from apps.floor import services as floor_services
+        from apps.floor.models import Area, Table, TableSession
+
+        area = Area.objects.create(
+            organization=branch.organization, branch=branch, name_ar="الصالة"
+        )
+        first = TableSession.objects.create(
+            table=Table.objects.create(area=area, number="M1", seats=4), guest_count=2
+        )
+        second = TableSession.objects.create(
+            table=Table.objects.create(area=area, number="M2", seats=4), guest_count=3
+        )
+
+        floor_services.merge_sessions(
+            source=first, target=second, user=make_user(email="merge@caesar.test")
+        )
+
+        row = self._assert("floor.sessions_merged")
+        assert row.detail["from_table"] == "M1"
+
     def test_a_reprint_is_recorded(self, branch, menu, cash, make_user, authed) -> None:
         """
         A duplicate copy of a paid receipt is the paperwork a refund fraud needs,

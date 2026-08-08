@@ -65,6 +65,12 @@ class TransferSerializer(serializers.Serializer):
     target_table = serializers.UUIDField()
 
 
+class MergeSerializer(serializers.Serializer):
+    """`into` survives; the session in the URL is folded into it and closes."""
+
+    into = serializers.UUIDField(help_text="The session that keeps the combined bill.")
+
+
 class FloorStatusSerializer(serializers.Serializer):
     """The live board: every table plus its open order summary."""
 

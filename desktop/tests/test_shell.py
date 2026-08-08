@@ -134,6 +134,26 @@ def make_shell(db, engine, *, user=None, printer=None, **kwargs) -> Shell:
     return Shell(db, user or session(), engine, printer=printer, **kwargs)
 
 
+def _seed_play_area(db, *, capacity: int = 25) -> None:
+    db.upsert_mirror(
+        "m_kids_areas",
+        {
+            "id": "area-1",
+            "name_ar": "صالة الأطفال",
+            "payload": json.dumps({"max_capacity": capacity, "is_active": True}),
+        },
+    )
+    db.upsert_mirror(
+        "m_kids_tariffs",
+        {
+            "id": "t-1",
+            "area_id": "area-1",
+            "name_ar": "عداد",
+            "payload": json.dumps({"mode": "TIMED", "entry_fee": "25.00"}),
+        },
+    )
+
+
 # ── who sees what ────────────────────────────────────────────────────────────
 
 
@@ -714,45 +734,114 @@ class TestTheHeaderIsReachable:
 
 
 class TestKidsWiring:
-    def test_a_checkout_reaches_the_server(self, qtbot, db, menu, engine, monkeypatch) -> None:
+    def test_a_checkout_is_recorded_and_queued(self, qtbot, db, menu, engine, monkeypatch) -> None:
+        """
+        Recorded locally and queued; the CHARGE is the server's. A terminal that
+        could not release a child during an outage would leave a parent standing
+        at a gate.
+        """
+        from caesar_pos.kids import service as kids
+        from caesar_pos.local import outbox
+
         monkeypatch.setattr("caesar_pos.ui.shell.QMessageBox.information", lambda *a, **k: None)
+        _seed_play_area(db)
 
         shell = make_shell(db, engine)
         qtbot.addWidget(shell)
-        shell._checkout_child("s-1")
+        session = kids.check_in(
+            db,
+            area_id="area-1",
+            child_name="يوسف",
+            guardian_name="أحمد",
+            tag_number="14",
+            tariff_id="t-1",
+        )
 
-        assert engine.client.posts == ["/kids/sessions/s-1/check-out/"]
+        shell._checkout_child(session["id"])
 
-    def test_offline_the_checkout_says_so(self, qtbot, db, menu, monkeypatch) -> None:
-        """The charge is computed on the server, so this one genuinely waits."""
+        assert kids.occupancy(db, "area-1") == 0
+        assert engine.client.posts == [], "queued, not sent — this works with the line down"
+        assert any(op.entity_type == "play_check_out" for op in outbox.pending(db))
+
+    def test_an_unknown_session_is_refused_out_loud(
+        self, qtbot, db, menu, engine, monkeypatch
+    ) -> None:
         warned = []
         monkeypatch.setattr(
             "caesar_pos.ui.shell.QMessageBox.warning", lambda *a, **k: warned.append(a[1])
         )
 
-        engine = SyncEngine(db=db, client=FakeClient(raises=NetworkUnavailable()))
         shell = make_shell(db, engine)
         qtbot.addWidget(shell)
-        shell._checkout_child("s-1")
+        shell._checkout_child("nope")
 
-        assert warned == ["غير متصل"]
+        assert warned == ["تعذّر الخروج"]
 
-    def test_check_in_is_not_done_offline(self, qtbot, db, menu, engine, monkeypatch) -> None:
+    def test_check_in_works_offline(self, qtbot, db, menu, engine) -> None:
         """
-        Capacity is a safety limit. Two terminals admitting the last place while
-        disconnected would put a child in a room that is already full.
+        Reversed from an earlier decision. Refusing locally never prevented an
+        over-admission, only the RECORD of one — and a child in the room with no
+        session is worse in every way. The server enforces capacity again and
+        flags a real breach as a conflict.
         """
-        told = []
+        from caesar_pos.kids import service as kids
+
+        _seed_play_area(db)
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._do_checkin(
+            {
+                "area_id": "area-1",
+                "child_name": "يوسف",
+                "guardian_name": "أحمد",
+                "guardian_phone": "0100",
+                "tag_number": "14",
+                "medical_notes": "",
+                "tariff_id": "t-1",
+            }
+        )
+
+        assert kids.occupancy(db, "area-1") == 1
+        assert engine.client.posts == [], "queued, not sent — this works with the line down"
+
+    def test_check_in_without_a_synced_area_says_so(
+        self, qtbot, db, menu, engine, monkeypatch
+    ) -> None:
+        """A modal dialog would hang here; the guard runs before it opens."""
+        warned = []
         monkeypatch.setattr(
-            "caesar_pos.ui.shell.QMessageBox.information", lambda *a, **k: told.append(a[1])
+            "caesar_pos.ui.shell.QMessageBox.warning", lambda *a, **k: warned.append(a[1])
         )
 
         shell = make_shell(db, engine)
         qtbot.addWidget(shell)
         shell._checkin_child()
 
-        assert told == ["دخول جديد"]
-        assert engine.client.posts == []
+        assert warned == ["لم تتم المزامنة"]
+
+    def test_a_full_area_is_refused_out_loud(self, qtbot, db, menu, engine, monkeypatch) -> None:
+        warned = []
+        monkeypatch.setattr(
+            "caesar_pos.ui.shell.QMessageBox.warning", lambda *a, **k: warned.append(a[1])
+        )
+        _seed_play_area(db, capacity=1)
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        payload = {
+            "area_id": "area-1",
+            "child_name": "يوسف",
+            "guardian_name": "أحمد",
+            "guardian_phone": "",
+            "tag_number": "14",
+            "medical_notes": "",
+            "tariff_id": "t-1",
+        }
+        shell._do_checkin(payload)
+        shell._do_checkin({**payload, "tag_number": "15", "child_name": "سارة"})
+
+        assert warned == ["تعذّر الدخول"]
 
 
 def test_a_paid_order_leaves_the_floor_map(qtbot, db, menu, engine) -> None:

@@ -5,6 +5,7 @@ from .views import (
     AreaViewSet,
     FloorStatusView,
     SessionCloseView,
+    SessionMergeView,
     SessionTransferView,
     SessionView,
     TableViewSet,
@@ -21,5 +22,6 @@ urlpatterns = [
     path("sessions/", SessionView.as_view(), name="sessions"),
     path("sessions/<uuid:pk>/close/", SessionCloseView.as_view(), name="session-close"),
     path("sessions/<uuid:pk>/transfer/", SessionTransferView.as_view(), name="session-transfer"),
+    path("sessions/<uuid:pk>/merge/", SessionMergeView.as_view(), name="session-merge"),
     path("", include(router.urls)),
 ]

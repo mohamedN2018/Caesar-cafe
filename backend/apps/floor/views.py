@@ -16,10 +16,12 @@ from apps.authz.drf import HasPermission, IsAuthenticatedPrincipal, auth_context
 from apps.core.exceptions import AppError, NotFoundError
 from apps.core.viewsets import BranchScopedViewSet
 
+from . import services
 from .models import Area, Table, TableSession, TableStatus
 from .serializers import (
     AreaSerializer,
     FloorStatusSerializer,
+    MergeSerializer,
     OpenSessionSerializer,
     TableSerializer,
     TableSessionSerializer,
@@ -283,3 +285,46 @@ class SessionTransferView(APIView):
         source.save(update_fields=["status", "updated_at"])
 
         return Response(TableSessionSerializer(session).data)
+
+
+class SessionMergeView(APIView):
+    """
+    Fold one open session into another: one party, one bill, one table freed.
+
+    Separately permissioned from `floor.transfer` because they are different
+    acts. Transferring moves a party to a different table; merging combines two
+    bills, and afterwards there is one payment where there would have been two.
+    """
+
+    permission_classes = [IsAuthenticatedPrincipal, HasPermission]
+    required_permission = "floor.merge"
+
+    @extend_schema(
+        summary="Merge this session into another",
+        request=MergeSerializer,
+        responses={200: TableSessionSerializer},
+    )
+    def post(self, request: Request, pk) -> Response:
+        serializer = MergeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        source = _open_session(request, pk)
+        target = _open_session(request, serializer.validated_data["into"])
+
+        merged = services.merge_sessions(source=source, target=target, user=_acting_user(request))
+        return Response(TableSessionSerializer(merged).data)
+
+
+def _open_session(request: Request, session_id) -> TableSession:
+    session = (
+        TableSession.objects.filter(
+            id=session_id,
+            table__area__branch_id=auth_context(request).branch_id,
+            closed_at__isnull=True,
+        )
+        .select_related("table")
+        .first()
+    )
+    if session is None:
+        raise NotFoundError("الجلسة غير موجودة", code="SESSION_NOT_FOUND")
+    return session

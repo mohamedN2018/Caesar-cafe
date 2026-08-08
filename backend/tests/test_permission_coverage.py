@@ -107,8 +107,6 @@ class TestEveryCatalogCodeIsActuallyEnforced:
     NOT_YET_BUILT = {
         "branch.manage_printers": "Printer configuration is per-device on the Desktop; "
         "there is no server-side printer registry yet.",
-        "floor.merge": "Merging two table sessions is not implemented. Transfer is "
-        "(`floor.transfer`); merge needs a rule for two open orders' events.",
         "orders.change_price": "A per-line price override is not implemented. Discounts "
         "cover the cases we have; an arbitrary price would need its own audit shape.",
     }
