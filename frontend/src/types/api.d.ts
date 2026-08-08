@@ -2182,6 +2182,530 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/purchasing/outstanding/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Submitted orders not yet fully received
+         * @description Submitted orders that have not fully arrived — the "where is my delivery"
+         *     screen, and the one an owner checks before ordering the same thing twice.
+         */
+        get: operations["purchasing_outstanding_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/purchase-orders/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["purchasing_purchase_orders_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["purchasing_purchase_orders_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/purchase-orders/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["purchasing_purchase_orders_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["purchasing_purchase_orders_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["purchasing_purchase_orders_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["purchasing_purchase_orders_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/purchasing/purchase-orders/{id}/cancel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Cancel a purchase order
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["purchasing_purchase_orders_cancel_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/purchase-orders/{id}/submit/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Submit a purchase order (moves NO stock)
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["purchasing_purchase_orders_submit_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/receipts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["purchasing_receipts_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["purchasing_receipts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/receipts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["purchasing_receipts_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["purchasing_receipts_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["purchasing_receipts_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["purchasing_receipts_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/purchasing/receipts/{id}/post/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post a receipt: stock in, supplier billed, costs refreshed
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["purchasing_receipts_post_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/reorder-suggestions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Items at or below their reorder level
+         * @description What is at or below its reorder level.
+         *
+         *     A suggestion, never an order. Turning this into an automatic PO would have
+         *     the system spending money on a number somebody typed once.
+         */
+        get: operations["purchasing_reorder_suggestions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/returns/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["purchasing_returns_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["purchasing_returns_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/returns/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["purchasing_returns_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["purchasing_returns_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["purchasing_returns_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["purchasing_returns_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/purchasing/returns/{id}/post/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post a return: stock out, supplier balance down
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["purchasing_returns_post_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/purchasing/valuation/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stock value at weighted-average cost */
+        get: operations["purchasing_valuation_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recipes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["recipes_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["recipes_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recipes/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["recipes_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["recipes_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["recipes_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["recipes_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/recipes/{id}/cost/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What one portion costs, and what the figure omits
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["recipes_cost_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recipes/{id}/refresh-cost/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Recompute and store the variant's cost
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["recipes_refresh_cost_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recipes/for-variant/{variant_id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recipe for a variant
+         * @description The recipe for one variant, by variant id.
+         *
+         *     A convenience the product screen needs: it holds a variant and wants to know
+         *     whether a recipe exists without listing every recipe in the branch.
+         */
+        get: operations["recipes_for_variant_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/reports/dashboard/": {
         parameters: {
             query?: never;
@@ -2810,6 +3334,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/suppliers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["suppliers_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["suppliers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/suppliers/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["suppliers_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["suppliers_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["suppliers_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["suppliers_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/suppliers/{id}/pay/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record a payment to a supplier
+         * @description Separately permissioned from editing the supplier.
+         *
+         *     Keeping a supplier's phone number up to date and moving money out of the
+         *     business are not the same act, and one person often does the first while
+         *     only the owner should do the second.
+         */
+        post: operations["suppliers_pay_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/suppliers/{id}/statement/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Statement of account
+         * @description Every entry, plus a reconciliation of the stored balance against them.
+         *
+         *     The drift is reported rather than hidden because a non-zero value is not
+         *     a supplier problem — it is a bug in a write path, and the person looking
+         *     at the statement is the one who will notice first.
+         */
+        get: operations["suppliers_statement_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sync/conflicts/": {
         parameters: {
             query?: never;
@@ -3295,6 +3941,17 @@ export interface components {
             counted_cash: string;
             reason?: string;
         };
+        CostLine: {
+            item_code: string;
+            item_name: string;
+            /** Format: decimal */
+            quantity: string;
+            unit_code: string;
+            /** Format: decimal */
+            unit_cost: string;
+            /** Format: decimal */
+            line_cost: string;
+        };
         /**
          * @description * `WEIGHTED_AVG` - WEIGHTED_AVG
          *     * `FIFO` - FIFO
@@ -3457,6 +4114,84 @@ export interface components {
             /** Format: decimal */
             total_due: string;
             waiter: string | null;
+        };
+        GRLine: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            po_line?: string | null;
+            /** Format: uuid */
+            item: string;
+            readonly item_code: string;
+            readonly item_name: string;
+            /** Format: uuid */
+            unit: string;
+            readonly unit_code: string;
+            /** Format: decimal */
+            quantity_received: string;
+            /**
+             * Format: decimal
+             * @description ACTUAL invoiced cost, which may differ from the PO price.
+             */
+            unit_cost: string;
+            /** Format: date */
+            expiry_date?: string | null;
+            /** Format: decimal */
+            readonly line_total: string;
+        };
+        GRLineRequest: {
+            /** Format: uuid */
+            po_line?: string | null;
+            /** Format: uuid */
+            item: string;
+            /** Format: uuid */
+            unit: string;
+            /** Format: decimal */
+            quantity_received: string;
+            /**
+             * Format: decimal
+             * @description ACTUAL invoiced cost, which may differ from the PO price.
+             */
+            unit_cost: string;
+            /** Format: date */
+            expiry_date?: string | null;
+        };
+        GoodsReceipt: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            purchase_order?: string | null;
+            /** Format: uuid */
+            supplier: string;
+            readonly supplier_name: string;
+            grn_number: string;
+            supplier_invoice_no?: string;
+            /** Format: date */
+            received_date: string;
+            notes?: string;
+            /**
+             * Format: date-time
+             * @description When stock and the supplier ledger were written.
+             */
+            readonly posted_at: string | null;
+            readonly is_posted: boolean;
+            /** Format: decimal */
+            readonly grand_total: string;
+            lines: components["schemas"]["GRLine"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        GoodsReceiptRequest: {
+            /** Format: uuid */
+            purchase_order?: string | null;
+            /** Format: uuid */
+            supplier: string;
+            grn_number: string;
+            supplier_invoice_no?: string;
+            /** Format: date */
+            received_date: string;
+            notes?: string;
+            lines: components["schemas"]["GRLineRequest"][];
         };
         Guardian: {
             /** Format: uuid */
@@ -3640,6 +4375,14 @@ export interface components {
          * @enum {string}
          */
         ItemTypeEnum: "RAW" | "CONSUMABLE" | "PACKAGING" | "FINISHED";
+        /**
+         * @description * `INVOICE` - INVOICE
+         *     * `PAYMENT` - PAYMENT
+         *     * `RETURN` - RETURN
+         *     * `ADJUSTMENT` - ADJUSTMENT
+         * @enum {string}
+         */
+        LedgerEntryTypeEnum: "INVOICE" | "PAYMENT" | "RETURN" | "ADJUSTMENT";
         License: {
             /** Format: uuid */
             readonly id: string;
@@ -4022,6 +4765,46 @@ export interface components {
             amount: string;
             reason: string;
         };
+        POLine: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            item: string;
+            readonly item_code: string;
+            readonly item_name: string;
+            /** Format: uuid */
+            unit: string;
+            readonly unit_code: string;
+            /** Format: decimal */
+            quantity_ordered: string;
+            /** Format: decimal */
+            readonly quantity_received: string;
+            /** Format: decimal */
+            unit_price: string;
+            /** Format: decimal */
+            readonly line_total: string;
+            /** Format: decimal */
+            readonly outstanding: string;
+        };
+        POLineRequest: {
+            /** Format: uuid */
+            item: string;
+            /** Format: uuid */
+            unit: string;
+            /** Format: decimal */
+            quantity_ordered: string;
+            /** Format: decimal */
+            unit_price: string;
+        };
+        /**
+         * @description * `DRAFT` - DRAFT
+         *     * `SUBMITTED` - SUBMITTED
+         *     * `PARTIAL` - PARTIAL
+         *     * `RECEIVED` - RECEIVED
+         *     * `CANCELLED` - CANCELLED
+         * @enum {string}
+         */
+        POStatusEnum: "DRAFT" | "SUBMITTED" | "PARTIAL" | "RECEIVED" | "CANCELLED";
         PaginatedChildList: {
             /**
              * Format: uri
@@ -4034,6 +4817,19 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Child"][];
+        };
+        PaginatedGoodsReceiptList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["GoodsReceipt"][];
         };
         PaginatedGuardianList: {
             /**
@@ -4100,6 +4896,32 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["ProductVariant"][];
         };
+        PaginatedPurchaseOrderList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["PurchaseOrder"][];
+        };
+        PaginatedPurchaseReturnList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["PurchaseReturn"][];
+        };
         PaginatedStockCountList: {
             /**
              * Format: uri
@@ -4112,6 +4934,19 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["StockCount"][];
+        };
+        PaginatedSupplierList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["Supplier"][];
         };
         PatchedAreaRequest: {
             /** @description الصالة / التراس / صالة الأطفال */
@@ -4139,6 +4974,18 @@ export interface components {
             /** @description Allergies, conditions staff must know about. */
             medical_notes?: string;
             consent_recorded?: boolean;
+        };
+        PatchedGoodsReceiptRequest: {
+            /** Format: uuid */
+            purchase_order?: string | null;
+            /** Format: uuid */
+            supplier?: string;
+            grn_number?: string;
+            supplier_invoice_no?: string;
+            /** Format: date */
+            received_date?: string;
+            notes?: string;
+            lines?: components["schemas"]["GRLineRequest"][];
         };
         PatchedGuardianRequest: {
             full_name?: string;
@@ -4259,6 +5106,38 @@ export interface components {
             is_active?: boolean;
             sort_order?: number;
         };
+        PatchedPurchaseOrderRequest: {
+            /** Format: uuid */
+            supplier?: string;
+            po_number?: string;
+            /** Format: date */
+            expected_date?: string | null;
+            notes?: string;
+            lines?: components["schemas"]["POLineRequest"][];
+        };
+        PatchedPurchaseReturnRequest: {
+            /** Format: uuid */
+            supplier?: string;
+            /** Format: uuid */
+            receipt?: string | null;
+            reference?: string;
+            reason?: string;
+            /** Format: date */
+            returned_date?: string;
+            lines?: components["schemas"]["PurchaseReturnLineRequest"][];
+        };
+        PatchedRecipeRequest: {
+            /** Format: uuid */
+            variant?: string;
+            /**
+             * Format: decimal
+             * @description Portions produced. A batch of 10 divides its lines by 10 per sale.
+             */
+            yield_quantity?: string;
+            notes?: string;
+            is_active?: boolean;
+            lines?: components["schemas"]["RecipeLineRequest"][];
+        };
         PatchedSettingWriteRequestRequest: {
             scope?: components["schemas"]["ScopeEnum"];
             /** Format: uuid */
@@ -4284,6 +5163,16 @@ export interface components {
             notes?: string;
             /** Format: date-time */
             counted_at?: string | null;
+        };
+        PatchedSupplierRequest: {
+            name?: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+            tax_number?: string;
+            payment_terms_days?: number;
+            notes?: string;
+            is_active?: boolean;
         };
         PatchedTableRequest: {
             /** Format: uuid */
@@ -4635,6 +5524,92 @@ export interface components {
             has_more: boolean;
             changes: components["schemas"]["Change"][];
         };
+        PurchaseOrder: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            supplier: string;
+            readonly supplier_name: string;
+            po_number: string;
+            readonly status: components["schemas"]["POStatusEnum"];
+            /** Format: date */
+            expected_date?: string | null;
+            notes?: string;
+            /** Format: date-time */
+            readonly submitted_at: string | null;
+            /** Format: decimal */
+            readonly subtotal: string;
+            readonly is_fully_received: boolean;
+            lines: components["schemas"]["POLine"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        PurchaseOrderRequest: {
+            /** Format: uuid */
+            supplier: string;
+            po_number: string;
+            /** Format: date */
+            expected_date?: string | null;
+            notes?: string;
+            lines: components["schemas"]["POLineRequest"][];
+        };
+        PurchaseReturn: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            supplier: string;
+            readonly supplier_name: string;
+            /** Format: uuid */
+            receipt?: string | null;
+            reference: string;
+            reason: string;
+            /** Format: date */
+            returned_date: string;
+            /** Format: date-time */
+            readonly posted_at: string | null;
+            /** Format: decimal */
+            readonly grand_total: string;
+            lines: components["schemas"]["PurchaseReturnLine"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        PurchaseReturnLine: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            item: string;
+            readonly item_code: string;
+            readonly item_name: string;
+            /** Format: uuid */
+            unit: string;
+            /** Format: decimal */
+            quantity: string;
+            /** Format: decimal */
+            unit_cost: string;
+            /** Format: decimal */
+            readonly line_total: string;
+        };
+        PurchaseReturnLineRequest: {
+            /** Format: uuid */
+            item: string;
+            /** Format: uuid */
+            unit: string;
+            /** Format: decimal */
+            quantity: string;
+            /** Format: decimal */
+            unit_cost: string;
+        };
+        PurchaseReturnRequest: {
+            /** Format: uuid */
+            supplier: string;
+            /** Format: uuid */
+            receipt?: string | null;
+            reference: string;
+            reason: string;
+            /** Format: date */
+            returned_date: string;
+            lines: components["schemas"]["PurchaseReturnLineRequest"][];
+        };
         PushRequestRequest: {
             /** Format: uuid */
             batch_id?: string | null;
@@ -4644,6 +5619,90 @@ export interface components {
             applied: number;
             failed: number;
             results: components["schemas"]["OperationResult"][];
+        };
+        Recipe: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            variant: string;
+            readonly variant_name: string;
+            /**
+             * Format: decimal
+             * @description Portions produced. A batch of 10 divides its lines by 10 per sale.
+             */
+            yield_quantity?: string;
+            notes?: string;
+            is_active?: boolean;
+            lines: components["schemas"]["RecipeLine"][];
+        };
+        /**
+         * @description What one portion costs, and — separately — what the figure does not include.
+         *
+         *     `missing_costs` is not a warning bolted on: an item that has never been
+         *     received has no cost, and a margin that looks excellent because an
+         *     ingredient is silently contributing zero is worse than no margin at all.
+         */
+        RecipeCost: {
+            /** Format: decimal */
+            total: string;
+            lines: components["schemas"]["CostLine"][];
+            missing_costs: string[];
+            /** Format: decimal */
+            price: string | null;
+            /** Format: decimal */
+            margin: string | null;
+            /** Format: decimal */
+            margin_percent: string | null;
+        };
+        RecipeLine: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            item: string;
+            readonly item_code: string;
+            readonly item_name: string;
+            /** Format: uuid */
+            unit: string;
+            readonly unit_code: string;
+            /** Format: decimal */
+            quantity: string;
+            /**
+             * Format: decimal
+             * @description Real shrinkage — beans lost in grinding, milk left in the pitcher. Without it, theoretical stock drifts from counted stock and staff stop trusting the numbers, which is how inventory systems die.
+             */
+            waste_percent?: string;
+            /**
+             * Format: decimal
+             * @description Including expected waste — what actually leaves the shelf.
+             */
+            readonly effective_quantity: string;
+            is_optional?: boolean;
+        };
+        RecipeLineRequest: {
+            /** Format: uuid */
+            item: string;
+            /** Format: uuid */
+            unit: string;
+            /** Format: decimal */
+            quantity: string;
+            /**
+             * Format: decimal
+             * @description Real shrinkage — beans lost in grinding, milk left in the pitcher. Without it, theoretical stock drifts from counted stock and staff stop trusting the numbers, which is how inventory systems die.
+             */
+            waste_percent?: string;
+            is_optional?: boolean;
+        };
+        RecipeRequest: {
+            /** Format: uuid */
+            variant: string;
+            /**
+             * Format: decimal
+             * @description Portions produced. A batch of 10 divides its lines by 10 per sale.
+             */
+            yield_quantity?: string;
+            notes?: string;
+            is_active?: boolean;
+            lines: components["schemas"]["RecipeLineRequest"][];
         };
         RefreshRequestRequest: {
             refresh: string;
@@ -4676,6 +5735,22 @@ export interface components {
         RenewLicenseRequest: {
             /** Format: date-time */
             expires_at: string;
+        };
+        ReorderSuggestion: {
+            /** Format: uuid */
+            item_id: string;
+            item_code: string;
+            item_name: string;
+            /** Format: decimal */
+            on_hand: string;
+            /** Format: decimal */
+            available: string;
+            /** Format: decimal */
+            reorder_level: string;
+            /** Format: decimal */
+            suggested_quantity: string;
+            supplier: string | null;
+            supplier_id: string | null;
         };
         /**
          * @description * `ACKNOWLEDGED` - ACKNOWLEDGED
@@ -4958,6 +6033,73 @@ export interface components {
          * @enum {string}
          */
         StockMovementTypeEnum: "OPENING" | "PURCHASE" | "SALE" | "WASTE" | "ADJUSTMENT" | "RETURN" | "TRANSFER" | "COUNT";
+        Supplier: {
+            /** Format: uuid */
+            readonly id: string;
+            name: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+            tax_number?: string;
+            payment_terms_days?: number;
+            notes?: string;
+            /**
+             * Format: decimal
+             * @description Positive = we owe them. A projection of the ledger below.
+             */
+            readonly current_balance: string;
+            is_active?: boolean;
+        };
+        SupplierLedgerEntry: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly entry_type: components["schemas"]["LedgerEntryTypeEnum"];
+            /**
+             * Format: decimal
+             * @description Signed: positive increases what we owe.
+             */
+            readonly amount: string;
+            /** Format: decimal */
+            readonly balance_after: string;
+            readonly ref_type: string;
+            /** Format: uuid */
+            readonly ref_id: string | null;
+            /** @description Supplier invoice number. */
+            readonly reference: string;
+            readonly notes: string;
+            readonly user_name: string;
+            /** Format: date-time */
+            readonly occurred_at: string;
+        };
+        SupplierPaymentRequest: {
+            /** Format: decimal */
+            amount: string;
+            reference?: string;
+        };
+        SupplierRequest: {
+            name: string;
+            phone?: string;
+            email?: string;
+            address?: string;
+            tax_number?: string;
+            payment_terms_days?: number;
+            notes?: string;
+            is_active?: boolean;
+        };
+        /** @description A statement of account, plus the proof that it still adds up. */
+        SupplierStatement: {
+            /** Format: uuid */
+            supplier_id: string;
+            supplier_name: string;
+            /** Format: decimal */
+            current_balance: string;
+            /**
+             * Format: decimal
+             * @description Stored balance minus the replayed ledger. Non-zero is a bug in a write path.
+             */
+            drift: string;
+            entries: components["schemas"]["SupplierLedgerEntry"][];
+        };
         SyncConflict: {
             /** Format: uuid */
             readonly id: string;
@@ -5150,6 +6292,13 @@ export interface components {
         TransferRequest: {
             /** Format: uuid */
             target_table: string;
+        };
+        Valuation: {
+            /** Format: decimal */
+            total: string;
+            by_type: {
+                [key: string]: string;
+            };
         };
         /** @description Step-up approval: a manager authorizes one action for one target. */
         VerifyPinRequestRequest: {
@@ -9916,6 +11065,1074 @@ export interface operations {
             };
         };
     };
+    purchasing_outstanding_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseOrder"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_purchase_orders_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+                /**
+                 * @description * `DRAFT` - DRAFT
+                 *     * `SUBMITTED` - SUBMITTED
+                 *     * `PARTIAL` - PARTIAL
+                 *     * `RECEIVED` - RECEIVED
+                 *     * `CANCELLED` - CANCELLED
+                 */
+                status?: "CANCELLED" | "DRAFT" | "PARTIAL" | "RECEIVED" | "SUBMITTED";
+                supplier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedPurchaseOrderList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_purchase_orders_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseOrderRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PurchaseOrderRequest"];
+                "multipart/form-data": components["schemas"]["PurchaseOrderRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseOrder"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_purchase_orders_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase order. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseOrder"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_purchase_orders_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase order. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseOrderRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PurchaseOrderRequest"];
+                "multipart/form-data": components["schemas"]["PurchaseOrderRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseOrder"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_purchase_orders_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase order. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    purchasing_purchase_orders_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase order. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPurchaseOrderRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPurchaseOrderRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPurchaseOrderRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseOrder"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_purchase_orders_cancel_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase order. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseOrder"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_purchase_orders_submit_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase order. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseOrder"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_receipts_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                purchase_order?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+                supplier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedGoodsReceiptList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_receipts_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoodsReceiptRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GoodsReceiptRequest"];
+                "multipart/form-data": components["schemas"]["GoodsReceiptRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["GoodsReceipt"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_receipts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا goods receipt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["GoodsReceipt"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_receipts_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا goods receipt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GoodsReceiptRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["GoodsReceiptRequest"];
+                "multipart/form-data": components["schemas"]["GoodsReceiptRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["GoodsReceipt"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_receipts_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا goods receipt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    purchasing_receipts_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا goods receipt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedGoodsReceiptRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedGoodsReceiptRequest"];
+                "multipart/form-data": components["schemas"]["PatchedGoodsReceiptRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["GoodsReceipt"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_receipts_post_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا goods receipt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["GoodsReceipt"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_reorder_suggestions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ReorderSuggestion"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_returns_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+                supplier?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedPurchaseReturnList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_returns_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseReturnRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PurchaseReturnRequest"];
+                "multipart/form-data": components["schemas"]["PurchaseReturnRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseReturn"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_returns_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase return. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseReturn"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_returns_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase return. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PurchaseReturnRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PurchaseReturnRequest"];
+                "multipart/form-data": components["schemas"]["PurchaseReturnRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseReturn"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_returns_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase return. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    purchasing_returns_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase return. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPurchaseReturnRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPurchaseReturnRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPurchaseReturnRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseReturn"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_returns_post_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا purchase return. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PurchaseReturn"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    purchasing_valuation_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Valuation"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recipes_list: {
+        parameters: {
+            query?: {
+                is_active?: boolean;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+                variant?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Recipe"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recipes_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RecipeRequest"];
+                "multipart/form-data": components["schemas"]["RecipeRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Recipe"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recipes_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا recipe. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Recipe"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recipes_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا recipe. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecipeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RecipeRequest"];
+                "multipart/form-data": components["schemas"]["RecipeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Recipe"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recipes_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا recipe. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    recipes_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا recipe. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedRecipeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedRecipeRequest"];
+                "multipart/form-data": components["schemas"]["PatchedRecipeRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Recipe"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recipes_cost_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا recipe. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["RecipeCost"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recipes_refresh_cost_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا recipe. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Recipe"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    recipes_for_variant_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                variant_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Recipe"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     reports_dashboard_retrieve: {
         parameters: {
             query?: never;
@@ -10785,6 +13002,264 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["Shift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    suppliers_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedSupplierList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    suppliers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupplierRequest"];
+                "multipart/form-data": components["schemas"]["SupplierRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Supplier"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    suppliers_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا supplier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Supplier"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    suppliers_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا supplier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupplierRequest"];
+                "multipart/form-data": components["schemas"]["SupplierRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Supplier"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    suppliers_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا supplier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    suppliers_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا supplier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedSupplierRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedSupplierRequest"];
+                "multipart/form-data": components["schemas"]["PatchedSupplierRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Supplier"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    suppliers_pay_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا supplier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SupplierPaymentRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SupplierPaymentRequest"];
+                "multipart/form-data": components["schemas"]["SupplierPaymentRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Supplier"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    suppliers_statement_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا supplier. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["SupplierStatement"];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

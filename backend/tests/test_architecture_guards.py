@@ -8,6 +8,7 @@ alone never prevents.
 from __future__ import annotations
 
 import ast
+import inspect
 import re
 from pathlib import Path
 
@@ -212,3 +213,63 @@ class TestNoReservedKeysInLogExtra:
 
         assert "filename" in keys
         assert "ok" in keys, "the guard must see every key, not just the first"
+
+
+class TestErrorConstructorsAcceptWhatCallersPass:
+    """
+    Every keyword handed to an `AppError` must be one it accepts.
+
+    The same shape of bug as the reserved-`extra` class above: it type-checks
+    fine, reads fine, and raises `TypeError` only on the path it guards. Found in
+    four call sites at once — `BRANCH_REQUIRED` in three views and the
+    `DEVICE_REVOKED` backstop in sync — none of which had a test that reached
+    them. Each returned a 500 with no machine code in place of the 400 or 403 the
+    client is written to branch on.
+    """
+
+    def _accepted_kwargs(self) -> set[str]:
+        from apps.core.exceptions import AppError
+
+        signature = inspect.signature(AppError.__init__)
+        return {
+            name
+            for name, param in signature.parameters.items()
+            if param.kind is inspect.Parameter.KEYWORD_ONLY
+        }
+
+    def _error_call_kwargs(self, path: Path) -> list[tuple[int, str, str]]:
+        """(line, class, kwarg) for every `SomethingError(...)` call in a file."""
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        found: list[tuple[int, str, str]] = []
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+                continue
+            if not node.func.id.endswith("Error"):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg:
+                    found.append((node.lineno, node.func.id, keyword.arg))
+        return found
+
+    def test_no_call_site_passes_an_unaccepted_keyword(self) -> None:
+        accepted = self._accepted_kwargs()
+        offenders = []
+
+        for path in _python_files():
+            for lineno, name, kwarg in self._error_call_kwargs(path):
+                if kwarg not in accepted:
+                    offenders.append(f"{path.relative_to(APPS_DIR)}:{lineno}: {name}(…, {kwarg}=…)")
+
+        assert not offenders, (
+            "These raise TypeError instead of the error they describe. "
+            f"AppError accepts {sorted(accepted)}:\n  " + "\n  ".join(offenders)
+        )
+
+    def test_the_guard_actually_catches_a_violation(self, tmp_path: Path) -> None:
+        offender = tmp_path / "offender.py"
+        offender.write_text('raise AppError("x", code="C", http=418)\n', encoding="utf-8")
+        kwargs = [kwarg for _, _, kwarg in self._error_call_kwargs(offender)]
+
+        assert kwargs == ["code", "http"]
+        assert "http" not in self._accepted_kwargs()

@@ -6303,6 +6303,1527 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/purchasing/outstanding/:
+    get:
+      operationId: purchasing_outstanding_list
+      description: |-
+        Submitted orders that have not fully arrived — the "where is my delivery"
+        screen, and the one an owner checks before ordering the same thing twice.
+      summary: Submitted orders not yet fully received
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PurchaseOrder'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/purchase-orders/:
+    get:
+      operationId: purchasing_purchase_orders_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - CANCELLED
+          - DRAFT
+          - PARTIAL
+          - RECEIVED
+          - SUBMITTED
+        description: |-
+          * `DRAFT` - DRAFT
+          * `SUBMITTED` - SUBMITTED
+          * `PARTIAL` - PARTIAL
+          * `RECEIVED` - RECEIVED
+          * `CANCELLED` - CANCELLED
+      - in: query
+        name: supplier
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedPurchaseOrderList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: purchasing_purchase_orders_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseOrder'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/purchase-orders/{id}/:
+    get:
+      operationId: purchasing_purchase_orders_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase order.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseOrder'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: purchasing_purchase_orders_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase order.
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseOrderRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseOrder'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: purchasing_purchase_orders_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase order.
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseOrderRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseOrderRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseOrderRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseOrder'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: purchasing_purchase_orders_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase order.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '204':
+          description: No response body
+  /api/v1/purchasing/purchase-orders/{id}/cancel/:
+    post:
+      operationId: purchasing_purchase_orders_cancel_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: Cancel a purchase order
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase order.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseOrder'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/purchase-orders/{id}/submit/:
+    post:
+      operationId: purchasing_purchase_orders_submit_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: Submit a purchase order (moves NO stock)
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase order.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseOrder'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/receipts/:
+    get:
+      operationId: purchasing_receipts_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - in: query
+        name: purchase_order
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      - in: query
+        name: supplier
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedGoodsReceiptList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: purchasing_receipts_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoodsReceiptRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GoodsReceiptRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GoodsReceiptRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/GoodsReceipt'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/receipts/{id}/:
+    get:
+      operationId: purchasing_receipts_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا goods receipt.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/GoodsReceipt'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: purchasing_receipts_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا goods receipt.
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoodsReceiptRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GoodsReceiptRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GoodsReceiptRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/GoodsReceipt'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: purchasing_receipts_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا goods receipt.
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGoodsReceiptRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGoodsReceiptRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGoodsReceiptRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/GoodsReceipt'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: purchasing_receipts_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا goods receipt.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '204':
+          description: No response body
+  /api/v1/purchasing/receipts/{id}/post/:
+    post:
+      operationId: purchasing_receipts_post_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: 'Post a receipt: stock in, supplier billed, costs refreshed'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا goods receipt.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/GoodsReceipt'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/reorder-suggestions/:
+    get:
+      operationId: purchasing_reorder_suggestions_list
+      description: |-
+        What is at or below its reorder level.
+
+        A suggestion, never an order. Turning this into an automatic PO would have
+        the system spending money on a number somebody typed once.
+      summary: Items at or below their reorder level
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ReorderSuggestion'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/returns/:
+    get:
+      operationId: purchasing_returns_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      - in: query
+        name: supplier
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedPurchaseReturnList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: purchasing_returns_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseReturn'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/returns/{id}/:
+    get:
+      operationId: purchasing_returns_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase return.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseReturn'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: purchasing_returns_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase return.
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PurchaseReturnRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseReturn'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: purchasing_returns_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase return.
+        required: true
+      tags:
+      - purchasing
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPurchaseReturnRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseReturn'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: purchasing_returns_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase return.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '204':
+          description: No response body
+  /api/v1/purchasing/returns/{id}/post/:
+    post:
+      operationId: purchasing_returns_post_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: 'Post a return: stock out, supplier balance down'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا purchase return.
+        required: true
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PurchaseReturn'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/purchasing/valuation/:
+    get:
+      operationId: purchasing_valuation_retrieve
+      summary: Stock value at weighted-average cost
+      tags:
+      - purchasing
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Valuation'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/recipes/:
+    get:
+      operationId: recipes_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      - in: query
+        name: variant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - recipes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Recipe'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: recipes_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - recipes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Recipe'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/recipes/{id}/:
+    get:
+      operationId: recipes_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا recipe.
+        required: true
+      tags:
+      - recipes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Recipe'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: recipes_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا recipe.
+        required: true
+      tags:
+      - recipes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RecipeRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Recipe'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: recipes_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا recipe.
+        required: true
+      tags:
+      - recipes
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRecipeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRecipeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRecipeRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Recipe'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: recipes_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا recipe.
+        required: true
+      tags:
+      - recipes
+      responses:
+        '204':
+          description: No response body
+  /api/v1/recipes/{id}/cost/:
+    get:
+      operationId: recipes_cost_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: What one portion costs, and what the figure omits
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا recipe.
+        required: true
+      tags:
+      - recipes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/RecipeCost'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/recipes/{id}/refresh-cost/:
+    post:
+      operationId: recipes_refresh_cost_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: Recompute and store the variant's cost
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا recipe.
+        required: true
+      tags:
+      - recipes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Recipe'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/recipes/for-variant/{variant_id}/:
+    get:
+      operationId: recipes_for_variant_retrieve
+      description: |-
+        The recipe for one variant, by variant id.
+
+        A convenience the product screen needs: it holds a variant and wants to know
+        whether a recipe exists without listing every recipe in the branch.
+      summary: Recipe for a variant
+      parameters:
+      - in: path
+        name: variant_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - recipes
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Recipe'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/reports/dashboard/:
     get:
       operationId: reports_dashboard_retrieve
@@ -7414,6 +8935,376 @@ paths:
                     - true
                   data:
                     $ref: '#/components/schemas/Shift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/suppliers/:
+    get:
+      operationId: suppliers_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - suppliers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedSupplierList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: suppliers_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - suppliers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Supplier'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/suppliers/{id}/:
+    get:
+      operationId: suppliers_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا supplier.
+        required: true
+      tags:
+      - suppliers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Supplier'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: suppliers_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا supplier.
+        required: true
+      tags:
+      - suppliers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupplierRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Supplier'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: suppliers_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا supplier.
+        required: true
+      tags:
+      - suppliers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSupplierRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSupplierRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSupplierRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Supplier'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: suppliers_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا supplier.
+        required: true
+      tags:
+      - suppliers
+      responses:
+        '204':
+          description: No response body
+  /api/v1/suppliers/{id}/pay/:
+    post:
+      operationId: suppliers_pay_create
+      description: |-
+        Separately permissioned from editing the supplier.
+
+        Keeping a supplier's phone number up to date and moving money out of the
+        business are not the same act, and one person often does the first while
+        only the owner should do the second.
+      summary: Record a payment to a supplier
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا supplier.
+        required: true
+      tags:
+      - suppliers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplierPaymentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupplierPaymentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupplierPaymentRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Supplier'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/suppliers/{id}/statement/:
+    get:
+      operationId: suppliers_statement_retrieve
+      description: |-
+        Every entry, plus a reconciliation of the stored balance against them.
+
+        The drift is reported rather than hidden because a non-zero value is not
+        a supplier problem — it is a bug in a write path, and the person looking
+        at the statement is the one who will notice first.
+      summary: Statement of account
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا supplier.
+        required: true
+      tags:
+      - suppliers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/SupplierStatement'
                   meta:
                     type: object
                     properties:
@@ -8567,6 +10458,34 @@ components:
           maxLength: 200
       required:
       - counted_cash
+    CostLine:
+      type: object
+      properties:
+        item_code:
+          type: string
+        item_name:
+          type: string
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_code:
+          type: string
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+        line_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+      required:
+      - item_code
+      - item_name
+      - line_cost
+      - quantity
+      - unit_code
+      - unit_cost
     CostingMethodEnum:
       enum:
       - WEIGHTED_AVG
@@ -8935,6 +10854,183 @@ components:
       - table_id
       - total_due
       - waiter
+    GRLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        po_line:
+          type: string
+          format: uuid
+          nullable: true
+        item:
+          type: string
+          format: uuid
+        item_code:
+          type: string
+          readOnly: true
+        item_name:
+          type: string
+          readOnly: true
+        unit:
+          type: string
+          format: uuid
+        unit_code:
+          type: string
+          readOnly: true
+        quantity_received:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          description: ACTUAL invoiced cost, which may differ from the PO price.
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - id
+      - item
+      - item_code
+      - item_name
+      - line_total
+      - quantity_received
+      - unit
+      - unit_code
+      - unit_cost
+    GRLineRequest:
+      type: object
+      properties:
+        po_line:
+          type: string
+          format: uuid
+          nullable: true
+        item:
+          type: string
+          format: uuid
+        unit:
+          type: string
+          format: uuid
+        quantity_received:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+          description: ACTUAL invoiced cost, which may differ from the PO price.
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - item
+      - quantity_received
+      - unit
+      - unit_cost
+    GoodsReceipt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        purchase_order:
+          type: string
+          format: uuid
+          nullable: true
+        supplier:
+          type: string
+          format: uuid
+        supplier_name:
+          type: string
+          readOnly: true
+        grn_number:
+          type: string
+          maxLength: 32
+        supplier_invoice_no:
+          type: string
+          maxLength: 64
+        received_date:
+          type: string
+          format: date
+        notes:
+          type: string
+        posted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: When stock and the supplier ledger were written.
+        is_posted:
+          type: boolean
+          readOnly: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/GRLine'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - grand_total
+      - grn_number
+      - id
+      - is_posted
+      - lines
+      - posted_at
+      - received_date
+      - supplier
+      - supplier_name
+    GoodsReceiptRequest:
+      type: object
+      properties:
+        purchase_order:
+          type: string
+          format: uuid
+          nullable: true
+        supplier:
+          type: string
+          format: uuid
+        grn_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        supplier_invoice_no:
+          type: string
+          maxLength: 64
+        received_date:
+          type: string
+          format: date
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/GRLineRequest'
+      required:
+      - grn_number
+      - lines
+      - received_date
+      - supplier
     Guardian:
       type: object
       properties:
@@ -9379,6 +11475,18 @@ components:
         * `CONSUMABLE` - CONSUMABLE
         * `PACKAGING` - PACKAGING
         * `FINISHED` - FINISHED
+    LedgerEntryTypeEnum:
+      enum:
+      - INVOICE
+      - PAYMENT
+      - RETURN
+      - ADJUSTMENT
+      type: string
+      description: |-
+        * `INVOICE` - INVOICE
+        * `PAYMENT` - PAYMENT
+        * `RETURN` - RETURN
+        * `ADJUSTMENT` - ADJUSTMENT
     License:
       type: object
       properties:
@@ -10298,6 +12406,99 @@ components:
       required:
       - amount
       - reason
+    POLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        item:
+          type: string
+          format: uuid
+        item_code:
+          type: string
+          readOnly: true
+        item_name:
+          type: string
+          readOnly: true
+        unit:
+          type: string
+          format: uuid
+        unit_code:
+          type: string
+          readOnly: true
+        quantity_ordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        quantity_received:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        outstanding:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+      required:
+      - id
+      - item
+      - item_code
+      - item_name
+      - line_total
+      - outstanding
+      - quantity_ordered
+      - quantity_received
+      - unit
+      - unit_code
+      - unit_price
+    POLineRequest:
+      type: object
+      properties:
+        item:
+          type: string
+          format: uuid
+        unit:
+          type: string
+          format: uuid
+        quantity_ordered:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+      required:
+      - item
+      - quantity_ordered
+      - unit
+      - unit_price
+    POStatusEnum:
+      enum:
+      - DRAFT
+      - SUBMITTED
+      - PARTIAL
+      - RECEIVED
+      - CANCELLED
+      type: string
+      description: |-
+        * `DRAFT` - DRAFT
+        * `SUBMITTED` - SUBMITTED
+        * `PARTIAL` - PARTIAL
+        * `RECEIVED` - RECEIVED
+        * `CANCELLED` - CANCELLED
     PaginatedChildList:
       type: object
       required:
@@ -10317,6 +12518,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Child'
+    PaginatedGoodsReceiptList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/GoodsReceipt'
     PaginatedGuardianList:
       type: object
       required:
@@ -10412,6 +12632,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProductVariant'
+    PaginatedPurchaseOrderList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseOrder'
+    PaginatedPurchaseReturnList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseReturn'
     PaginatedStockCountList:
       type: object
       required:
@@ -10431,6 +12689,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/StockCount'
+    PaginatedSupplierList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Supplier'
     PatchedAreaRequest:
       type: object
       properties:
@@ -10492,6 +12769,32 @@ components:
           description: Allergies, conditions staff must know about.
         consent_recorded:
           type: boolean
+    PatchedGoodsReceiptRequest:
+      type: object
+      properties:
+        purchase_order:
+          type: string
+          format: uuid
+          nullable: true
+        supplier:
+          type: string
+          format: uuid
+        grn_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        supplier_invoice_no:
+          type: string
+          maxLength: 64
+        received_date:
+          type: string
+          format: date
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/GRLineRequest'
     PatchedGuardianRequest:
       type: object
       properties:
@@ -10742,6 +13045,70 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+    PatchedPurchaseOrderRequest:
+      type: object
+      properties:
+        supplier:
+          type: string
+          format: uuid
+        po_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/POLineRequest'
+    PatchedPurchaseReturnRequest:
+      type: object
+      properties:
+        supplier:
+          type: string
+          format: uuid
+        receipt:
+          type: string
+          format: uuid
+          nullable: true
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 32
+        reason:
+          type: string
+          minLength: 1
+        returned_date:
+          type: string
+          format: date
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseReturnLineRequest'
+    PatchedRecipeRequest:
+      type: object
+      properties:
+        variant:
+          type: string
+          format: uuid
+        yield_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Portions produced. A batch of 10 divides its lines by 10 per
+            sale.
+        notes:
+          type: string
+        is_active:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeLineRequest'
     PatchedSettingWriteRequestRequest:
       type: object
       properties:
@@ -10796,6 +13163,36 @@ components:
           type: string
           format: date-time
           nullable: true
+    PatchedSupplierRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 32
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+        tax_number:
+          type: string
+          maxLength: 50
+        payment_terms_days:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        notes:
+          type: string
+        is_active:
+          type: boolean
     PatchedTableRequest:
       type: object
       properties:
@@ -11586,6 +13983,235 @@ components:
       - cursor
       - has_more
       - stream
+    PurchaseOrder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier:
+          type: string
+          format: uuid
+        supplier_name:
+          type: string
+          readOnly: true
+        po_number:
+          type: string
+          maxLength: 32
+        status:
+          allOf:
+          - $ref: '#/components/schemas/POStatusEnum'
+          readOnly: true
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+        submitted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        subtotal:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        is_fully_received:
+          type: boolean
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/POLine'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - is_fully_received
+      - lines
+      - po_number
+      - status
+      - submitted_at
+      - subtotal
+      - supplier
+      - supplier_name
+    PurchaseOrderRequest:
+      type: object
+      properties:
+        supplier:
+          type: string
+          format: uuid
+        po_number:
+          type: string
+          minLength: 1
+          maxLength: 32
+        expected_date:
+          type: string
+          format: date
+          nullable: true
+        notes:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/POLineRequest'
+      required:
+      - lines
+      - po_number
+      - supplier
+    PurchaseReturn:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        supplier:
+          type: string
+          format: uuid
+        supplier_name:
+          type: string
+          readOnly: true
+        receipt:
+          type: string
+          format: uuid
+          nullable: true
+        reference:
+          type: string
+          maxLength: 32
+        reason:
+          type: string
+        returned_date:
+          type: string
+          format: date
+        posted_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        grand_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseReturnLine'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - grand_total
+      - id
+      - lines
+      - posted_at
+      - reason
+      - reference
+      - returned_date
+      - supplier
+      - supplier_name
+    PurchaseReturnLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        item:
+          type: string
+          format: uuid
+        item_code:
+          type: string
+          readOnly: true
+        item_name:
+          type: string
+          readOnly: true
+        unit:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+        line_total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+      required:
+      - id
+      - item
+      - item_code
+      - item_name
+      - line_total
+      - quantity
+      - unit
+      - unit_cost
+    PurchaseReturnLineRequest:
+      type: object
+      properties:
+        item:
+          type: string
+          format: uuid
+        unit:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        unit_cost:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,4})?$
+      required:
+      - item
+      - quantity
+      - unit
+      - unit_cost
+    PurchaseReturnRequest:
+      type: object
+      properties:
+        supplier:
+          type: string
+          format: uuid
+        receipt:
+          type: string
+          format: uuid
+          nullable: true
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 32
+        reason:
+          type: string
+          minLength: 1
+        returned_date:
+          type: string
+          format: date
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PurchaseReturnLineRequest'
+      required:
+      - lines
+      - reason
+      - reference
+      - returned_date
+      - supplier
     PushRequestRequest:
       type: object
       properties:
@@ -11616,6 +14242,180 @@ components:
       - applied
       - failed
       - results
+    Recipe:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        variant:
+          type: string
+          format: uuid
+        variant_name:
+          type: string
+          readOnly: true
+        yield_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Portions produced. A batch of 10 divides its lines by 10 per
+            sale.
+        notes:
+          type: string
+        is_active:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeLine'
+      required:
+      - id
+      - lines
+      - variant
+      - variant_name
+    RecipeCost:
+      type: object
+      description: |-
+        What one portion costs, and — separately — what the figure does not include.
+
+        `missing_costs` is not a warning bolted on: an item that has never been
+        received has no cost, and a margin that looks excellent because an
+        ingredient is silently contributing zero is worse than no margin at all.
+      properties:
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/CostLine'
+        missing_costs:
+          type: array
+          items:
+            type: string
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        margin:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          nullable: true
+        margin_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,4}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - lines
+      - margin
+      - margin_percent
+      - missing_costs
+      - price
+      - total
+    RecipeLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        item:
+          type: string
+          format: uuid
+        item_code:
+          type: string
+          readOnly: true
+        item_name:
+          type: string
+          readOnly: true
+        unit:
+          type: string
+          format: uuid
+        unit_code:
+          type: string
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        waste_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          description: Real shrinkage — beans lost in grinding, milk left in the pitcher.
+            Without it, theoretical stock drifts from counted stock and staff stop
+            trusting the numbers, which is how inventory systems die.
+        effective_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          readOnly: true
+          description: Including expected waste — what actually leaves the shelf.
+        is_optional:
+          type: boolean
+      required:
+      - effective_quantity
+      - id
+      - item
+      - item_code
+      - item_name
+      - quantity
+      - unit
+      - unit_code
+    RecipeLineRequest:
+      type: object
+      properties:
+        item:
+          type: string
+          format: uuid
+        unit:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        waste_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          description: Real shrinkage — beans lost in grinding, milk left in the pitcher.
+            Without it, theoretical stock drifts from counted stock and staff stop
+            trusting the numbers, which is how inventory systems die.
+        is_optional:
+          type: boolean
+      required:
+      - item
+      - quantity
+      - unit
+    RecipeRequest:
+      type: object
+      properties:
+        variant:
+          type: string
+          format: uuid
+        yield_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+          description: Portions produced. A batch of 10 divides its lines by 10 per
+            sale.
+        notes:
+          type: string
+        is_active:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipeLineRequest'
+      required:
+      - lines
+      - variant
     RefreshRequestRequest:
       type: object
       properties:
@@ -11701,6 +14501,48 @@ components:
           format: date-time
       required:
       - expires_at
+    ReorderSuggestion:
+      type: object
+      properties:
+        item_id:
+          type: string
+          format: uuid
+        item_code:
+          type: string
+        item_name:
+          type: string
+        on_hand:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        available:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        reorder_level:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        suggested_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,11}(?:\.\d{0,3})?$
+        supplier:
+          type: string
+          nullable: true
+        supplier_id:
+          type: string
+          nullable: true
+      required:
+      - available
+      - item_code
+      - item_id
+      - item_name
+      - on_hand
+      - reorder_level
+      - suggested_quantity
+      - supplier
+      - supplier_id
     ResolutionEnum:
       enum:
       - ACKNOWLEDGED
@@ -12389,6 +15231,177 @@ components:
         * `RETURN` - RETURN
         * `TRANSFER` - TRANSFER
         * `COUNT` - COUNT
+    Supplier:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 32
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+        tax_number:
+          type: string
+          maxLength: 50
+        payment_terms_days:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        notes:
+          type: string
+        current_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+          description: Positive = we owe them. A projection of the ledger below.
+        is_active:
+          type: boolean
+      required:
+      - current_balance
+      - id
+      - name
+    SupplierLedgerEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        entry_type:
+          allOf:
+          - $ref: '#/components/schemas/LedgerEntryTypeEnum'
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+          description: 'Signed: positive increases what we owe.'
+        balance_after:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        ref_type:
+          type: string
+          readOnly: true
+        ref_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        reference:
+          type: string
+          readOnly: true
+          description: Supplier invoice number.
+        notes:
+          type: string
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - balance_after
+      - entry_type
+      - id
+      - notes
+      - occurred_at
+      - ref_id
+      - ref_type
+      - reference
+      - user_name
+    SupplierPaymentRequest:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        reference:
+          type: string
+          maxLength: 64
+      required:
+      - amount
+    SupplierRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        phone:
+          type: string
+          maxLength: 32
+        email:
+          oneOf:
+          - type: string
+            format: email
+            maxLength: 254
+          - type: string
+            maxLength: 0
+        address:
+          type: string
+        tax_number:
+          type: string
+          maxLength: 50
+        payment_terms_days:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        notes:
+          type: string
+        is_active:
+          type: boolean
+      required:
+      - name
+    SupplierStatement:
+      type: object
+      description: A statement of account, plus the proof that it still adds up.
+      properties:
+        supplier_id:
+          type: string
+          format: uuid
+        supplier_name:
+          type: string
+        current_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        drift:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          description: Stored balance minus the replayed ledger. Non-zero is a bug
+            in a write path.
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplierLedgerEntry'
+      required:
+      - current_balance
+      - drift
+      - entries
+      - supplier_id
+      - supplier_name
     SyncConflict:
       type: object
       properties:
@@ -12842,6 +15855,22 @@ components:
           format: uuid
       required:
       - target_table
+    Valuation:
+      type: object
+      properties:
+        total:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+        by_type:
+          type: object
+          additionalProperties:
+            type: string
+            format: decimal
+            pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+      required:
+      - by_type
+      - total
     VerifyPinRequestRequest:
       type: object
       description: 'Step-up approval: a manager authorizes one action for one target.'

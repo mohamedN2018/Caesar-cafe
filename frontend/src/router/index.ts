@@ -112,10 +112,28 @@ const router = createRouter({
           meta: { permission: 'catalog.view' },
         },
         {
+          path: 'recipes',
+          name: 'recipes',
+          component: () => import('@/views/catalog/RecipeView.vue'),
+          meta: { permission: 'catalog.view' },
+        },
+        {
           path: 'stock',
           name: 'stock',
           component: () => import('@/views/inventory/StockLevelView.vue'),
           meta: { permission: 'inventory.view' },
+        },
+        {
+          path: 'suppliers',
+          name: 'suppliers',
+          component: () => import('@/views/purchasing/SupplierListView.vue'),
+          meta: { permission: 'purchasing.view' },
+        },
+        {
+          path: 'purchasing',
+          name: 'purchasing',
+          component: () => import('@/views/purchasing/PurchaseOrderView.vue'),
+          meta: { permission: 'purchasing.view' },
         },
         {
           path: 'stock/movements',

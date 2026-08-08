@@ -65,8 +65,16 @@ const groups: NavGroup[] = [
     items: [
       { label: 'المنتجات', to: '/products', icon: '☕', permission: 'catalog.view' },
       { label: 'الأقسام', to: '/categories', icon: '🗂️', permission: 'catalog.view' },
+      { label: 'الوصفات والتكلفة', to: '/recipes', icon: '🧾', permission: 'catalog.view' },
       { label: 'أرصدة المخزون', to: '/stock', icon: '📦', permission: 'inventory.view' },
       { label: 'حركة المخزون', to: '/stock/movements', icon: '📜', permission: 'inventory.view' },
+    ],
+  },
+  {
+    label: 'الشراء',
+    items: [
+      { label: 'الموردون', to: '/suppliers', icon: '🚚', permission: 'purchasing.view' },
+      { label: 'الشراء والاستلام', to: '/purchasing', icon: '📥', permission: 'purchasing.view' },
     ],
   },
   {

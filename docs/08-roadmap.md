@@ -261,8 +261,52 @@ One real bug found: `suppliers.reconcile()` compared the ledger against a possib
 in-memory balance, because `record_ledger_entry` updates a row-locked copy. A reconciliation that
 trusts a stale value is not reconciling anything; both sides now read fresh from the database.
 
-**Still outstanding for this phase:** the Web Admin screens for these resources. The API and the
-domain rules they will drive are complete and tested.
+### API and Web Admin ✅ COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **831 tests passing** (48 new) · migrations clean ·
+`spectacular --fail-on-warn` clean · `vue-tsc` clean · `vite build` clean.
+
+A correction to what this section previously claimed. The domain rules were complete and tested —
+**the API was not.** `apps/suppliers`, `apps/purchasing` and `apps/recipes` each had models and
+services and no views, no serializers and no URLs at all; none of them were in `config/urls.py`.
+Eleven `purchasing.*` and `catalog.manage_recipes` permission codes existed in the catalogue with no
+route that used them. That is now built, tested and wired, along with the four Web screens over it:
+suppliers with their statement of account, purchase orders and goods receipts, reorder suggestions,
+and the recipe/costing editor.
+
+The PO/GRN distinction shows up directly in the route table rather than only in the services, which
+is the point:
+
+    POST /purchase-orders/              an intention
+    POST /purchase-orders/{id}/submit/  still an intention, now committed to
+    POST /receipts/{id}/post/           ← the only route here that touches stock
+
+`purchasing.create_po` and `purchasing.receive` stay separate for the same reason: the person who
+orders the milk is often not the person who signs for it, and a system where they must be is a
+system where one person can invent a delivery. Likewise `purchasing.pay_supplier` is split from
+`purchasing.manage_suppliers` — the store manager keeps the phone number current, the owner moves
+the money.
+
+Four rules the endpoints enforce that the services alone could not:
+
+1. **A submitted order is not editable, and a posted receipt is frozen.** The receipt's lines are
+   already stock movements and a supplier invoice; editing them afterwards would leave the ledger
+   describing a delivery that no longer matches the document it came from.
+2. **`quantity_received` is read-only on the order.** An order that could mark itself received would
+   make the whole distinction decorative.
+3. **`Supplier.current_balance` is read-only.** A settable balance would let a typo erase a debt with
+   no ledger entry to explain it — the same discipline `StockLevel` follows. The statement endpoint
+   replays the ledger and reports the drift rather than hiding it, because a non-zero drift is a bug
+   in a write path and the person reading the statement notices first.
+4. **A partially received order can still be cancelled.** The delivered half stays on the shelf and
+   in the ledger; the outstanding half stops being expected. Refusing would leave it open forever.
+
+**One bug found, and it was a class.** `AppError.__init__` never accepted `status_code`, but four
+call sites passed it: `BRANCH_REQUIRED` in three views and the `DEVICE_REVOKED` backstop in sync.
+Each raised `TypeError` and answered 500 with no machine code in place of the 400 or 403 the clients
+branch on — and none had a test that reached them. `AppError` now takes it per instance,
+`tests/test_error_envelope.py` proves the consequences at runtime, and a new architecture guard
+AST-walks every `*Error(...)` call and fails on any keyword the constructor does not accept.
 
 ---
 
