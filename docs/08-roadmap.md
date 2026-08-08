@@ -604,9 +604,40 @@ items, no more payment and cannot be voided (`PAID → OPEN` is unreachable by c
 marks rather than removes; firing twice sends only what is new; a terminal whose `finance.*` has not
 synced **refuses to price an order** rather than guessing a VAT rate.
 
-**Still outstanding on the Desktop:** the screens themselves — the PIN pad, the POS order screen,
-the floor map, the KDS, the kids board — and receipt printing with the Arabic rasterizer. Every one
-of them is now a view over a store, a fold and a sync engine that exist and are tested.
+### Desktop login ✅ COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **209 desktop tests passing** (37 new).
+
+Delivered: `security/pin.py` (offline verification of the mirrored hash),
+`security/session.py` (the session, the permission set, the lockout, step-up approval), and
+`ui/login/` (the PIN pad and its screen).
+
+- **A cashier logs in with the internet down.** Django's `make_password` output is mirrored and
+  verified locally — both Argon2id (what the server prefers) and PBKDF2-SHA256 (its fallback),
+  because a terminal that could not read a legacy hash would lock out the one person who has not
+  changed their PIN since the upgrade.
+- **The 4-digit secret stays defensible.** Five wrong PINs lock the DEVICE for fifteen minutes —
+  not the account, because locking the account would let anyone with a keypad lock out the manager,
+  a denial of service needing no credentials at all.
+- **A revoked assignment removes the permission**, via the mirror DELETE the puller applies.
+- **Step-up approval does not log the cashier out.** Systems that force a full logout get defeated
+  by managers sharing their PIN, which destroys accountability entirely. The approver must actually
+  hold the permission, and asking the wrong colleague does not count toward the lockout — otherwise
+  a cashier could lock the till by asking twice.
+- The terminal caches permissions for the UI only. **The server re-checks every operation on sync**,
+  and a disagreement lands in `sync_conflicts` where somebody sees it.
+
+Two decisions in the pad itself, both from watching what the job actually is: it **submits itself**
+at the configured length, because asking for a fifth tap after four is one interaction too many
+forty times a day; and a wrong PIN **says how many attempts remain**, because a cashier who does not
+know they are on their last try is a cashier who locks the till mid-queue.
+
+An unreadable hash raises rather than reporting "wrong PIN" — telling somebody their PIN is wrong
+when the server upgraded its hasher would have them retyping until they lock themselves out.
+
+**Still outstanding on the Desktop:** the POS order screen, the floor map, the KDS, the kids board,
+and receipt printing with the Arabic rasterizer. Every one is now a view over a store, a fold, a
+sync engine and a session that exist and are tested.
 
 Original plan:
 

@@ -9,6 +9,10 @@ dependencies = [
     "httpx>=0.27",
     "keyring>=25.4",
     "cryptography>=43.0",
+    # Verifies the mirrored PIN hash offline. The server hashes with Argon2id,
+    # so without this a cashier cannot log in during an outage — which is the
+    # one time it matters most.
+    "argon2-cffi>=23.1",
     "python-escpos>=3.1",
     "Pillow>=10.4",
     "arabic-reshaper>=3.0",
