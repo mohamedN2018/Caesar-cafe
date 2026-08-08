@@ -540,9 +540,50 @@ Three design decisions worth recording:
    Desktop running silently on last month's prices, and that failure is invisible until a customer
    is charged the wrong amount.
 
-**Still outstanding — the Desktop half:** the SQLite schema with its `m_`/`l_` separation, the
-single-transaction outbox write, the drainer with jittered backoff, the local fold, and the header
-sync indicator. The server contract they build against is now fixed and tested.
+### Desktop half ✅ ENGINE COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **123 desktop tests passing** (59 new) · vendored modules in sync.
+
+Delivered: `local/schema.py` (the `m_`/`l_` SQLite schema, WAL, versioned migrations),
+`local/db.py` (the connection, and a `MirrorIsReadOnly` guard that refuses application writes to a
+mirror table), `local/outbox.py` (the single-transaction enqueue), `sync/backoff.py`,
+`sync/pusher.py`, `sync/puller.py`, and `sync/engine.py` with the four-state indicator.
+
+Exit criteria met:
+
+- **The sale and its outbox row commit together or not at all.** Tested by crashing between them:
+  without one transaction the sale sits on the machine and the server never hears about it — a lost
+  sale that reconciles to nothing.
+- **An outage never discards anything.** A push against a dead connection defers five operations and
+  rejects none; they drain when the link returns.
+- **One rejection does not lose the batch** — 2 applied, 1 rejected, queue clear.
+- **A conflict stops retrying and becomes visible**, carrying the server's state so a human can act
+  on it rather than guess.
+- **The mirror cannot be written by the application.** `db.insert("m_variants", …)` raises: a
+  terminal that can edit its own copy of a price can charge whatever it likes, and the drift is
+  invisible until a customer complains.
+- **A revoked permission does not survive in the cache** — the one mirror update that is a security
+  control rather than a convenience.
+- Retry jitter genuinely scatters: 20 draws of the same attempt number produce >15 distinct delays.
+  Four terminals sharing one router lose wifi together, and without jitter they retry in lockstep.
+
+Three decisions worth recording:
+
+1. **Money is TEXT in SQLite, never REAL.** REAL would reintroduce exactly the imprecision
+   `money.py` exists to avoid, on the one machine where the total is computed offline.
+2. **Every mirror row keeps the whole server payload** alongside the few columns the UI filters on.
+   A server newer than this client sends fields it has never heard of, and a mirror that dropped
+   them would lose data on every re-pull.
+3. **An unknown entity type is skipped, not fatal.** A terminal that refused to sync over a feature
+   it does not have is a terminal that stops selling.
+
+Two bugs the tests found: `connect()` returned a cached connection that had been closed (the
+activation flow restarts in-process, so this was reachable), and the puller wrote `None` for absent
+payload keys — overriding schema defaults on insert and blanking good values on update.
+
+**Still outstanding on the Desktop:** the POS order screen, the PIN pad, the floor map, the KDS, the
+kids screens, receipt printing with the Arabic rasterizer, and the local fold that turns
+`l_order_events` into a running total. The engine underneath them is done.
 
 Original plan:
 
