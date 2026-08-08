@@ -1913,6 +1913,48 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ops/backups/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Backups and their state */
+        get: operations["ops_backups_retrieve"];
+        put?: never;
+        /**
+         * Take a backup now
+         * @description Runs synchronously.
+         *
+         *     A cafe database dumps in seconds, and an operator who pressed this button
+         *     wants the answer, not a task id to go and look up. If it ever grows past
+         *     that, the nightly Celery task is already the async path.
+         */
+        post: operations["ops_backups_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/backups/{id}/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Re-digest a backup file */
+        post: operations["ops_backups_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/orders/": {
         parameters: {
             query?: never;
@@ -3042,6 +3084,44 @@ export interface components {
             readonly request_id: string;
             /** Format: date-time */
             readonly occurred_at: string;
+        };
+        BackupRecord: {
+            readonly id: number;
+            readonly filename: string;
+            readonly size_bytes: number;
+            readonly size_mb: string;
+            /** @description Of the file as written. What a restore checks before trusting it. */
+            readonly sha256: string;
+            readonly encrypted: boolean;
+            readonly status: components["schemas"]["BackupRecordStatusEnum"];
+            readonly error: string;
+            /** Format: date-time */
+            readonly started_at: string;
+            /** Format: date-time */
+            readonly finished_at: string | null;
+            readonly duration_seconds: number;
+            readonly triggered_by_name: string;
+        };
+        /**
+         * @description * `RUNNING` - RUNNING
+         *     * `COMPLETE` - COMPLETE
+         *     * `FAILED` - FAILED
+         * @enum {string}
+         */
+        BackupRecordStatusEnum: "RUNNING" | "COMPLETE" | "FAILED";
+        BackupStatus: {
+            /** @description True when BACKUP_ENCRYPTION_KEY is set. False means plaintext dumps. */
+            configured: boolean;
+            directory: string;
+            total: number;
+            failed: number;
+            /** Format: date-time */
+            last_success: string | null;
+            last_filename: string | null;
+            last_size_mb: string | null;
+            /** @description The number that matters. 'last run: COMPLETE' means nothing if the last run was in April. */
+            hours_since_last: string | null;
+            backups: components["schemas"]["BackupRecord"][];
         };
         Board: {
             /** Format: uuid */
@@ -9181,6 +9261,80 @@ export interface operations {
                         };
                     };
                 };
+            };
+        };
+    };
+    ops_backups_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["BackupStatus"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    ops_backups_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["BackupRecord"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    ops_backups_verify_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
         };
     };

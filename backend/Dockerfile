@@ -12,6 +12,10 @@ WORKDIR /app
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
         build-essential libpq-dev curl \
+        # postgresql-client provides pg_dump and psql. Backups run INSIDE this
+        # image (apps/ops) rather than in a sidecar, so that a restore drill on a
+        # scratch host needs one image rather than two that must stay in step.
+        postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
 COPY pyproject.toml ./

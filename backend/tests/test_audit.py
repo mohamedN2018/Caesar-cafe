@@ -681,6 +681,29 @@ class TestCatalogueCoverage:
         audit.record("sync.conflict_resolved", branch=branch, object_id="x")
         self._assert("sync.conflict_resolved")
 
+    def test_ops(self, branch, make_user, tmp_path, settings, monkeypatch) -> None:
+        """
+        Backup and restore, through the real code paths.
+
+        The restore is deliberately made to fail at the psql step: the audit row
+        is written BEFORE the database is touched, so an attempt that goes wrong
+        is still recorded. A restore that failed halfway and left no trace is the
+        worst possible version of this event.
+        """
+        from apps.ops import backups
+
+        settings.BACKUP_DIR = str(tmp_path / "backups")
+        monkeypatch.delenv("BACKUP_ENCRYPTION_KEY", raising=False)
+
+        record = backups.create(user=make_user(email="ops@caesar.test"), label="audit")
+        assert record.status == "COMPLETE", record.error
+        self._assert("system.backup_triggered")
+
+        monkeypatch.setenv("DATABASE_URL", "postgresql://nobody:wrong@nowhere:5432/missing")
+        with pytest.raises(backups.BackupFailed):
+            backups.restore(record.filename, confirmed=True)
+        self._assert("system.restore_performed")
+
     def test_zz_every_catalogued_action_was_produced(self) -> None:
         """
         Runs last (the `zz` prefix). A catalogued action nobody produces is a

@@ -5488,6 +5488,84 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/ops/backups/:
+    get:
+      operationId: ops_backups_retrieve
+      summary: Backups and their state
+      tags:
+      - ops
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/BackupStatus'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: ops_backups_create
+      description: |-
+        Runs synchronously.
+
+        A cafe database dumps in seconds, and an operator who pressed this button
+        wants the answer, not a task id to go and look up. If it ever grows past
+        that, the nightly Celery task is already the async path.
+      summary: Take a backup now
+      tags:
+      - ops
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/BackupRecord'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/ops/backups/{id}/verify/:
+    post:
+      operationId: ops_backups_verify_create
+      summary: Re-digest a backup file
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - ops
+      responses:
+        '200':
+          description: No response body
   /api/v1/orders/:
     get:
       operationId: orders_list
@@ -7991,6 +8069,116 @@ components:
       - occurred_at
       - request_id
       - severity
+    BackupRecord:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        filename:
+          type: string
+          readOnly: true
+        size_bytes:
+          type: integer
+          readOnly: true
+        size_mb:
+          type: string
+          readOnly: true
+        sha256:
+          type: string
+          readOnly: true
+          description: Of the file as written. What a restore checks before trusting
+            it.
+        encrypted:
+          type: boolean
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BackupRecordStatusEnum'
+          readOnly: true
+        error:
+          type: string
+          readOnly: true
+        started_at:
+          type: string
+          format: date-time
+          readOnly: true
+        finished_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        duration_seconds:
+          type: integer
+          readOnly: true
+        triggered_by_name:
+          type: string
+          readOnly: true
+      required:
+      - duration_seconds
+      - encrypted
+      - error
+      - filename
+      - finished_at
+      - id
+      - sha256
+      - size_bytes
+      - size_mb
+      - started_at
+      - status
+      - triggered_by_name
+    BackupRecordStatusEnum:
+      enum:
+      - RUNNING
+      - COMPLETE
+      - FAILED
+      type: string
+      description: |-
+        * `RUNNING` - RUNNING
+        * `COMPLETE` - COMPLETE
+        * `FAILED` - FAILED
+    BackupStatus:
+      type: object
+      properties:
+        configured:
+          type: boolean
+          description: True when BACKUP_ENCRYPTION_KEY is set. False means plaintext
+            dumps.
+        directory:
+          type: string
+        total:
+          type: integer
+        failed:
+          type: integer
+        last_success:
+          type: string
+          format: date-time
+          nullable: true
+        last_filename:
+          type: string
+          nullable: true
+        last_size_mb:
+          type: string
+          nullable: true
+        hours_since_last:
+          type: string
+          nullable: true
+          description: 'The number that matters. ''last run: COMPLETE'' means nothing
+            if the last run was in April.'
+        backups:
+          type: array
+          items:
+            $ref: '#/components/schemas/BackupRecord'
+      required:
+      - backups
+      - configured
+      - directory
+      - failed
+      - hours_since_last
+      - last_filename
+      - last_size_mb
+      - last_success
+      - total
     Board:
       type: object
       properties:

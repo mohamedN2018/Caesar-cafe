@@ -85,9 +85,8 @@ ACTIONS: tuple[ActionDef, ...] = (
     _a("kids.charge_overridden", "kids", "تعديل قيمة جلسة", Severity.WARNING),
     # ── System ───────────────────────────────────────────────────────────────
     _a("system.setting_changed", "system", "تغيير إعداد", Severity.NOTICE),
-    # "system.backup_triggered" and "system.restore_performed" arrive with the
-    # backup implementation in Phase 10. A catalogued action that nothing produces
-    # is a claim the audit trail cannot keep.
+    _a("system.backup_triggered", "system", "تشغيل نسخة احتياطية", Severity.NOTICE),
+    _a("system.restore_performed", "system", "استعادة نسخة احتياطية", Severity.WARNING),
     _a("sync.conflict_resolved", "system", "حل تعارض مزامنة", Severity.NOTICE),
     # ── Auth ─────────────────────────────────────────────────────────────────
     _a("auth.login_failed", "auth", "فشل تسجيل دخول متكرر", Severity.WARNING),

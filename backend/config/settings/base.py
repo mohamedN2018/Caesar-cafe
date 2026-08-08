@@ -86,6 +86,7 @@ INSTALLED_APPS = [
     "apps.sync",
     "apps.reporting",
     "apps.audit",
+    "apps.ops",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -163,12 +164,26 @@ CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 # self-healing: a worker that was down overnight catches up without anyone
 # noticing, because rebuilding an existing day costs the same as building it.
 CELERY_BEAT_SCHEDULE = {
+    # 03:00, BEFORE the 04:00 business-day boundary, so a dump lands while the
+    # previous trading day is complete and nothing is half-written into the next.
+    "nightly-backup": {
+        "task": "ops.nightly_backup",
+        "schedule": crontab(hour=3, minute=0),
+    },
+    "verify-last-backup": {
+        "task": "ops.verify_last_backup",
+        "schedule": crontab(hour=4, minute=0),
+    },
     "nightly-rollups": {
         "task": "reporting.build_rollups",
         "schedule": crontab(hour=5, minute=15),
         "kwargs": {"days": 2},
     },
 }
+
+# Where `pg_dump` writes. A volume in production; a temp path in dev, because a
+# dev machine should not accumulate database dumps nobody asked for.
+BACKUP_DIR = env("BACKUP_DIR", "/backups")
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 # Argon2id first: memory-hard, and the current recommendation for password storage.

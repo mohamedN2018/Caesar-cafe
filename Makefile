@@ -67,6 +67,39 @@ seed:  ## Load demo data (Phase 2+)
 clean:  ## Remove containers and volumes — DESTROYS LOCAL DATA
 	$(COMPOSE) down -v
 
+# ── Production ───────────────────────────────────────────────────────────────
+# Read docs/13-operations.md before the first deploy. It is short.
+PROD := docker compose -f docker-compose.prod.yml
+
+.PHONY: prod-config prod-up prod-down prod-logs prod-migrate backup backup-list backup-verify
+
+prod-config:  ## Validate the production compose file and Caddyfile (CI runs this)
+	$(PROD) config --quiet && echo "compose OK"
+	docker run --rm -v "$(CURDIR)/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+		-e DOMAIN -e ACME_EMAIL caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+
+prod-up:  ## Start the production stack
+	$(PROD) up -d
+
+prod-down:  ## Stop the production stack (data volumes survive)
+	$(PROD) down
+
+prod-logs:  ## Tail production API logs
+	$(PROD) logs -f api
+
+prod-migrate:  ## Apply migrations in production — take a backup first
+	$(PROD) exec api python manage.py backup_database --label pre-migrate
+	$(PROD) exec api python manage.py migrate
+
+backup:  ## Take a backup now
+	$(COMPOSE) exec api python manage.py backup_database
+
+backup-list:  ## Show recent backups and how long since the last success
+	$(COMPOSE) exec api python manage.py backup_database --list
+
+backup-verify:  ## Re-digest the most recent backup
+	$(COMPOSE) exec api python manage.py backup_database --verify
+
 # ── Desktop client ───────────────────────────────────────────────────────────
 .PHONY: vendor vendor-check desktop-build desktop-test desktop-lint signing-key
 

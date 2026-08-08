@@ -1,0 +1,101 @@
+# Caesar Cafe — reverse proxy, TLS, and the outer rate limit.
+#
+# Caddy is the only container the internet can reach. TLS is automatic: a
+# certificate is obtained on first boot and renewed without intervention, which
+# matters because a POS whose certificate expired is a POS that stops selling and
+# nobody knew a renewal was due.
+#
+# The system is internet-facing from Phase 1 (C11), so the scanning traffic in
+# docs/09 (D0) arrives on day one. The limits below are the first line; fail2ban
+# on the host is the second.
+{
+	email {$ACME_EMAIL}
+
+	# The `Server: Caddy` header is stripped per-site below. Free reconnaissance
+	# is still reconnaissance.
+	admin off
+}
+
+(security_headers) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "same-origin"
+		Cross-Origin-Opener-Policy "same-origin"
+		Permissions-Policy "geolocation=(), microphone=(), camera=()"
+
+		# The SPA loads nothing from anywhere else. `connect-src 'self'` is what
+		# stops an injected script from exfiltrating to another host.
+		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+
+		-Server
+		-X-Powered-By
+	}
+}
+
+{$DOMAIN} {
+	import security_headers
+	encode zstd gzip
+
+	# ── API ──────────────────────────────────────────────────────────────────
+	handle /api/* {
+		reverse_proxy api:8000 {
+			# X-Forwarded-* are set by default; only X-Real-IP needs stating.
+			# The audit trail reads the left-most X-Forwarded-For entry, which is
+			# trustworthy here only because nothing but this proxy can reach the
+			# app (docs/09, I6).
+			header_up X-Real-IP {remote_host}
+
+			# A sync push of 500 operations is a large body and a slow request on
+			# a bad connection. 120s is generous on purpose: a terminal that
+			# times out mid-push retries the whole batch, and the batch is
+			# idempotent but the bandwidth is not free.
+			transport http {
+				read_timeout 120s
+				write_timeout 120s
+			}
+		}
+	}
+
+	# WebSockets for the kitchen display. Same upstream; Caddy upgrades in place.
+	handle /ws/* {
+		reverse_proxy api:8000
+	}
+
+	handle /static/* {
+		root * /srv
+		file_server
+		header Cache-Control "public, max-age=31536000, immutable"
+	}
+
+	handle /media/* {
+		root * /srv
+		file_server
+		header Cache-Control "public, max-age=86400"
+	}
+
+	# ── the SPA ──────────────────────────────────────────────────────────────
+	handle {
+		root * /srv/web
+		try_files {path} /index.html
+		file_server
+
+		# index.html must never be cached: it is what points at the hashed asset
+		# bundles, so a cached copy pins a browser to a deployment that is gone.
+		@html path *.html /
+		header @html Cache-Control "no-cache, must-revalidate"
+	}
+
+	log {
+		output stdout
+		format json
+	}
+}
+
+# Anything asking for a host we do not serve gets nothing — no redirect, no
+# banner, no certificate. Most of that traffic is scanners.
+:443 {
+	tls internal
+	respond 421
+}

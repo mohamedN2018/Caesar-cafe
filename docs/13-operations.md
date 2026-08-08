@@ -40,26 +40,178 @@ the business day boundary and before the cafe opens.
 
 ---
 
+## First Deployment
+
+One host, one clone, one `.env`. The whole point of the exit criterion — *a
+fresh-host deploy from a clean clone succeeds by following the runbook alone* —
+is that these steps are complete. If you had to improvise, the runbook has a bug.
+
+```bash
+# 1. Prerequisites: Docker Engine 24+, a domain whose A record points here,
+#    ports 80 and 443 reachable. Nothing else.
+git clone <repo> caesar && cd caesar
+
+# 2. Secrets. Never commit the result.
+cp .env.example .env
+python -c "import secrets; print('DJANGO_SECRET_KEY=' + secrets.token_urlsafe(64))"
+python -c "import secrets; print('JWT_SIGNING_KEY=' + secrets.token_urlsafe(64))"
+python -c "import secrets; print('LICENSE_PEPPER=' + secrets.token_urlsafe(64))"
+python -c "import os,base64; print('BACKUP_ENCRYPTION_KEY=' + base64.b64encode(os.urandom(32)).decode())"
+# …and DOMAIN, ACME_EMAIL, POSTGRES_PASSWORD, DATABASE_URL,
+#    DJANGO_SETTINGS_MODULE=config.settings.prod, DJANGO_DEBUG=False
+```
+
+**Copy `LICENSE_PEPPER` and `BACKUP_ENCRYPTION_KEY` somewhere outside this host
+before continuing.** The pepper cannot be rotated — every issued licence key
+becomes unverifiable. The backup key cannot be recovered — every off-site backup
+becomes unreadable. A host loss that takes both with it is unrecoverable in a way
+nothing else here is.
+
+```bash
+# 3. The Ed25519 licence signing key
+docker compose -f docker-compose.prod.yml run --rm api python manage.py generate_signing_key
+#    → paste the output into .env as LICENSE_SIGNING_KEY
+
+# 4. Build the SPA. Caddy serves the files directly; there is no Node process in
+#    production, because a process that only hands out static files is a process
+#    that can crash for no reason.
+docker run --rm -v "$PWD/frontend:/app" -w /app -e VITE_API_BASE_URL=/api/v1 \
+  node:22-alpine sh -c "npm ci && npm run build"
+
+# 5. Up. `api` runs migrate and collectstatic on start.
+docker compose -f docker-compose.prod.yml up -d
+
+# 6. The first administrator
+docker compose -f docker-compose.prod.yml exec api python manage.py createsuperuser
+```
+
+### Verify, in this order
+
+Not the health endpoint alone — that returns 200 on a stack with an empty
+database and no certificate.
+
+1. `curl -I https://$DOMAIN/api/v1/system/health/` → **200 over HTTPS**, with a
+   real certificate. Caddy obtains it on first boot; if this is a self-signed
+   warning, DNS is not pointing here yet.
+2. Log in to `https://$DOMAIN` as the superuser.
+3. `docker compose -f docker-compose.prod.yml exec api python manage.py backup_database`
+   → completes and says **(encrypted)**. If it says NOT ENCRYPTED, stop and fix
+   `BACKUP_ENCRYPTION_KEY`; production settings will refuse the scheduled run.
+4. Apply the audit grant — the one step that appears to work when skipped:
+   ```bash
+   docker compose -f docker-compose.prod.yml exec postgres \
+     psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+     -c 'REVOKE DELETE, TRUNCATE, UPDATE ON audit_log FROM '"$POSTGRES_USER"';'
+   ```
+5. Issue a licence and activate one Desktop terminal end to end. The system is
+   not deployed until a terminal has actually opened.
+
+---
+
+## Deploying a Change
+
+```bash
+git pull
+docker compose -f docker-compose.prod.yml exec api python manage.py backup_database --label pre-deploy
+docker compose -f docker-compose.prod.yml build api
+docker compose -f docker-compose.prod.yml up -d api worker beat
+```
+
+The backup before the build is not ceremony. A migration that fails halfway is
+the one deployment failure that a rollback of the images does not fix.
+
+### Migration checklist
+
+Before applying anything to production:
+
+- [ ] `python manage.py makemigrations --check --dry-run` is clean on the branch.
+- [ ] The migration is **reversible**, or the fact that it is not is written in
+      its docstring. An irreversible migration is allowed; an undocumented one is
+      not.
+- [ ] It does not lock a large table for long. `ALTER TABLE … ADD COLUMN` with a
+      default rewrites the table in older Postgres; add nullable, backfill in
+      batches, then constrain.
+- [ ] A pre-deploy backup exists and `--verify` passes on it.
+- [ ] The rollback path is known **before** starting. For a column addition it is
+      "leave it"; for a data migration it is the restore below.
+
+### Rollback
+
+Two different failures with two different answers:
+
+**The code is wrong, the database is fine** — the common case. Roll the image
+back; migrations that only added columns are harmless to leave in place:
+
+```bash
+git checkout <previous-tag>
+docker compose -f docker-compose.prod.yml build api
+docker compose -f docker-compose.prod.yml up -d api worker beat
+```
+
+**The migration corrupted or destroyed data** — restore, and accept the data loss
+between the backup and now:
+
+```bash
+docker compose -f docker-compose.prod.yml stop api worker beat
+docker compose -f docker-compose.prod.yml run --rm api \
+  python manage.py restore_database <pre-deploy-file> --i-understand-this-destroys-data
+docker compose -f docker-compose.prod.yml up -d
+```
+
+Terminals that were offline during this keep their outbox and push when they
+reconnect, so orders taken during the outage are not lost — that is the whole
+point of C1 and Phase 7. Orders taken *online* between the backup and the restore
+are gone. Say so, out loud, before running it.
+
+---
+
 ## Backup
 
-**Not yet implemented.** Nightly `pg_dump` plus WAL archiving, the retention
-policy, and the `system.backup_triggered` / `system.restore_performed` audit
-actions all arrive in Phase 10. They are named here so the gap is visible rather
-than assumed covered.
+Implemented in `apps/ops`. Nightly at 03:00 — before the 04:00 business-day
+boundary, so a dump lands while the previous trading day is complete.
 
-Targets from [09](09-security.md#backup--recovery), for whoever builds it:
-
-| Property | Target |
+| Property | Actual |
 |---|---|
-| Frequency | Nightly full `pg_dump` + continuous WAL archiving |
-| Retention | 30 daily, 12 monthly |
-| Encryption | At rest, off-site |
-| RPO | ≤ 24h from the dump, ≤ 5 min with WAL |
-| RTO | ≤ 2h on a clean host |
+| Frequency | Nightly full `pg_dump`, gzipped, AES-256-GCM encrypted |
+| Retention | 30 daily + the first backup of each of the last 12 months |
+| Encryption | Mandatory in production — the app **refuses to run** without a key |
+| Integrity | SHA-256 recorded on write, re-checked nightly at 04:00 and before any restore |
+| RPO | **≤ 24h.** No WAL archiving — see the gap below |
+| RTO | ~15 min for the restore itself, plus the verification below |
 
-Until it exists, the honest statement of risk is: **a host loss costs everything
-since the last manual dump.** That is an accepted risk only for the days between
-now and Phase 10, and it should be stated to the customer in those words.
+```bash
+# manual
+python manage.py backup_database --label before-something-risky
+python manage.py backup_database --list
+python manage.py backup_database --verify
+```
+
+Or `POST /api/v1/ops/backups/` with `backups.manage`. There is deliberately **no
+download endpoint and no restore endpoint**: the file holds every order, phone
+number and staff record, and a route that replaces the database is a route
+somebody eventually calls by mistake.
+
+### The remaining gap, stated plainly
+
+**There is no WAL archiving, so the RPO is up to 24 hours, not the 5 minutes
+docs/09 targets.** A host loss at 22:00 costs the whole trading day. Closing it
+is a Postgres configuration task — `archive_mode = on` shipping WAL segments to
+the same off-site bucket — and it is not done. Until it is, that is the number to
+give the customer.
+
+### Off-site copy
+
+The backups volume is on the same host as the database, which means it survives
+a container failure and not a host failure. Ship it somewhere else:
+
+```bash
+# In root's crontab, 04:30 — after the nightly backup and its verification.
+30 4 * * * docker run --rm -v caesar_backups:/b:ro -v /root/.aws:/root/.aws:ro \
+  amazon/aws-cli s3 sync /b s3://caesar-backups/ --storage-class STANDARD_IA
+```
+
+The files are already encrypted, so the bucket does not need to be trusted — only
+the key, which lives in `.env` and in whatever you copied it to in step 2.
 
 ---
 

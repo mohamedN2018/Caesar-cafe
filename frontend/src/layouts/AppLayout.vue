@@ -66,6 +66,7 @@ const groups: NavGroup[] = [
       { label: 'الأجهزة', to: '/devices', icon: '🖥️', permission: 'devices.view' },
       { label: 'المزامنة', to: '/sync', icon: '🔄', permission: 'sync.view' },
       { label: 'سجل التدقيق', to: '/audit', icon: '📋', permission: 'audit.view' },
+      { label: 'النسخ الاحتياطي', to: '/backups', icon: '💾', permission: 'backups.manage' },
       { label: 'الإعدادات', to: '/settings', icon: '⚙️', permission: 'branch.view' },
     ],
   },

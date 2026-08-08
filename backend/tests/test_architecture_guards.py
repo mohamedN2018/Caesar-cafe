@@ -133,3 +133,82 @@ class TestRegistryCoversTheDocumentedCatalog:
         from apps.configuration.registry import registry
 
         assert key in registry, f"{key} is documented but not registered"
+
+
+class TestNoReservedKeysInLogExtra:
+    """
+    `logger.info(..., extra={"filename": x})` raises KeyError at runtime.
+
+    Python's logging refuses to let `extra` shadow a LogRecord attribute, so the
+    call site does not log — it throws, from inside an exception handler, and
+    takes down whatever it was trying to report on. Found the hard way in
+    `apps/ops/backups.py`, where every backup crashed on its own success message.
+
+    Cheap to check statically, and the failure is invisible until the code path
+    runs — which for logging is usually during an incident.
+    """
+
+    #: The subset of LogRecord attributes a developer might plausibly reach for.
+    RESERVED = frozenset(
+        {
+            "args",
+            "asctime",
+            "created",
+            "exc_info",
+            "exc_text",
+            "filename",
+            "funcName",
+            "levelname",
+            "levelno",
+            "lineno",
+            "message",
+            "module",
+            "msecs",
+            "msg",
+            "name",
+            "pathname",
+            "process",
+            "processName",
+            "relativeCreated",
+            "stack_info",
+            "thread",
+            "threadName",
+            "taskName",
+        }
+    )
+
+    def _extra_keys(self, path: Path) -> list[tuple[int, str]]:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        found: list[tuple[int, str]] = []
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg != "extra" or not isinstance(keyword.value, ast.Dict):
+                    continue
+                for key in keyword.value.keys:
+                    if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                        found.append((key.lineno, key.value))
+        return found
+
+    def test_no_call_site_shadows_a_logrecord_attribute(self) -> None:
+        offenders = []
+        for path in _python_files():
+            for lineno, key in self._extra_keys(path):
+                if key in self.RESERVED:
+                    offenders.append(f"{path.relative_to(APPS_DIR)}:{lineno}: extra={{'{key}': …}}")
+
+        assert not offenders, (
+            "These would raise KeyError instead of logging. Rename the key:\n  "
+            + "\n  ".join(offenders)
+        )
+
+    def test_the_guard_actually_catches_a_violation(self, tmp_path: Path) -> None:
+        """A guard that cannot fail is not a guard."""
+        offender = tmp_path / "offender.py"
+        offender.write_text('logger.info("x", extra={"filename": f, "ok": 1})\n', encoding="utf-8")
+        keys = [key for _, key in self._extra_keys(offender)]
+
+        assert "filename" in keys
+        assert "ok" in keys, "the guard must see every key, not just the first"

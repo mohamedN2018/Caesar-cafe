@@ -31,6 +31,7 @@ api_v1 = [
     path("sync/", include("apps.sync.urls")),
     path("reports/", include("apps.reporting.urls")),
     path("audit/", include("apps.audit.urls")),
+    path("ops/", include("apps.ops.urls")),
     path("settings/", include("apps.configuration.urls")),
 ]
 

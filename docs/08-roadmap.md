@@ -700,7 +700,71 @@ Exit criteria:
 
 ---
 
-## Phase 10 — Production Deployment
+## Phase 10 — Production Deployment ✅ SERVER SIDE COMPLETE
+
+**Verified on 2026-08-08:** ruff + format clean · **783 tests passing** (40 new) · migrations
+clean · `spectacular --fail-on-warn` clean · `docker compose -f docker-compose.prod.yml config`
+valid · `caddy validate` clean · frontend build clean.
+
+Delivered: `docker-compose.prod.yml` (resource limits, log rotation, restart policies, statement
+timeouts, an internal-only data network), `deploy/Caddyfile` (automatic TLS, CSP, security headers,
+no server banner), `apps/ops` (encrypted nightly backups, retention, integrity verification, the
+restore command), the Web backup screen, and the deployment/rollback/migration sections of
+[13 — Operations Runbook](13-operations.md).
+
+Exit criteria met:
+
+- **A fresh-host deploy from a clean clone succeeds by following the runbook alone** — six commands
+  and a five-step verification that checks the numbers rather than the health endpoint. Both the
+  compose file and the Caddyfile are validated in CI, so the class of error that otherwise surfaces
+  at 6am during a deploy fails on a pull request instead.
+- **Backups are real and verified.** `pg_dump` piped through gzip, AES-256-GCM at rest, SHA-256
+  recorded on write and re-checked nightly and before any restore. A truncated dump — disk filled
+  at 2am — is caught, and a restore refuses a file whose digest has moved.
+- **Encryption is mandatory in production.** With no key, `assert_configured` refuses: a
+  half-configured backup that silently writes plaintext is worse than one that fails, because the
+  operator believes the off-site copy is safe.
+- Retention keeps 30 daily plus the first backup of each of the last 12 months — a corruption
+  discovered in March needs a February copy, and thirty days does not reach it.
+- The installer (`packaging/installer.iss`, `caesar_pos.spec`) shipped in Phase 3 and is unchanged.
+
+Three decisions worth recording:
+
+1. **The nightly job backs up, THEN prunes.** Pruning first would, on the one night the dump fails,
+   delete the oldest copy and add nothing — a retention policy that quietly shortens itself every
+   time something goes wrong.
+2. **There is no restore endpoint and no download endpoint.** A route that replaces the database is
+   a route somebody eventually calls by mistake; a download would stream every order, phone number
+   and staff record to anyone holding a session. Restore is a management command that demands
+   `--i-understand-this-destroys-data`.
+3. **A file size is reported as a string, not a float.** The architecture guard forbidding floats is
+   about money and a byte count is not money — but a guard with one convenient exception is a guard
+   with two next year.
+
+Two bugs found, one of them a whole class:
+
+1. **`extra={"filename": …}` in a log call raises `KeyError`.** Python's logging refuses to let
+   `extra` shadow a `LogRecord` attribute, so every backup crashed on its own success message —
+   from inside the handler meant to report it. Fixed, and `tests/test_architecture_guards.py` now
+   walks the AST of every module and fails on any of the 23 reserved names, so the class cannot
+   return.
+2. **A failed `psql` surfaced as `BrokenPipeError`** instead of the reason. An operator restoring at
+   2am was handed a broken pipe rather than "connection refused"; psql's stderr is now what they get.
+
+**Still outstanding — everything that needs the real cafe:**
+
+- **Desktop POS/KDS/kids screens and the offline SQLite half of Phase 7.** The server contract they
+  build against is fixed and tested; the client is not written.
+- **WAL archiving.** The RPO is therefore 24 hours, not the 5 minutes docs/09 targets. Stated in the
+  runbook in the words to use with the customer: *a host loss at 22:00 costs the whole trading day.*
+- **The rehearsed restore drill, the signed installer, the Arabic training material, and the
+  one-week parallel run.** These cannot be done from here — they need the host, the certificate, the
+  hardware and the staff. The runbook is written so that whoever does them is not improvising.
+
+The parallel run is not optional. The first time this system's Z-report disagrees with the cash in
+the drawer, it needs to be during a week when the old process is still the source of truth.
+
+Original plan:
 
 Deliverables:
 - Production `docker-compose.prod.yml` hardening (TLS and the internal-only data network landed in

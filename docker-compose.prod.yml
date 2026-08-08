@@ -1,0 +1,185 @@
+## Caesar Cafe — production stack
+##   docker compose -f docker-compose.prod.yml up -d
+##
+## Shape of the deployment, and why:
+##
+##   * Caddy is the ONLY container with published ports. It terminates TLS,
+##     obtains and renews the certificate, and rate-limits. Everything else is
+##     unreachable from the internet — including the API, which Caddy proxies.
+##   * `postgres` and `redis` sit on an internal-only network with no published
+##     ports at all (docs/09, I6). Not "firewalled": unroutable.
+##   * Every service has a memory limit. A cafe runs this on one small VPS, and
+##     an unbounded Celery worker that leaks will take Postgres down with it —
+##     which turns a slow memory bug into an outage that stops sales.
+##   * Every service rotates its logs. The failure mode this prevents is a disk
+##     filled by 40 GB of access logs, which stops writes, which stops the cafe.
+##
+## Read docs/13-operations.md before the first deploy. It is short.
+
+name: caesar
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-api-base: &api-base
+  build:
+    context: ./backend
+    target: prod
+  image: caesar-api:${IMAGE_TAG:-latest}
+  env_file: [.env]
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.prod
+  restart: unless-stopped
+  logging: *logging
+  depends_on:
+    postgres: {condition: service_healthy}
+    redis: {condition: service_healthy}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      # Dumps and restores must not be corrupted by a locale mismatch between
+      # the host that wrote them and the host that reads them.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    command:
+      - postgres
+      # A runaway report must not hold a connection open forever. Reports read
+      # rollups, so anything past 30s is a bug, not a big query.
+      - -c
+      - statement_timeout=30000
+      - -c
+      - idle_in_transaction_session_timeout=60000
+      - -c
+      - max_connections=100
+      - -c
+      - shared_buffers=256MB
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    deploy:
+      resources:
+        limits: {memory: 1G}
+
+  redis:
+    image: redis:7-alpine
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      # Redis holds the Celery queue and the permission cache. If it hits the
+      # ceiling, evicting the least-recently-used key degrades cache hit rate;
+      # refusing writes would stop the outbox draining.
+      - --maxmemory
+      - 256mb
+      - --maxmemory-policy
+      - allkeys-lru
+    volumes:
+      - redisdata:/data
+    networks: [internal]
+    restart: unless-stopped
+    logging: *logging
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    deploy:
+      resources:
+        limits: {memory: 384M}
+
+  api:
+    <<: *api-base
+    # Static files are collected on every start rather than baked into the image,
+    # so a config change that affects them cannot leave a stale copy behind.
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             gunicorn config.wsgi:application
+               --bind 0.0.0.0:8000
+               --workers ${GUNICORN_WORKERS:-4}
+               --timeout 60
+               --graceful-timeout 30
+               --max-requests 1000
+               --max-requests-jitter 100
+               --access-logfile -
+               --error-logfile -"
+    volumes:
+      - static:/app/staticfiles
+      - media:/app/media
+      - backups:/backups
+    networks: [internal, edge]
+    deploy:
+      resources:
+        limits: {memory: 1G}
+
+  worker:
+    <<: *api-base
+    command: celery -A config worker -l info --concurrency=${CELERY_CONCURRENCY:-2} --max-tasks-per-child=200
+    volumes:
+      - media:/app/media
+      - backups:/backups
+    networks: [internal]
+    deploy:
+      resources:
+        limits: {memory: 768M}
+
+  beat:
+    <<: *api-base
+    command: celery -A config beat -l info
+    networks: [internal]
+    deploy:
+      resources:
+        limits: {memory: 256M}
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # The built SPA. Caddy serves it directly — a Node process in production to
+      # hand out static files is a process that can crash for no reason.
+      - ./frontend/dist:/srv/web:ro
+      - static:/srv/static:ro
+      - media:/srv/media:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [edge]
+    restart: unless-stopped
+    logging: *logging
+    depends_on: [api]
+    deploy:
+      resources:
+        limits: {memory: 256M}
+
+volumes:
+  pgdata:
+  redisdata:
+  static:
+  media:
+  backups:
+  caddy_data:
+  caddy_config:
+
+networks:
+  internal:
+    internal: true
+  edge:

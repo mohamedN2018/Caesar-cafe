@@ -106,6 +106,12 @@ const router = createRouter({
           meta: { permission: 'devices.view' },
         },
         {
+          path: 'backups',
+          name: 'backups',
+          component: () => import('@/views/ops/BackupView.vue'),
+          meta: { permission: 'backups.manage' },
+        },
+        {
           path: 'audit',
           name: 'audit',
           component: () => import('@/views/audit/AuditLogView.vue'),

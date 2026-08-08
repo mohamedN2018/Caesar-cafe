@@ -176,3 +176,31 @@ jobs:
           pip install pip-audit
           pip install -e .
           pip-audit --strict || echo "::warning::pip-audit reported findings"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Frontend dependency audit
+        working-directory: frontend
+        # A warning, not a failure. A transitive advisory in a build-only
+        # dependency should not stop a deploy that fixes a cashier's bug — but
+        # nobody should be able to say they did not know.
+        run: npm audit --audit-level=high || echo "::warning::npm audit reported findings"
+
+      - name: Production compose is valid
+        # Catches the class of error that otherwise surfaces during a deploy at
+        # 6am: a typo in docker-compose.prod.yml or a variable nothing sets.
+        env:
+          DOMAIN: ci.example
+          ACME_EMAIL: ci@example
+          POSTGRES_DB: caesar
+          POSTGRES_USER: caesar
+          POSTGRES_PASSWORD: ci
+        run: docker compose -f docker-compose.prod.yml config --quiet
+
+      - name: Caddyfile is valid
+        run: |
+          docker run --rm -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
+            -e DOMAIN=ci.example -e ACME_EMAIL=ci@example \
+            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
