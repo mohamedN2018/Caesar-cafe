@@ -391,9 +391,21 @@ Three bugs this phase found, all of them in the seam between orders and the kitc
    earlier. That is exactly how a fallback path rots unnoticed, so both now emit
    `serialize_ticket` verbatim.
 
-**Still outstanding:** the Desktop KDS screens, the Web live-kitchen view and station config, and
-kitchen ticket printing as the offline fallback — all client work, deferred with the rest of the
-Desktop POS surface.
+### Clients ✅ COMPLETE (2026-08-08)
+
+The Desktop KDS, kitchen ticket printing and the Web live-kitchen view all landed — see the Desktop
+sections under Phase 7 and "Web Admin: floor, kitchen and kids" below.
+
+Worth recording about the Web view: **it is not a second KDS.** The cook's board is on the Desktop,
+where one tap advances a ticket and nothing needs a mouse. The Web screen answers the owner's
+question instead — *is the kitchen keeping up?* — from home, over the internet, which the Desktop
+cannot do (C11). It leads with how many tickets are late and the single worst wait, because an
+average hides the one table that is furious, and puts prep times per station underneath, since "the
+coffee bar is slow after 8pm" is a staffing decision rather than a today decision.
+
+`target_prep_minutes` is per-station and configurable for a reason the station screen states: an
+espresso is late at three minutes and a grill order is not late at ten. One global target would make
+one station permanently red and the other permanently green, at which point nobody reads the colour.
 
 Original plan:
 
@@ -462,8 +474,19 @@ And one bug the tests found: `bill_session` returned the caller's in-memory orde
 predate the line `apply_events` had just folded in — a caller could have taken payment for the
 wrong amount. It now returns the refreshed row.
 
-**Still outstanding:** the Desktop kids screens (live board, check-in, check-out, incident log),
-and the Web guardians/incidents admin pages — deferred with the rest of the Desktop surface.
+### Clients ✅ COMPLETE (2026-08-08)
+
+The Desktop kids board landed with the rest of the Desktop surface; the Web guardians and incidents
+pages landed with the Web Admin batch below.
+
+Two decisions from the Web pages worth keeping:
+
+- **Medical notes live on the child, not on the session.** An allergy is a property of the child,
+  not of today's visit. Re-typing it at every check-in is how it eventually gets typed wrong — or
+  left blank.
+- **The incident log is append-only, and that is the server's rule, not the UI's.** The API offers
+  GET and POST and nothing else. A log that can be tidied afterwards is a log nobody can rely on,
+  and "nothing was reported" is not a defensible answer three weeks later.
 
 Original plan:
 
@@ -735,6 +758,26 @@ Also fixed: `EscposPrinter` imported `Usb` under a `noqa` claiming it was used b
 **Still outstanding on the Desktop:** nothing buildable from here. What remains needs the real
 cafe — the signed installer on clean Windows hardware, a real thermal printer to calibrate the
 raster width against, and the parallel run.
+
+### Web Admin: floor, kitchen and kids ✅ COMPLETE (2026-08-08)
+
+**Verified:** `vue-tsc` clean · `vite build` clean.
+
+Five screens that had been deferred alongside the Desktop surface: the floor plan editor, the live
+kitchen view, station config, the guardians register and the incident log.
+
+**The floor plan editor is the source of `pos_x`/`pos_y`** — the coordinates the Desktop map lays
+tables out on. Without this screen every table falls back to a flow layout and the map is a list
+with bigger buttons. Two decisions shape it:
+
+- **Nothing saves while you drag.** A PATCH per mousemove would be hundreds of writes and a change
+  log the Desktop then has to pull. Positions are collected and sent in one explicit save, and the
+  button says how many are unsaved so leaving the page cannot silently lose the layout.
+- **Dropping onto an occupied cell swaps rather than stacks.** Overlapping tiles look fine on a web
+  canvas and wrong in the Desktop's grid.
+
+The kitchen and kids decisions are recorded under Phase 6 and Phase 6B respectively, beside the
+server work they complete.
 
 Original plan:
 

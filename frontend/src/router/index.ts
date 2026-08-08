@@ -52,9 +52,39 @@ const router = createRouter({
           meta: { permission: 'reports.sales' },
         },
         {
+          path: 'floor',
+          name: 'floor-plan',
+          component: () => import('@/views/floor/FloorPlanView.vue'),
+          meta: { permission: 'floor.view' },
+        },
+        {
+          path: 'kitchen',
+          name: 'kitchen-live',
+          component: () => import('@/views/kitchen/KitchenLiveView.vue'),
+          meta: { permission: 'kitchen.view' },
+        },
+        {
+          path: 'kitchen/stations',
+          name: 'kitchen-stations',
+          component: () => import('@/views/kitchen/StationListView.vue'),
+          meta: { permission: 'kitchen.view' },
+        },
+        {
           path: 'kids',
           name: 'kids-board',
           component: () => import('@/views/kids/KidsBoardView.vue'),
+          meta: { permission: 'kids.view' },
+        },
+        {
+          path: 'kids/guardians',
+          name: 'kids-guardians',
+          component: () => import('@/views/kids/KidsGuardianView.vue'),
+          meta: { permission: 'kids.view' },
+        },
+        {
+          path: 'kids/incidents',
+          name: 'kids-incidents',
+          component: () => import('@/views/kids/KidsIncidentView.vue'),
           meta: { permission: 'kids.view' },
         },
         {

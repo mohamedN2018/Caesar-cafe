@@ -43,10 +43,20 @@ const groups: NavGroup[] = [
     ],
   },
   {
+    label: 'الصالة والمطبخ',
+    items: [
+      { label: 'مخطط الصالة', to: '/floor', icon: '🪑', permission: 'floor.view' },
+      { label: 'المطبخ الآن', to: '/kitchen', icon: '🍳', permission: 'kitchen.view' },
+      { label: 'المحطات', to: '/kitchen/stations', icon: '🔥', permission: 'kitchen.view' },
+    ],
+  },
+  {
     label: 'صالة الأطفال',
     items: [
       { label: 'اللوحة المباشرة', to: '/kids', icon: '🧸', permission: 'kids.view' },
       { label: 'الجلسات', to: '/kids/sessions', icon: '⏱️', permission: 'kids.view' },
+      { label: 'أولياء الأمور', to: '/kids/guardians', icon: '👨‍👩‍👧', permission: 'kids.view' },
+      { label: 'سجل الوقائع', to: '/kids/incidents', icon: '📋', permission: 'kids.view' },
       { label: 'التعريفات', to: '/kids/tariffs', icon: '🎟️', permission: 'kids.view' },
     ],
   },
