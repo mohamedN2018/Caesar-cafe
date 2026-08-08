@@ -50,6 +50,7 @@ from ..security.session import Session
 from ..shifts import service as shifts
 from ..sync.engine import SyncEngine
 from .floor.window import FloorWindow
+from .history import HistoryDialog
 from .kids.window import KidsWindow
 from .kitchen.window import KitchenWindow
 from .pos.window import PosWindow
@@ -203,6 +204,13 @@ class Shell(QWidget):
         holder = QWidget()
         holder.setLayout(self.tab_row)
         row.addWidget(holder)
+
+        # "The receipt for the table that just left — can I have it again?" is
+        # asked several times a shift, and the answer used to be no.
+        self.history_button = QPushButton("طلبات اليوم", objectName="Shift")
+        self.history_button.clicked.connect(self.show_history)
+        row.addWidget(self.history_button)
+
         row.addStretch(1)
 
         # Only shown when there IS a backlog. A permanent "printer OK" is a label
@@ -568,6 +576,22 @@ class Shell(QWidget):
 
         board.set_connection(live=True)
         board.show_tickets(data.get("results", data) if isinstance(data, dict) else data)
+
+    def show_history(self) -> None:
+        dialog = HistoryDialog(self.db, self.session, parent=self)
+        dialog.reopen_requested.connect(self._reopen_order)
+        dialog.exec()
+        self.refresh_status()
+
+    def _reopen_order(self, order_id: str) -> None:
+        """An order still open goes back on the till, where it can be finished."""
+        pos = self.boards.get("pos")
+        if pos is None or not hasattr(pos, "panel"):
+            return
+
+        pos.order_id = order_id
+        pos.panel.show_order(service.load(self.db, order_id))
+        self.show_board("pos")
 
     def show_conflicts(self) -> None:
         dialog = ConflictsDialog(self.db, parent=self)

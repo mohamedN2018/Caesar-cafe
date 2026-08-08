@@ -433,6 +433,33 @@ def open_orders(db: Database) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def recent_orders(db: Database, *, limit: int = 60, search: str = "") -> list[dict]:
+    """
+    Today's orders, newest first, for the history screen.
+
+    Reads the projection rather than folding sixty event streams: this is a list
+    somebody scrolls, and folding each one to render a row would make opening it
+    take a second on the hardware these run on.
+
+    Scoped to what this terminal knows. During an outage that is only this
+    device's sales — the honest limitation the header already states, and the
+    reason the screen says so rather than implying it holds the whole day.
+    """
+    where = ["substr(opened_at, 1, 10) = ?"]
+    params: list = [datetime.now(UTC).date().isoformat()]
+
+    if search:
+        where.append("local_number LIKE ?")
+        params.append(f"%{search}%")
+
+    rows = db.query(
+        f"SELECT * FROM l_orders WHERE {' AND '.join(where)} "  # noqa: S608 — fixed fragments
+        "ORDER BY opened_at DESC LIMIT ?",
+        (*params, limit),
+    )
+    return [dict(row) for row in rows]
+
+
 # ── internals ────────────────────────────────────────────────────────────────
 
 
