@@ -9,7 +9,7 @@
  */
 import { describe, expect, it } from 'vitest'
 
-import { footprint, fullness, seatsFor } from './geometry'
+import { footprint, fullness, seatsFor, splitByDepth } from './geometry'
 
 describe('a round table', () => {
   it('spaces its chairs evenly around the circle', () => {
@@ -157,6 +157,36 @@ describe('fullness', () => {
 
   it('never reports beyond full', () => {
     expect(fullness(4, 6)).toBe('full')
+  })
+})
+
+describe('depth order', () => {
+  it('separates the chairs behind the table from the ones in front', () => {
+    /**
+     * The room is tilted, so a chair at the near edge must be painted OVER the
+     * table and one at the far edge under it. Drawing them in one pass tucks
+     * the near chairs behind the furniture and the illusion collapses.
+     */
+    const { behind, infront } = splitByDepth(seatsFor('SQUARE', 4))
+
+    expect(behind).toHaveLength(2)
+    expect(infront).toHaveLength(2)
+    expect(behind.every((s) => s.y < 0)).toBe(true)
+    expect(infront.every((s) => s.y >= 0)).toBe(true)
+  })
+
+  it('loses no chairs in the split', () => {
+    const seats = seatsFor('ROUND', 7, 3)
+    const { behind, infront } = splitByDepth(seats)
+
+    expect(behind.length + infront.length).toBe(seats.length)
+    expect([...behind, ...infront].filter((s) => s.occupied)).toHaveLength(3)
+  })
+
+  it('puts a bar row entirely in front of its counter', () => {
+    const { behind, infront } = splitByDepth(seatsFor('BAR', 5))
+    expect(behind).toHaveLength(0)
+    expect(infront).toHaveLength(5)
   })
 })
 

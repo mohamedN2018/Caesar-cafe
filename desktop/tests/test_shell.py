@@ -622,6 +622,97 @@ class TestTheDrawer:
         assert warned == ["لا توجد وردية"]
 
 
+class TestTheHeaderIsReachable:
+    """
+    Every control in the header has to have a way to be pressed. A method with
+    no caller is a feature that shipped and cannot be used — the cash-movement
+    dialog was exactly that until this batch.
+    """
+
+    def test_the_cash_movement_button_appears_with_a_shift(self, qtbot, db, menu, engine) -> None:
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell.show()
+
+        assert shell.movement_button.isHidden(), "nothing to move into without a drawer"
+
+        shell._do_open_shift(Decimal("500.00"))
+        assert not shell.movement_button.isHidden()
+        assert not shell.xreport_button.isHidden()
+
+    def test_the_x_report_reads_without_closing(self, qtbot, db, menu, engine) -> None:
+        """
+        "How are we doing?" at eight in the evening used to be answerable only
+        by ending the shift.
+        """
+        from caesar_pos.shifts import service as shifts
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._do_open_shift(Decimal("500.00"))
+
+        report = shifts.z_report(db, shell.shift["id"])
+        assert report.expected_cash == Decimal("500.00")
+        assert shell.shift is not None, "reading it must not end it"
+
+    def test_the_x_report_without_a_shift_is_refused(
+        self, qtbot, db, menu, engine, monkeypatch
+    ) -> None:
+        warned = []
+        monkeypatch.setattr(
+            "caesar_pos.ui.shell.QMessageBox.warning", lambda *a, **k: warned.append(a[1])
+        )
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell.x_report()
+
+        assert warned == ["لا توجد وردية"]
+
+    def test_the_conflicts_button_is_hidden_when_there_are_none(
+        self, qtbot, db, menu, engine
+    ) -> None:
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell.show()
+
+        assert shell.conflicts_button.isHidden()
+
+    def test_a_conflict_surfaces_a_button_that_names_the_count(
+        self, qtbot, db, menu, engine
+    ) -> None:
+        """
+        Until this existed the header could say "⚠️ تعارض (٢)" with no way to
+        find out which two.
+        """
+        order = service.open_order(db, settings=service.settings_from_mirror(db))
+        service.add_item(db, order.order_id, variant_id="v1")
+        operation = outbox.pending(db)[0]
+        outbox.mark_conflict(db, operation.op_uuid, code="ORDER_ALREADY_CLOSED", server_state={})
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell.show()
+
+        assert not shell.conflicts_button.isHidden()
+        assert "1" in shell.conflicts_button.text()
+
+    def test_resolving_a_conflict_clears_the_button(self, qtbot, db, menu, engine) -> None:
+        order = service.open_order(db, settings=service.settings_from_mirror(db))
+        service.add_item(db, order.order_id, variant_id="v1")
+        operation = outbox.pending(db)[0]
+        outbox.mark_conflict(db, operation.op_uuid, code="SEQUENCE_GAP", server_state={})
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell.show()
+
+        outbox.acknowledge(db, operation.op_uuid)
+        shell.refresh_status()
+
+        assert shell.conflicts_button.isHidden()
+
+
 class TestKidsWiring:
     def test_a_checkout_reaches_the_server(self, qtbot, db, menu, engine, monkeypatch) -> None:
         monkeypatch.setattr("caesar_pos.ui.shell.QMessageBox.information", lambda *a, **k: None)

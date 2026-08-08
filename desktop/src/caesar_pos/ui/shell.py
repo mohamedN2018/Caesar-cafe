@@ -42,6 +42,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..api.client import ApiError, NetworkUnavailable
+from ..local import outbox
 from ..local.db import Database
 from ..orders import service
 from ..printing import spooler
@@ -52,7 +53,8 @@ from .floor.window import FloorWindow
 from .kids.window import KidsWindow
 from .kitchen.window import KitchenWindow
 from .pos.window import PosWindow
-from .shift import CashMovementDialog, CloseShiftDialog, OpenShiftDialog
+from .shift import CashMovementDialog, CloseShiftDialog, OpenShiftDialog, XReportDialog
+from .sync import ConflictsDialog
 
 logger = logging.getLogger(__name__)
 
@@ -71,6 +73,7 @@ QLabel#ShellPrint { font-size: 14px; color: #b45309; font-weight: 600; }
 QLabel#ShellShift { font-size: 14px; color: #475569; }
 QPushButton#Shift { background: #e2e8f0; color: #0f172a; padding: 8px 14px; }
 QPushButton#ShiftNeeded { background: #b45309; color: #ffffff; padding: 8px 14px; }
+QPushButton#Conflicts { background: #b3261e; color: #ffffff; padding: 8px 14px; font-weight: 700; }
 QPushButton#Tab       { background: #e2e8f0; color: #0f172a; padding: 10px 18px; }
 QPushButton#TabActive { background: #1d4e89; color: #ffffff; padding: 10px 18px; }
 QPushButton#Logout    { background: #e2e8f0; color: #0f172a; padding: 8px 14px; }
@@ -217,6 +220,27 @@ class Shell(QWidget):
         self.shift_button = QPushButton("", objectName="Shift")
         self.shift_button.clicked.connect(self.toggle_shift)
         row.addWidget(self.shift_button)
+
+        # Money in or out of the drawer for something that is not a sale. Shown
+        # only while a drawer is open, because there is nothing to move into
+        # otherwise.
+        self.movement_button = QPushButton("حركة نقدية", objectName="Shift")
+        self.movement_button.clicked.connect(self.cash_movement)
+        row.addWidget(self.movement_button)
+
+        # A read without closing. "How are we doing?" at eight in the evening
+        # used to be answerable only by ending the shift.
+        self.xreport_button = QPushButton("قراءة", objectName="Shift")
+        self.xreport_button.clicked.connect(self.x_report)
+        row.addWidget(self.xreport_button)
+
+        # Conflicts are the one sync state that needs a person, and until this
+        # button existed the header could say "⚠️ تعارض (٢)" with no way to find
+        # out which two. Hidden when there are none.
+        self.conflicts_button = QPushButton("", objectName="Conflicts")
+        self.conflicts_button.clicked.connect(self.show_conflicts)
+        self.conflicts_button.hide()
+        row.addWidget(self.conflicts_button)
 
         self.sync_label = QLabel("", objectName="ShellSync")
         row.addWidget(self.sync_label)
@@ -462,6 +486,13 @@ class Shell(QWidget):
         )
         self.refresh_status()
 
+    def x_report(self) -> None:
+        shift = self.shift
+        if shift is None:
+            QMessageBox.warning(self, "لا توجد وردية", "افتح وردية عشان تقدر تقرأ الدرج.")
+            return
+        XReportDialog(shifts.z_report(self.db, shift["id"]), parent=self).exec()
+
     def cash_movement(self) -> None:
         if self.shift is None:
             QMessageBox.warning(self, "لا توجد وردية", "افتح وردية قبل تسجيل حركة نقدية.")
@@ -538,6 +569,12 @@ class Shell(QWidget):
         board.set_connection(live=True)
         board.show_tickets(data.get("results", data) if isinstance(data, dict) else data)
 
+    def show_conflicts(self) -> None:
+        dialog = ConflictsDialog(self.db, parent=self)
+        dialog.resolved.connect(self.refresh_status)
+        dialog.exec()
+        self.refresh_status()
+
     def refresh_status(self) -> None:
         status = self.engine.status()
         self.sync_label.setText(str(status))
@@ -551,6 +588,15 @@ class Shell(QWidget):
         # that reconcile against nothing.
         self.shift_button.setObjectName("Shift" if shift else "ShiftNeeded")
         self.shift_button.style().polish(self.shift_button)
+        self.movement_button.setVisible(shift is not None)
+        self.xreport_button.setVisible(shift is not None)
+
+        # The count is the actionable half of the sync state. A cashier can do
+        # nothing about "syncing"; a conflict is waiting on them specifically.
+        unresolved = len(outbox.open_conflicts(self.db))
+        self.conflicts_button.setVisible(bool(unresolved))
+        if unresolved:
+            self.conflicts_button.setText(f"⚠ {unresolved} تحتاج مراجعة")
 
         pos = self.boards.get("pos")
         if pos is not None:

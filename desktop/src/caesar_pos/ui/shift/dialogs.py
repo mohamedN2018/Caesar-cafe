@@ -194,6 +194,60 @@ class CashMovementDialog(QDialog):
         self.accept()
 
 
+class XReportDialog(QDialog):
+    """
+    A read of the drawer without closing it.
+
+    Managers ask "how are we doing" at eight in the evening, and the only way to
+    answer used to be to close the shift — which ends it. An X-report is the
+    same figures with nothing written down.
+
+    It shows the expected cash, unlike the CLOSE screen, and that is not an
+    inconsistency: nobody is counting yet, so there is no count for the number
+    to contaminate. Withholding it here would just make the manager close the
+    till to find out, which is the outcome this exists to avoid.
+    """
+
+    def __init__(self, report: shifts.ZReport, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setStyleSheet(STYLESHEET)
+        self.setWindowTitle("قراءة الوردية")
+        self.setLayoutDirection(Qt.LayoutDirection.RightToLeft)
+        self.setMinimumWidth(420)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(24, 24, 24, 24)
+        layout.setSpacing(10)
+
+        layout.addWidget(QLabel("قراءة الوردية", objectName="Title"))
+        layout.addWidget(
+            QLabel("قراءة فقط — الوردية تفضل مفتوحة ومفيش حاجة بتتسجّل.", objectName="Hint")
+        )
+
+        for label, value in [
+            ("العهدة الافتتاحية", report.opening_cash),
+            ("مبيعات نقدية", report.cash_sales),
+            ("مبيعات غير نقدية", report.non_cash_sales),
+            ("إيداعات", report.pay_ins),
+            ("مصروفات", report.pay_outs),
+        ]:
+            row = QHBoxLayout()
+            row.addWidget(QLabel(label, objectName="Row"))
+            row.addStretch(1)
+            row.addWidget(QLabel(f"{value} ج.م", objectName="Row"))
+            layout.addLayout(row)
+
+        layout.addWidget(QLabel(f"عدد الطلبات: {report.order_count}", objectName="Hint"))
+
+        expected = QLabel(f"المتوقع في الدرج {report.expected_cash} ج.م", objectName="Expected")
+        expected.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(expected)
+
+        close = QPushButton("إغلاق")
+        close.clicked.connect(self.accept)
+        layout.addWidget(close)
+
+
 class CloseShiftDialog(QDialog):
     """
     Count the drawer, then see the difference.

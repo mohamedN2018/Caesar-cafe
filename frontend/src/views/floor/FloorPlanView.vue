@@ -102,6 +102,19 @@ const visible = computed(() =>
     .map((t) => ({ ...t, ...(live.value[t.id] ?? {}), table_id: t.id })),
 )
 
+/**
+ * Whether this area is outside, decided from its name.
+ *
+ * A guess, and a cheap one — but the alternative is a database column somebody
+ * has to remember to set, and getting it wrong costs a decking texture rather
+ * than anything that matters.
+ */
+const OUTDOOR_WORDS = ['تراس', 'خارج', 'حديق', 'جاردن', 'terrace', 'garden', 'outdoor']
+const isOutdoor = computed(() => {
+  const name = areas.value.find((a) => a.id === selectedArea.value)?.name_ar?.toLowerCase() ?? ''
+  return OUTDOOR_WORDS.some((word) => name.includes(word))
+})
+
 const selected = computed(() => tables.value.find((t) => t.id === selectedId.value) ?? null)
 const selectedLive = computed(() =>
   selectedId.value ? (live.value[selectedId.value] ?? null) : null,
@@ -362,6 +375,7 @@ onUnmounted(() => {
           :tables="visible"
           :stations="editing ? [] : stations"
           :editable="editing && mayEdit"
+          :outdoor="isOutdoor"
           :selected-id="selectedId"
           @select="selectedId = $event.table_id"
           @move="move"

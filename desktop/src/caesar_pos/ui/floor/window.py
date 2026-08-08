@@ -179,10 +179,22 @@ class FloorWindow(QWidget):
 
         self.tabs.addStretch(1)
 
+    #: Words that mean "this area is outside". A guess, and a cheap one — the
+    #: alternative is a column somebody has to remember to set, and getting it
+    #: wrong costs a decking texture rather than anything that matters.
+    OUTDOOR_WORDS = ("تراس", "خارج", "حديق", "جاردن", "terrace", "garden", "outdoor")
+
+    @property
+    def is_outdoor(self) -> bool:
+        if self.area_id is None:
+            return False
+        name = next((a["name_ar"] for a in areas(self.db) if a["id"] == self.area_id), "")
+        return any(word in name.lower() for word in self.OUTDOOR_WORDS)
+
     def _render_tables(self) -> None:
         rows = self.visible_tables
         self.empty.setVisible(not rows)
-        self.room.show_tables(rows)
+        self.room.show_tables(rows, outdoor=self.is_outdoor)
 
     @staticmethod
     def _label(table: dict) -> str:

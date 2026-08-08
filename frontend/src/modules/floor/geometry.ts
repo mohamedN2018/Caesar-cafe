@@ -168,6 +168,22 @@ export function footprint(shape: TableShape, spanX: number, spanY: number, cell:
   return { width, height }
 }
 
+/**
+ * Split the seats into the ones behind the table and the ones in front.
+ *
+ * The room is drawn tilted, so a chair at the bottom of a table is NEARER the
+ * viewer and must be painted over the table top, while one at the top is behind
+ * it and must be painted under. Drawing them all in one pass — which is what
+ * the first version did — puts the near chairs behind the furniture and the
+ * whole scene stops reading as three-dimensional.
+ */
+export function splitByDepth(seats: Seat[]): { behind: Seat[]; infront: Seat[] } {
+  return {
+    behind: seats.filter((seat) => seat.y < 0),
+    infront: seats.filter((seat) => seat.y >= 0),
+  }
+}
+
 export type Fullness = 'free' | 'light' | 'busy' | 'full'
 
 /**

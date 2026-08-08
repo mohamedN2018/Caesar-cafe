@@ -162,6 +162,21 @@ def footprint(shape: str, span_x: int, span_y: int, cell: int) -> tuple[int, int
     return width, height
 
 
+def split_by_depth(seats: list[Seat]) -> tuple[list[Seat], list[Seat]]:
+    """
+    (behind, in front) — the chairs painted under the table and over it.
+
+    Even flat, the near chairs have to sit on top: a chair at the bottom edge is
+    pulled out towards the viewer and its back is what you would see. Painting
+    them all before the table tucks them underneath and the furniture stops
+    looking like furniture.
+    """
+    return (
+        [seat for seat in seats if seat.y < 0],
+        [seat for seat in seats if seat.y >= 0],
+    )
+
+
 FREE = "free"
 LIGHT = "light"
 BUSY = "busy"

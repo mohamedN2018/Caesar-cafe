@@ -6,15 +6,23 @@ same room with QPainter — same geometry, same palette, same rule that colour
 never carries a meaning alone.
 
 Why paint it rather than lay out widgets: a round table with six chairs around
-it is not a rectangle, and faking it with stylesheets means a grid of buttons
-that only claims to be a map. A waiter using this is matching what is on the
-screen to what is in front of them, and a square standing in for a round table
-breaks that the first time they look up.
+it is not a rectangle, and faking it with stylesheets gives a grid of buttons
+that only claims to be a map. A waiter is matching what is on the screen to what
+is in front of them, and a square standing in for a round table breaks that the
+first time they look up.
 
-Depth is a drop shadow and a lifted edge rather than a perspective transform.
-On the hardware these run on — an atom-class box driving a 15" touchscreen —
-a tilted plane costs frames the till cannot spare, and the flat overhead view is
-the one a floor plan is normally read in anyway.
+Three things make it read as a room:
+
+  * **Depth order.** Far tables first, and within a table the near chairs are
+    painted over the top while the far ones go under it.
+  * **Chairs shaped like chairs**, with a back turned away from the table.
+  * **People at occupied seats.** "How many are actually on it" is the question
+    this screen answers, and a figure answers it before a number does.
+
+Depth is a soft shadow and a lifted edge rather than a perspective transform. On
+the hardware these run on — an atom-class box driving a 15" touchscreen — a
+tilted plane costs frames the till cannot spare, and a floor plan is normally
+read from overhead anyway.
 """
 
 from __future__ import annotations
@@ -23,7 +31,16 @@ import logging
 from decimal import Decimal
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QBrush, QColor, QFont, QPainter, QPainterPath, QPen
+from PySide6.QtGui import (
+    QBrush,
+    QColor,
+    QFont,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+    QRadialGradient,
+)
 from PySide6.QtWidgets import QWidget
 
 from .. import palette as p
@@ -33,8 +50,8 @@ logger = logging.getLogger(__name__)
 
 #: Pixels per grid cell. Large: this is a touchscreen and a table is a target.
 CELL = 96
-MARGIN = 24
-CHAIR = 20
+MARGIN = 28
+CHAIR = 24
 
 STATE_FILL = {
     geometry.FREE: p.TABLE_FREE,
@@ -43,13 +60,16 @@ STATE_FILL = {
     geometry.FULL: p.BRAND_300,
 }
 
+SKIN = "#d8a273"
+SKIN_EDGE = "#a9764b"
+
 
 class RoomWidget(QWidget):
     """
     Draws tables and emits `table_clicked(table_id)`.
 
-    `tables` are dicts as `floor.window.tables()` returns them, plus whatever
-    occupancy the caller knows.
+    `tables` are dicts as `floor.window.tables()` returns them, carrying
+    whatever occupancy the caller knows.
     """
 
     table_clicked = Signal(str)
@@ -59,13 +79,22 @@ class RoomWidget(QWidget):
         self.tables: list[dict] = []
         self.columns = 10
         self.rows = 8
+        self.outdoor = False
         self._hitboxes: list[tuple[QRectF, str]] = []
         self.setMinimumSize(640, 420)
-        self.setMouseTracking(True)
 
-    def show_tables(self, tables: list[dict]) -> None:
-        self.tables = tables
-        self.updateGeometry()
+    def show_tables(self, tables: list[dict], *, outdoor: bool = False) -> None:
+        # Far tables first, so a near one overlaps it. `pos_y` alone is not
+        # enough — a tall table one row back can still reach in front of the one
+        # below it, so the sort is on where its near edge actually falls.
+        self.tables = sorted(
+            tables,
+            key=lambda t: (
+                int(t.get("pos_y") or 0) + int(t.get("span_y") or 1) * 0.5,
+                int(t.get("pos_x") or 0),
+            ),
+        )
+        self.outdoor = outdoor
         self.update()
 
     def sizeHint(self):
@@ -87,10 +116,15 @@ class RoomWidget(QWidget):
         painter.end()
 
     def _paint_floor(self, painter: QPainter) -> None:
-        painter.fillRect(self.rect(), QColor(p.FLOOR_TILE))
+        if self.outdoor:
+            # Decking, so outside reads as outside before anybody reads a tab.
+            painter.fillRect(self.rect(), QColor("#b98a5c"))
+            plank = QColor("#ad7f52")
+            for x in range(0, self.width(), 36):
+                painter.fillRect(x, 0, 2, self.height(), plank)
+            return
 
-        # Tiles, so the room reads as a floor rather than a canvas. Cheap: two
-        # loops of fillRect, no image to load or scale.
+        painter.fillRect(self.rect(), QColor(p.FLOOR_TILE))
         alt = QColor(p.FLOOR_TILE_ALT)
         size = CELL // 2
         for row in range((self.height() // size) + 1):
@@ -114,20 +148,30 @@ class RoomWidget(QWidget):
 
         painter.save()
         painter.translate(centre)
+
+        self._paint_shadow(painter, width, height)
         painter.rotate(rotation)
 
-        for seat in geometry.seats_for(shape, seats, seated, span_x, span_y):
-            self._paint_chair(painter, seat, width, height)
+        behind, infront = geometry.split_by_depth(
+            geometry.seats_for(shape, seats, seated, span_x, span_y)
+        )
+        for seat in behind:
+            self._paint_chair(painter, seat, width, height, rotation)
 
         body = QRectF(-width / 2, -height / 2, width, height)
         self._paint_top(painter, body, shape, table, seats, seated)
 
+        # Painted last, so a chair pulled out towards the viewer sits over the
+        # table rather than under it.
+        for seat in infront:
+            self._paint_chair(painter, seat, width, height, rotation)
+
         painter.restore()
 
-        # The hitbox is unrotated and axis-aligned. A rotated one would be
-        # more correct and would cost a polygon test per click on a machine
-        # that is also folding an order; 15° of slop on a 96px target is
-        # nothing a fingertip notices.
+        # The hitbox is unrotated and axis-aligned. A rotated one would be more
+        # correct and would cost a polygon test per click on a machine that is
+        # also folding an order; 15° of slop on a 96px target is nothing a
+        # fingertip notices.
         self._hitboxes.append(
             (
                 QRectF(centre.x() - width / 2, centre.y() - height / 2, width, height),
@@ -135,26 +179,55 @@ class RoomWidget(QWidget):
             )
         )
 
-    def _paint_chair(
-        self, painter: QPainter, seat: geometry.Seat, width: float, height: float
-    ) -> None:
-        colour = QColor(p.CHAIR_OCCUPIED if seat.occupied else p.CHAIR)
-        rect = QRectF(
-            seat.x * width * 0.5 - CHAIR / 2,
-            seat.y * height * 0.5 - CHAIR / 2,
-            CHAIR,
-            CHAIR,
-        )
+    def _paint_shadow(self, painter: QPainter, width: float, height: float) -> None:
+        """A soft ellipse on the floor — contact, rather than a hard offset."""
+        rect = QRectF(-width * 0.62, height * 0.04, width * 1.24, height * 0.62)
+        gradient = QRadialGradient(rect.center(), rect.width() / 2)
+        gradient.setColorAt(0.0, QColor(42, 26, 22, 92))
+        gradient.setColorAt(1.0, QColor(42, 26, 22, 0))
 
-        # A lifted edge under each chair. Occupied ones sit taller, so a full
-        # table reads as full before anybody has read a number.
-        lift = 6 if seat.occupied else 3
-        shadow = QColor(p.BRAND_900 if seat.occupied else p.WOOD_EDGE)
         painter.setPen(Qt.PenStyle.NoPen)
-        painter.setBrush(QBrush(shadow))
-        painter.drawRoundedRect(rect.translated(0, lift), 5, 5)
-        painter.setBrush(QBrush(colour))
-        painter.drawRoundedRect(rect, 5, 5)
+        painter.setBrush(QBrush(gradient))
+        painter.drawEllipse(rect)
+
+    def _paint_chair(
+        self, painter: QPainter, seat: geometry.Seat, width: float, height: float, rotation: int
+    ) -> None:
+        painter.save()
+        painter.translate(seat.x * width * 0.5, seat.y * height * 0.5)
+        painter.rotate(seat.angle)
+
+        taken = seat.occupied
+        painter.setPen(Qt.PenStyle.NoPen)
+
+        # The back, turned away from the table. A block beside a table is a
+        # block; a back and a seat is a chair.
+        back = QRectF(-CHAIR / 2, -CHAIR / 2, CHAIR, CHAIR * 0.34)
+        painter.setBrush(QBrush(QColor(p.BRAND_400 if taken else "#9a6739")))
+        painter.drawRoundedRect(back, 4, 4)
+
+        pad = QRectF(-CHAIR / 2 + 2, -CHAIR / 2 + 7, CHAIR - 4, CHAIR - 9)
+        painter.setBrush(QBrush(QColor(p.BRAND_900 if taken else p.WOOD_EDGE)))
+        painter.drawRoundedRect(pad.translated(0, 3), 4, 4)
+        painter.setBrush(QBrush(QColor(p.CHAIR_OCCUPIED if taken else p.CHAIR)))
+        painter.drawRoundedRect(pad, 4, 4)
+
+        if taken:
+            self._paint_person(painter)
+
+        painter.restore()
+
+    def _paint_person(self, painter: QPainter) -> None:
+        """Head and shoulders. The count made visible before it is read."""
+        painter.setPen(Qt.PenStyle.NoPen)
+
+        body = QRectF(-8, -2, 16, 13)
+        painter.setBrush(QBrush(QColor(p.BRAND_700)))
+        painter.drawRoundedRect(body, 7, 7)
+
+        painter.setBrush(QBrush(QColor(SKIN)))
+        painter.setPen(QPen(QColor(SKIN_EDGE), 1.4))
+        painter.drawEllipse(QRectF(-5.5, -9, 11, 11))
 
     def _paint_top(
         self, painter: QPainter, body: QRectF, shape: str, table: dict, seats: int, seated: int
@@ -162,7 +235,6 @@ class RoomWidget(QWidget):
         state = (
             "cleaning" if table.get("status") == "CLEANING" else geometry.fullness(seats, seated)
         )
-        fill = QColor(p.WARNING_BG if state == "cleaning" else STATE_FILL.get(state, p.TABLE_FREE))
 
         path = QPainterPath()
         if shape == geometry.ROUND:
@@ -170,16 +242,23 @@ class RoomWidget(QWidget):
         elif shape == geometry.BOOTH:
             path.addRoundedRect(body, 14, 14)
         else:
-            path.addRoundedRect(body, 10, 10)
+            path.addRoundedRect(body, 9, 9)
 
-        # The lift: a solid dark edge below, then the top. This is what makes it
-        # read as furniture standing on a floor rather than a sticker printed
-        # on it.
+        # The thickness of the table, then the top. Together they read as an
+        # object standing on the floor rather than printed on it.
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QBrush(QColor(p.WOOD_DARK)))
         painter.drawPath(path.translated(0, 8))
 
-        painter.setBrush(QBrush(fill))
+        if state == "cleaning":
+            painter.setBrush(QBrush(QColor(p.WARNING_BG)))
+        else:
+            top = QColor(STATE_FILL.get(state, p.TABLE_FREE))
+            gradient = QLinearGradient(body.topLeft(), body.bottomRight())
+            gradient.setColorAt(0.0, top.lighter(107))
+            gradient.setColorAt(1.0, top.darker(106))
+            painter.setBrush(QBrush(gradient))
+
         painter.setPen(QPen(QColor(p.WOOD_EDGE), 2))
         painter.drawPath(path)
 
@@ -200,12 +279,12 @@ class RoomWidget(QWidget):
 
         detail = QFont(painter.font())
         detail.setPointSize(9)
-        detail.setBold(False)
+        detail.setBold(True)
         painter.setFont(detail)
         painter.setPen(QPen(QColor(p.INK_MUTED)))
 
-        # Seats AND money, both in words. The occupancy is what seats a walk-in;
-        # the total is what a waiter came over to find.
+        # Seats AND money. The occupancy is what seats a walk-in; the total is
+        # what a waiter came over to find.
         due = table.get("grand_total")
         caption = f"{seated}/{seats}"
         if table.get("order_id") and due:
