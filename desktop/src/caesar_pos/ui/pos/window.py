@@ -33,19 +33,35 @@ from PySide6.QtWidgets import (
 from ...local.db import Database
 from ...orders import service
 from ...security.session import Session
+from .. import palette as p
 from . import catalog
+from .item_dialog import ItemDialog
 from .order_panel import OrderPanel
 from .payment_dialog import PaymentDialog
 from .product_grid import ProductGrid
 
 logger = logging.getLogger(__name__)
 
-STYLESHEET = """
-QWidget#Header { background: #ffffff; border-bottom: 1px solid #e2e8f0; }
-QLabel#User { font-size: 15px; font-weight: 600; }
-QLabel#Sync { font-size: 14px; color: #475569; }
-QPushButton#Logout { background: #e2e8f0; color: #0f172a; padding: 8px 14px; }
-QPushButton#NewOrder { padding: 10px 18px; }
+#: The three ways an order leaves the building. Service charge follows from
+#: this, which is why it is snapshotted rather than looked up at payment.
+ORDER_TYPES = {
+    "DINE_IN": "صالة",
+    "TAKEAWAY": "تيك أواي",
+    "DELIVERY": "دليفري",
+}
+
+STYLESHEET = f"""
+QWidget#Header {{ background: {p.SURFACE}; border-bottom: 1px solid {p.BORDER}; }}
+QLabel#User {{ font-size: 15px; font-weight: 600; }}
+QLabel#Sync {{ font-size: 14px; color: {p.INK_MUTED}; }}
+QPushButton#Logout {{ background: {p.SURFACE_SUNKEN}; color: {p.INK}; padding: 8px 14px; }}
+QPushButton#NewOrder {{ padding: 10px 18px; }}
+QPushButton#OrderType {{
+    background: {p.SURFACE_SUNKEN}; color: {p.INK}; padding: 8px 14px; font-size: 14px;
+}}
+QPushButton#OrderTypeActive {{
+    background: {p.BRAND_700}; color: {p.FG_ON_BRAND}; padding: 8px 14px; font-size: 14px;
+}}
 """
 
 
@@ -76,6 +92,10 @@ class PosWindow(QWidget):
         # carries it, because a sale attributed to no shift reconciles against
         # nothing and the cashier only finds out at close.
         self.shift_id: str | None = None
+        # Dine-in until somebody says otherwise. Snapshotted onto the order at
+        # open, because service charge depends on it and a bill must not change
+        # its own rules after the customer has seen it.
+        self.order_type = "DINE_IN"
 
         self.setStyleSheet(STYLESHEET)
         self.setWindowTitle("كافيه القيصر — نقطة البيع")
@@ -118,6 +138,19 @@ class PosWindow(QWidget):
         self.new_order_button = QPushButton("طلب جديد", objectName="NewOrder")
         self.new_order_button.clicked.connect(self.new_order)
         row.addWidget(self.new_order_button)
+
+        # The order type is a header control, not a dialog on every sale. It
+        # changes a few times an hour — when the phone rings — and asking on
+        # every order taxes the ninety percent that are dine-in.
+        self.type_buttons: dict[str, QPushButton] = {}
+        for code, label in ORDER_TYPES.items():
+            button = QPushButton(label, objectName="OrderType")
+            button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+            button.clicked.connect(lambda _=False, c=code: self.set_order_type(c))
+            row.addWidget(button)
+            self.type_buttons[code] = button
+        self.set_order_type(self.order_type)
+
         row.addStretch(1)
 
         self.sync_label = QLabel("", objectName="Sync")
@@ -138,9 +171,43 @@ class PosWindow(QWidget):
             self._refuse("الترخيص مقيّد — يمكن إنهاء الطلبات المفتوحة فقط. جدّد الاشتراك.")
             return
 
-        order = service.open_order(self.db, settings=self.settings, shift_id=self.shift_id)
+        order = service.open_order(
+            self.db,
+            settings=self._settings_for(self.order_type),
+            order_type=self.order_type,
+            shift_id=self.shift_id,
+        )
         self.order_id = order.order_id
         self.panel.show_order(order)
+
+    def _settings_for(self, order_type: str) -> service.Settings:
+        """
+        The money rules for this order type.
+
+        Service charge applies to some types and not others, so a dine-in
+        snapshot on a takeaway would charge for a table nobody sat at. Read
+        fresh for that reason — and falling back to the rules this window was
+        constructed with if the config is not there, because refusing to sell in
+        order to get a more specific snapshot is the worse of the two failures.
+        """
+        try:
+            return service.settings_from_mirror(self.db, order_type=order_type)
+        except RuntimeError:
+            logger.warning("Falling back to the constructed rules", extra={"type": order_type})
+            return self.settings
+
+    def set_order_type(self, code: str) -> None:
+        """
+        Applies to the NEXT order, never to one already open.
+
+        Retyping a bill the customer is looking at would change its service
+        charge underneath them, which is the one thing a snapshot exists to
+        prevent.
+        """
+        self.order_type = code
+        for candidate, button in self.type_buttons.items():
+            button.setObjectName("OrderTypeActive" if candidate == code else "OrderType")
+            button.style().polish(button)
 
     def set_sync_label(self, text: str) -> None:
         self.sync_label.setText(text)
@@ -150,27 +217,42 @@ class PosWindow(QWidget):
         A tap adds. An order is opened implicitly if there is not one — making a
         cashier press "new order" before the first item is a step that exists
         only because the software wanted it.
+
+        The simplest item — one size, no add-ons — still adds in that one tap.
+        The dialog opens only when there is genuinely something to choose, so
+        the common case stays as fast as it was.
         """
         if self.order_id is None:
             self.new_order()
             if self.order_id is None:  # refused — a restricted licence
                 return
 
-        if tile.needs_variant_choice:
-            tile = self._choose_variant(tile)
-            if tile is None:
-                return
+        variants = (
+            catalog.variants_of(self.db, tile.product_id) if tile.needs_variant_choice else []
+        )
+        modifiers = catalog.modifiers_for(self.db, tile.product_id)
 
-        self._perform(lambda: service.add_item(self.db, self.order_id, variant_id=tile.variant_id))
+        if not variants and not modifiers:
+            self._perform(
+                lambda: service.add_item(self.db, self.order_id, variant_id=tile.variant_id)
+            )
+            return
 
-    def _choose_variant(self, tile):
-        options = catalog.variants_of(self.db, tile.product_id)
-        labels = [f"{o.name_ar} — {o.price}" for o in options]
+        dialog = ItemDialog(tile, variants=variants or [tile], modifiers=modifiers, parent=self)
+        dialog.confirmed.connect(self._add_configured)
+        dialog.exec()
 
-        choice, ok = QInputDialog.getItem(self, "اختر الحجم", tile.name_ar, labels, 0, False)
-        if not ok:
-            return None
-        return options[labels.index(choice)]
+    def _add_configured(self, variant_id: str, quantity, modifiers: list, note: str) -> None:
+        self._perform(
+            lambda: service.add_item(
+                self.db,
+                self.order_id,
+                variant_id=variant_id,
+                quantity=quantity,
+                modifiers=modifiers,
+                note=note,
+            )
+        )
 
     def _void_line(self, line_id: str) -> None:
         """
