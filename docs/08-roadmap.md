@@ -581,9 +581,32 @@ Two bugs the tests found: `connect()` returned a cached connection that had been
 activation flow restarts in-process, so this was reachable), and the puller wrote `None` for absent
 payload keys — overriding schema defaults on insert and blanking good values on update.
 
-**Still outstanding on the Desktop:** the POS order screen, the PIN pad, the floor map, the KDS, the
-kids screens, receipt printing with the Arabic rasterizer, and the local fold that turns
-`l_order_events` into a running total. The engine underneath them is done.
+### Desktop orders ✅ FOLD COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **172 desktop tests passing** (49 new) · vendored parity clean.
+
+Delivered: `orders/events.py` (event types and the local state machine), `orders/fold.py` (the pure
+fold), and `orders/service.py` (open, add, void, discount, fire, pay — each in one transaction with
+its outbox row).
+
+The exit criterion for this piece was **"Desktop and server totals agree on all golden-file
+cases, to the piaster"**, and it is met in the strongest available form: `TestGoldenParity` runs
+the *server's own* `backend/tests/fixtures/money_cases.json` through the *Desktop's* fold. Not a
+copy of the fixture — the same file, read across the monorepo. A copy is a thing that drifts.
+
+The fold does no arithmetic of its own; every total comes from `vendored/money.py`, byte-identical
+to the backend's and checked in CI. The documented example — 2× cappuccino + 1× turkish, 12%
+service, 14% VAT — comes to **204.29** on the terminal, the same figure as docs/04, the Phase 1
+fixture, and the server.
+
+Also enforced locally, with the same rules the server applies on sync: a paid order takes no more
+items, no more payment and cannot be voided (`PAID → OPEN` is unreachable by construction); a void
+marks rather than removes; firing twice sends only what is new; a terminal whose `finance.*` has not
+synced **refuses to price an order** rather than guessing a VAT rate.
+
+**Still outstanding on the Desktop:** the screens themselves — the PIN pad, the POS order screen,
+the floor map, the KDS, the kids board — and receipt printing with the Arabic rasterizer. Every one
+of them is now a view over a store, a fold and a sync engine that exist and are tested.
 
 Original plan:
 
