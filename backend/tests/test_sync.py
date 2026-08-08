@@ -727,6 +727,50 @@ class TestShiftHandlers:
         )
         assert result.results[0]["result"]["server_client_drift"] == "-20.00"
 
+    def test_an_offline_order_lands_in_the_shift_it_was_sold_in(
+        self, device, branch, menu, cash
+    ) -> None:
+        """
+        The handler used to drop the terminal's `shift_id`, so every synced order
+        arrived with no drawer — which empties the Z-report of exactly the sales
+        the terminal made, and takes the variance report with it.
+        """
+        shift_id = str(uuid.uuid4())
+        order_id = uuid.uuid4()
+
+        push(device, branch, [op("shift_open", {"shift_id": shift_id, "opening_cash": "500.00"})])
+        push(
+            device,
+            branch,
+            [
+                op(
+                    "order_open",
+                    {
+                        "order_id": str(order_id),
+                        "order_type": "DINE_IN",
+                        "local_number": "MB-01-0099",
+                        "shift_id": shift_id,
+                    },
+                ),
+                add_item_op(order_id, menu),
+            ],
+        )
+
+        order = Order.objects.get(id=order_id)
+        assert str(order.shift_id) == shift_id
+
+    def test_an_order_with_no_shift_still_syncs(self, device, branch, menu) -> None:
+        """
+        A terminal mid-upgrade, or a board that never opened a drawer, must not
+        have its sales rejected — they arrive unattributed and visible rather
+        than lost.
+        """
+        order_id = uuid.uuid4()
+        result = push(device, branch, [open_order_op(order_id)])
+
+        assert result.applied == 1
+        assert Order.objects.get(id=order_id).shift_id is None
+
 
 class TestInvoiceReconciliation:
     def test_a_provisional_serial_is_recorded_beside_the_permanent_one(

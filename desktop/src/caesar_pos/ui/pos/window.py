@@ -72,6 +72,10 @@ class PosWindow(QWidget):
         # alternative is a cafe with money on its tables and no way to take it.
         self.can_open_new_orders = can_open_new_orders
         self.order_id: str | None = None
+        # The open drawer, kept current by the shell. Every order and payment
+        # carries it, because a sale attributed to no shift reconciles against
+        # nothing and the cashier only finds out at close.
+        self.shift_id: str | None = None
 
         self.setStyleSheet(STYLESHEET)
         self.setWindowTitle("كافيه القيصر — نقطة البيع")
@@ -134,7 +138,7 @@ class PosWindow(QWidget):
             self._refuse("الترخيص مقيّد — يمكن إنهاء الطلبات المفتوحة فقط. جدّد الاشتراك.")
             return
 
-        order = service.open_order(self.db, settings=self.settings)
+        order = service.open_order(self.db, settings=self.settings, shift_id=self.shift_id)
         self.order_id = order.order_id
         self.panel.show_order(order)
 
@@ -223,6 +227,7 @@ class PosWindow(QWidget):
                 method_id=method_id,
                 amount=amount,
                 tendered=tendered,
+                shift_id=self.shift_id,
             )
 
         order = self._perform(run)

@@ -46,11 +46,13 @@ from ..local.db import Database
 from ..orders import service
 from ..printing import spooler
 from ..security.session import Session
+from ..shifts import service as shifts
 from ..sync.engine import SyncEngine
 from .floor.window import FloorWindow
 from .kids.window import KidsWindow
 from .kitchen.window import KitchenWindow
 from .pos.window import PosWindow
+from .shift import CashMovementDialog, CloseShiftDialog, OpenShiftDialog
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +68,9 @@ QWidget#ShellHeader { background: #ffffff; border-bottom: 1px solid #e2e8f0; }
 QLabel#ShellUser  { font-size: 15px; font-weight: 600; }
 QLabel#ShellSync  { font-size: 14px; color: #475569; }
 QLabel#ShellPrint { font-size: 14px; color: #b45309; font-weight: 600; }
+QLabel#ShellShift { font-size: 14px; color: #475569; }
+QPushButton#Shift { background: #e2e8f0; color: #0f172a; padding: 8px 14px; }
+QPushButton#ShiftNeeded { background: #b45309; color: #ffffff; padding: 8px 14px; }
 QPushButton#Tab       { background: #e2e8f0; color: #0f172a; padding: 10px 18px; }
 QPushButton#TabActive { background: #1d4e89; color: #ffffff; padding: 10px 18px; }
 QPushButton#Logout    { background: #e2e8f0; color: #0f172a; padding: 8px 14px; }
@@ -203,6 +208,16 @@ class Shell(QWidget):
         self.print_label.hide()
         row.addWidget(self.print_label)
 
+        # The drawer, permanently. A terminal selling into no shift produces
+        # sales that reconcile against nothing, and the cashier finds out at
+        # close — which is the one moment it cannot be fixed.
+        self.shift_label = QLabel("", objectName="ShellShift")
+        row.addWidget(self.shift_label)
+
+        self.shift_button = QPushButton("", objectName="Shift")
+        self.shift_button.clicked.connect(self.toggle_shift)
+        row.addWidget(self.shift_button)
+
         self.sync_label = QLabel("", objectName="ShellSync")
         row.addWidget(self.sync_label)
 
@@ -264,7 +279,10 @@ class Shell(QWidget):
             return window
 
         if name == "kids":
-            return KidsWindow(self.db)
+            window = KidsWindow(self.db)
+            window.checkout_requested.connect(self._checkout_child)
+            window.checkin_requested.connect(self._checkin_child)
+            return window
 
         return None
 
@@ -347,6 +365,122 @@ class Shell(QWidget):
         else:
             self.tick_boards()
 
+    # ── the kids area ────────────────────────────────────────────────────────
+
+    def _checkin_child(self) -> None:
+        """
+        Check-in runs on the server, not offline.
+
+        A child is physically present and the area has a hard capacity: two
+        terminals admitting the last place while disconnected would put a child
+        inside a room that is already full. Every other offline operation costs
+        money; this one costs supervision, so it is the one thing that waits for
+        the server.
+        """
+        QMessageBox.information(
+            self,
+            "دخول جديد",
+            "الدخول يتم من لوحة الويب أو بعد الاتصال — السعة قاعدة سلامة ولا تُقدَّر محلياً.",
+        )
+
+    def _checkout_child(self, session_id: str) -> None:
+        """
+        Check-out bills through the till, so the charge lands on an order like
+        anything else the customer pays for.
+        """
+        try:
+            data = self.engine.client.post(
+                f"/kids/sessions/{session_id}/check-out/", {"bill": True}
+            )
+        except NetworkUnavailable:
+            QMessageBox.warning(
+                self,
+                "غير متصل",
+                "الخروج يحتاج اتصالاً بالخادم — قيمة الجلسة تُحتسب هناك.",
+            )
+            return
+        except ApiError as exc:
+            QMessageBox.warning(self, "تعذّر التنفيذ", str(exc))
+            return
+
+        payable = (data or {}).get("session", {}).get("payable")
+        if payable:
+            QMessageBox.information(self, "خروج", f"المستحق {payable} ج.م — حصّله من نقطة البيع.")
+        self.refresh_board("kids")
+
+    # ── the drawer ───────────────────────────────────────────────────────────
+
+    @property
+    def shift(self) -> dict | None:
+        return shifts.current(self.db)
+
+    def toggle_shift(self) -> None:
+        self.close_shift() if self.shift else self.open_shift()
+
+    def open_shift(self) -> None:
+        dialog = OpenShiftDialog(parent=self)
+        dialog.confirmed.connect(self._do_open_shift)
+        dialog.exec()
+
+    def _do_open_shift(self, opening_cash) -> None:
+        try:
+            shifts.open_shift(self.db, opening_cash=opening_cash, user_id=self.session.user_id)
+        except (shifts.ShiftAlreadyOpen, ValueError) as exc:
+            QMessageBox.warning(self, "تعذّر فتح الوردية", str(exc))
+            return
+        self.refresh_status()
+
+    def close_shift(self) -> None:
+        shift = self.shift
+        if shift is None:
+            return
+
+        dialog = CloseShiftDialog(
+            shifts.z_report(self.db, shift["id"]),
+            unsettled=shifts.unsettled_orders(self.db, shift["id"]),
+            parent=self,
+        )
+        dialog.confirmed.connect(self._do_close_shift)
+        dialog.exec()
+
+    def _do_close_shift(self, counted_cash, reason: str) -> None:
+        try:
+            report = shifts.close_shift(self.db, counted_cash=counted_cash, reason=reason)
+        except (shifts.NoOpenShift, ValueError) as exc:
+            QMessageBox.warning(self, "تعذّر إغلاق الوردية", str(exc))
+            return
+
+        # Said plainly, and only the terminal's own figure. The server recomputes
+        # on receipt and its number is the one that counts; promising this one is
+        # final would be a promise an offline terminal cannot make.
+        QMessageBox.information(
+            self,
+            "تم إغلاق الوردية",
+            f"المتوقع {report.expected_cash} · المعدود {report.counted_cash}\n"
+            f"الفرق {report.variance} ج.م\n\n"
+            "سيعيد الخادم الحساب عند المزامنة، ورقمه هو المعتمد.",
+        )
+        self.refresh_status()
+
+    def cash_movement(self) -> None:
+        if self.shift is None:
+            QMessageBox.warning(self, "لا توجد وردية", "افتح وردية قبل تسجيل حركة نقدية.")
+            return
+
+        dialog = CashMovementDialog(parent=self)
+        dialog.confirmed.connect(self._do_cash_movement)
+        dialog.exec()
+
+    def _do_cash_movement(self, movement_type: str, amount, reason: str) -> None:
+        try:
+            shifts.record_movement(
+                self.db, movement_type=movement_type, amount=amount, reason=reason
+            )
+        except (shifts.NoOpenShift, ValueError) as exc:
+            QMessageBox.warning(self, "تعذّر التسجيل", str(exc))
+            return
+        self.refresh_status()
+
     # ── the timers ───────────────────────────────────────────────────────────
 
     def tick_sync(self) -> None:
@@ -408,9 +542,20 @@ class Shell(QWidget):
         status = self.engine.status()
         self.sync_label.setText(str(status))
 
+        shift = self.shift
+        self.shift_label.setText(
+            f"وردية · عهدة {shift['opening_cash']}" if shift else "لا توجد وردية"
+        )
+        self.shift_button.setText("إغلاق الوردية" if shift else "افتح وردية")
+        # Amber until a drawer is open: selling into no shift produces sales
+        # that reconcile against nothing.
+        self.shift_button.setObjectName("Shift" if shift else "ShiftNeeded")
+        self.shift_button.style().polish(self.shift_button)
+
         pos = self.boards.get("pos")
         if pos is not None:
             pos.set_sync_label(str(status))
+            pos.shift_id = shift["id"] if shift else None
 
         counts = spooler.counts(self.db)
         backlog = counts["pending"] + counts["failed"]

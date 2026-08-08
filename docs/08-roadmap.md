@@ -841,6 +841,49 @@ Four bugs the tests found, three of them real gaps:
 
 Also fixed: `EscposPrinter` imported `Usb` under a `noqa` claiming it was used below. It was not.
 
+### Desktop cash drawer ✅ COMPLETE (2026-08-08)
+
+**Verified:** ruff + format clean · **397 desktop tests** (62 new) · **885 backend tests** (2 new) ·
+vendored modules in sync.
+
+The last thing the Desktop could not do. It could take payments and had nowhere to attribute them:
+no shift, no Z-report, no variance, and therefore no way for anyone to notice a drawer was short.
+
+Delivered: `shifts/service.py` (open, cash movements, a locally-computed Z-report, close),
+`ui/shift/` (three dialogs), and the shell wiring that keeps the header, the till and the drawer in
+step.
+
+**The terminal computes its own Z-report.** A cashier at 1am with the internet down still has to
+count and go home. The close operation carries the terminal's expected figure so the server can
+compare it against its own — and when the two differ, that difference is the finding, not an error
+to swallow.
+
+**The close screen hides the expected total until a count is entered.** This is the single most
+important interaction decision in the cash path: a cashier who can see "should be 4,320" will find
+4,320, and the variance report quietly stops working. Sales figures ARE shown from the start —
+those cannot be counted, and seeing them is what makes an obviously wrong total obvious. A
+difference must be explained before the drawer closes on it, and a shortage is stated in words
+("ناقص ٤٥ ج.م"), not merely coloured red.
+
+**Only cash is counted.** A card total that disagrees with the log is a payment-processor question,
+not a drawer question, and mixing them turns one clear number into two vague ones. An unmirrored
+payment method counts as non-cash: guessing "cash" would inflate what the drawer should hold and
+manufacture a shortage nobody can explain.
+
+Three bugs found, one of them across the seam:
+
+1. **The `shift_id` never reached the server.** The Desktop stored it on the local order and left it
+   out of the outbox payload, *and* `apps/sync/handlers.py` dropped it from the one operation that
+   did carry it. So every offline order arrived with no drawer — emptying the server's Z-report of
+   exactly the sales the terminal made. Both sides fixed, with a test on each.
+2. **`l_payments` had no `shift_id` column**, so a local Z-report could not attribute a single
+   payment. The third schema gap of this shape today, after `m_tables.pos_x` and
+   `l_play_sessions.medical_notes`.
+3. **The kids board's `checkout_requested` and `checkin_requested` were never connected** — two
+   dead signals behind live buttons. Check-out now bills through the till; check-in deliberately
+   does not run offline, because capacity is a safety limit and two terminals admitting the last
+   place while disconnected would put a child in a room that is already full.
+
 **Still outstanding on the Desktop:** nothing buildable from here. What remains needs the real
 cafe — the signed installer on clean Windows hardware, a real thermal printer to calibrate the
 raster width against, and the parallel run.

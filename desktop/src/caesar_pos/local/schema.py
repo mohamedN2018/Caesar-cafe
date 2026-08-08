@@ -227,6 +227,10 @@ MIGRATIONS: list[str] = [
         change_given     TEXT NOT NULL DEFAULT '0.00',
         reference        TEXT NOT NULL DEFAULT '',
         idempotency_key  TEXT NOT NULL UNIQUE,
+        -- Which drawer this money went into. Without it the terminal cannot
+        -- compute its own Z-report, and a cashier counting out during an outage
+        -- has nothing to count against.
+        shift_id         TEXT,
         taken_at         TEXT NOT NULL
     );
 

@@ -156,6 +156,11 @@ def open_order(
                 "order_id": order_id,
                 "order_type": order_type,
                 "local_number": local_number,
+                "table_id": table_id,
+                # The server attributes the sale to this drawer. Omitting it left
+                # every synced order with no shift, which empties the Z-report of
+                # exactly the terminal that made the sales.
+                "shift_id": shift_id,
             },
         )
 
@@ -331,6 +336,7 @@ def take_payment(
                 "change_given": str(change),
                 "reference": reference,
                 "idempotency_key": idempotency_key,
+                "shift_id": shift_id,
                 "taken_at": now,
             },
         )

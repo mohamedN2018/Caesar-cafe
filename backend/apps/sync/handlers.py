@@ -72,6 +72,10 @@ def _order_open(*, device, branch, payload: dict, actor=None) -> dict:
         order_type=payload.get("order_type", OrderType.DINE_IN),
         order_id=order_id,
         local_number=payload.get("local_number"),
+        # The drawer the terminal attributed the sale to. Dropping it here left
+        # every offline order with no shift, which empties the Z-report of
+        # exactly the sales the terminal made — and the variance report with it.
+        shift=_shift_for(payload.get("shift_id")),
         device_id=device.id if device else None,
         user=actor,
     )

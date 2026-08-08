@@ -17,6 +17,7 @@ from decimal import Decimal
 import pytest
 
 from caesar_pos.api.client import ApiError, NetworkUnavailable
+from caesar_pos.local import outbox
 from caesar_pos.local.db import Database, connect
 from caesar_pos.orders import service
 from caesar_pos.printing import receipt, spooler
@@ -537,6 +538,130 @@ class TestHeader:
         shell.boards["pos"].logout_requested.emit()
 
         assert seen == [True]
+
+
+class TestTheDrawer:
+    def test_the_header_says_there_is_no_shift(self, qtbot, db, menu, engine) -> None:
+        """
+        Selling into no shift produces sales that reconcile against nothing, and
+        the cashier finds out at close — the one moment it cannot be fixed.
+        """
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+
+        assert "لا توجد وردية" in shell.shift_label.text()
+        assert shell.shift_button.objectName() == "ShiftNeeded"
+
+    def test_opening_a_shift_updates_the_header_and_the_till(self, qtbot, db, menu, engine) -> None:
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._do_open_shift(Decimal("500.00"))
+
+        assert "500.00" in shell.shift_label.text()
+        assert shell.shift_button.objectName() == "Shift"
+        assert shell.boards["pos"].shift_id == shell.shift["id"]
+
+    def test_an_order_opened_after_that_carries_the_shift(self, qtbot, db, menu, engine) -> None:
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._do_open_shift(Decimal("500.00"))
+
+        shell.boards["pos"].new_order()
+        order_id = shell.boards["pos"].order_id
+
+        # The projection row and the queued operation must agree: the first is
+        # what the local Z-report reads, the second is what the server's does.
+        row = db.one("SELECT shift_id FROM l_orders WHERE id = ?", (order_id,))
+        assert row["shift_id"] == shell.shift["id"]
+
+        operation = next(
+            op
+            for op in outbox.pending(db)
+            if op.entity_type == "order_open" and op.entity_id == order_id
+        )
+        assert operation.payload["shift_id"] == shell.shift["id"]
+
+    def test_closing_clears_it_again(self, qtbot, db, menu, engine, monkeypatch) -> None:
+        monkeypatch.setattr("caesar_pos.ui.shell.QMessageBox.information", lambda *a, **k: None)
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._do_open_shift(Decimal("500.00"))
+        shell._do_close_shift(Decimal("500.00"), "")
+
+        assert shell.shift is None
+        assert shell.boards["pos"].shift_id is None
+        assert "لا توجد وردية" in shell.shift_label.text()
+
+    def test_a_second_open_is_refused_out_loud(self, qtbot, db, menu, engine, monkeypatch) -> None:
+        warned = []
+        monkeypatch.setattr(
+            "caesar_pos.ui.shell.QMessageBox.warning", lambda *a, **k: warned.append(a[1])
+        )
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._do_open_shift(Decimal("500.00"))
+        shell._do_open_shift(Decimal("300.00"))
+
+        assert warned == ["تعذّر فتح الوردية"]
+        assert Decimal(shell.shift["opening_cash"]) == Decimal("500.00")
+
+    def test_a_cash_movement_without_a_shift_is_refused(
+        self, qtbot, db, menu, engine, monkeypatch
+    ) -> None:
+        warned = []
+        monkeypatch.setattr(
+            "caesar_pos.ui.shell.QMessageBox.warning", lambda *a, **k: warned.append(a[1])
+        )
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell.cash_movement()
+
+        assert warned == ["لا توجد وردية"]
+
+
+class TestKidsWiring:
+    def test_a_checkout_reaches_the_server(self, qtbot, db, menu, engine, monkeypatch) -> None:
+        monkeypatch.setattr("caesar_pos.ui.shell.QMessageBox.information", lambda *a, **k: None)
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._checkout_child("s-1")
+
+        assert engine.client.posts == ["/kids/sessions/s-1/check-out/"]
+
+    def test_offline_the_checkout_says_so(self, qtbot, db, menu, monkeypatch) -> None:
+        """The charge is computed on the server, so this one genuinely waits."""
+        warned = []
+        monkeypatch.setattr(
+            "caesar_pos.ui.shell.QMessageBox.warning", lambda *a, **k: warned.append(a[1])
+        )
+
+        engine = SyncEngine(db=db, client=FakeClient(raises=NetworkUnavailable()))
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._checkout_child("s-1")
+
+        assert warned == ["غير متصل"]
+
+    def test_check_in_is_not_done_offline(self, qtbot, db, menu, engine, monkeypatch) -> None:
+        """
+        Capacity is a safety limit. Two terminals admitting the last place while
+        disconnected would put a child in a room that is already full.
+        """
+        told = []
+        monkeypatch.setattr(
+            "caesar_pos.ui.shell.QMessageBox.information", lambda *a, **k: told.append(a[1])
+        )
+
+        shell = make_shell(db, engine)
+        qtbot.addWidget(shell)
+        shell._checkin_child()
+
+        assert told == ["دخول جديد"]
+        assert engine.client.posts == []
 
 
 def test_a_paid_order_leaves_the_floor_map(qtbot, db, menu, engine) -> None:
