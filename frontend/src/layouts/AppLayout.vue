@@ -37,6 +37,9 @@ const groups: NavGroup[] = [
   {
     label: 'المبيعات',
     items: [
+      // First in the group, because for a cashier it is the only entry that
+      // matters and the sidebar is read top-down.
+      { label: 'نقطة البيع', to: '/pos', icon: '🧮', permission: 'orders.create' },
       { label: 'الطلبات', to: '/orders', icon: '🧾', permission: 'orders.view' },
       { label: 'الورديات', to: '/shifts', icon: '💵', permission: 'shifts.view_all' },
       { label: 'التقارير', to: '/reports', icon: '📈', permission: 'reports.sales' },

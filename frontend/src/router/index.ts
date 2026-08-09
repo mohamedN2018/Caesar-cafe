@@ -206,6 +206,26 @@ const router = createRouter({
       ],
     },
     {
+      /**
+       * The till, outside the admin shell on purpose.
+       *
+       * `PosLayout` takes the whole viewport and drops the sidebar, the
+       * breadcrumb and the 14px type — none of which survive being used
+       * standing up with a queue waiting. Nesting it under `AppLayout` would
+       * have inherited all three.
+       */
+      path: '/pos',
+      component: () => import('@/layouts/PosLayout.vue'),
+      meta: { permission: 'orders.create' },
+      children: [
+        {
+          path: '',
+          name: 'pos',
+          component: () => import('@/views/pos/PosBoardView.vue'),
+        },
+      ],
+    },
+    {
       path: '/:pathMatch(.*)*',
       name: 'not-found',
       component: () => import('@/views/NotFoundView.vue'),
