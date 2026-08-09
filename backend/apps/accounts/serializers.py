@@ -75,3 +75,21 @@ class MFASetupSerializer(serializers.Serializer):
 
 class MFAConfirmSerializer(serializers.Serializer):
     code = serializers.RegexField(r"^\d{6}$")
+
+
+class PosSignInSerializer(serializers.Serializer):
+    """
+    One of the two, never neither.
+
+    Both are optional individually because a terminal offers a keypad and a
+    scanner side by side, and which one arrives depends on what the cashier
+    reached for.
+    """
+
+    pin = serializers.CharField(min_length=4, max_length=8, required=False, allow_blank=True)
+    badge = serializers.CharField(max_length=120, required=False, allow_blank=True)
+
+    def validate(self, attrs: dict) -> dict:
+        if not attrs.get("pin") and not attrs.get("badge"):
+            raise serializers.ValidationError("أدخل رمز الدخول أو امسح البطاقة")
+        return attrs

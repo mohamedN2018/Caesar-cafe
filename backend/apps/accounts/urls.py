@@ -8,6 +8,7 @@ from .views import (
     MFAConfirmView,
     MFADisableView,
     MFASetupView,
+    PosSignInView,
     RefreshView,
     SessionListView,
     SetPinView,
@@ -18,6 +19,8 @@ app_name = "accounts"
 
 urlpatterns = [
     path("login/", LoginView.as_view(), name="login"),
+    # The cashier path. A device token plus a PIN or badge — no account.
+    path("pos-login/", PosSignInView.as_view(), name="pos-login"),
     path("refresh/", RefreshView.as_view(), name="refresh"),
     path("logout/", LogoutView.as_view(), name="logout"),
     path("me/", MeView.as_view(), name="me"),

@@ -580,6 +580,23 @@ class TestCatalogueCoverage:
         audit.record("staff.pin_reset", organization=branch.organization, actor=user, obj=user)
         self._assert("staff.pin_reset")
 
+        # Through the real issuer, not a hand-written row: reissuing silently
+        # kills the previous card, and "why did my badge stop working" needs an
+        # answer in the trail rather than a mystery at the start of a shift.
+        from apps.authz.views import _issue_badge
+
+        _issue_badge(user, issued_by=user)
+        audit.record(
+            "staff.badge_issued",
+            organization=branch.organization,
+            actor=user,
+            obj=user,
+            object_label=user.full_name_ar,
+        )
+        row = self._assert("staff.badge_issued")
+        # The token is never in the record. Storing it would defeat hashing it.
+        assert "QSRB1." not in str(row.before) + str(row.after) + str(row.detail)
+
         user.is_active = False
         user.save(update_fields=["is_active"])
         self._assert("staff.user_deactivated")

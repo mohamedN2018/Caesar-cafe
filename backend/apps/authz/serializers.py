@@ -123,7 +123,19 @@ class StaffCreateSerializer(serializers.Serializer):
     email = serializers.EmailField()
     full_name_ar = serializers.CharField(max_length=200)
     phone = serializers.CharField(max_length=32, required=False, allow_blank=True)
-    password = serializers.CharField(min_length=12, write_only=True)
+
+    #: Optional, and absent is the NORMAL case.
+    #:
+    #: A cashier has no account to log into. They have a PIN and a badge and a
+    #: terminal the branch enrolled, which is the whole credential. Handing
+    #: every one of them an email and a password would mean a password typed on
+    #: a shared screen in front of a queue — which is a password written on the
+    #: till within a week.
+    #:
+    #: Left out, the account gets an unusable password: not a blank one, not a
+    #: guessable default. Email sign-in is closed for that person, permanently,
+    #: until somebody deliberately sets one.
+    password = serializers.CharField(min_length=12, write_only=True, required=False)
     role = serializers.CharField(
         help_text="A role code, e.g. CASHIER. Assigned to the caller's branch."
     )

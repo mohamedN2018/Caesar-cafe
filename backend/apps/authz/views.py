@@ -28,6 +28,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Count
+from django.utils import timezone
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import viewsets
@@ -199,23 +200,43 @@ class StaffViewSet(viewsets.ModelViewSet):
         if role is None:
             raise NotFoundError("الدور غير موجود", code="ROLE_NOT_FOUND")
 
-        try:
-            validate_password(data["password"])
-        except DjangoValidationError as exc:
-            raise AppError(
-                "كلمة المرور ضعيفة",
-                code="WEAK_PASSWORD",
-                errors={"password": list(exc.messages)},
-            ) from exc
+        password = data.get("password")
+        if password:
+            try:
+                validate_password(password)
+            except DjangoValidationError as exc:
+                raise AppError(
+                    "كلمة المرور ضعيفة",
+                    code="WEAK_PASSWORD",
+                    errors={"password": list(exc.messages)},
+                ) from exc
+
+        pin_length = resolver.get(
+            "security.pin_length", ScopeContext(organization_id=principal.organization_id)
+        )
+        pin = _next_free_pin(principal.organization_id, pin_length)
 
         with transaction.atomic():
             user = User.objects.create_user(
                 email=data["email"],
-                password=data["password"],
+                password=password,
                 organization_id=principal.organization_id,
                 full_name_ar=data["full_name_ar"],
                 phone=data.get("phone", ""),
             )
+            if not password:
+                # Unusable, not blank and not a default. Email sign-in is closed
+                # for this person until somebody deliberately opens it.
+                user.set_unusable_password()
+
+            # **Every staff member gets a PIN, always.** The till is the normal
+            # way in, and a person created without one is a person who cannot
+            # work until a second, easily-forgotten step is done — which in
+            # practice means a manager lends them theirs, and the audit trail
+            # starts naming the wrong human.
+            user.set_pin(pin)
+            user.save(update_fields=["password", "pin_hash", "pin_set_at"])
+
             RoleAssignment.objects.create(
                 user=user,
                 role=role,
@@ -225,14 +246,34 @@ class StaffViewSet(viewsets.ModelViewSet):
                 branch_id=principal.branch_id if data["branch_scoped"] else None,
                 created_by_id=principal.user_id,
             )
+            badge_token = _issue_badge(user, issued_by=_acting_user(request))
 
         audit.record(
             "staff.user_created",
             obj=user,
             object_label=user.full_name_ar or user.email,
-            detail={"role": role.code, "branch_scoped": data["branch_scoped"]},
+            detail={
+                "role": role.code,
+                "branch_scoped": data["branch_scoped"],
+                "can_sign_in_with_email": bool(password),
+            },
         )
-        return Response(StaffSerializer(user).data, status=201)
+
+        # The PIN and the badge are returned ONCE, here, because this response
+        # is what prints the card. Neither is readable afterwards — the staff
+        # list can say a person HAS a badge, never what it says.
+        return Response(
+            {
+                **StaffSerializer(user).data,
+                "credentials": {
+                    "pin": pin,
+                    "badge": badge_token,
+                    "name": user.full_name_ar,
+                    "note": "اطبع البطاقة الآن — لن يظهر الرمز مرة أخرى.",
+                },
+            },
+            status=201,
+        )
 
     def perform_update(self, serializer) -> None:
         before = {
@@ -322,6 +363,97 @@ class StaffViewSet(viewsets.ModelViewSet):
         return Response(StaffSerializer(user).data)
 
     @extend_schema(
+        summary="Print a new badge for this person", responses={200: OpenApiTypes.OBJECT}
+    )
+    @action(detail=True, methods=["post"], url_path="badge")
+    def reissue_badge(self, request: Request, pk=None) -> Response:
+        """
+        Gated on `staff.reset_pin`, not `staff.manage_users`.
+
+        A badge unlocks a till exactly as a PIN does, so it answers to the same
+        risk. Editing somebody's phone number is administration; minting the
+        thing that lets a person ring up sales as them is not.
+        """
+        principal = auth_context(request)
+        if not principal.has("staff.reset_pin"):
+            raise PermissionDeniedError("يتطلب صلاحية: staff.reset_pin")
+
+        user = self.get_object()
+        token = _issue_badge(user, issued_by=_acting_user(request))
+
+        audit.record(
+            "staff.badge_issued",
+            obj=user,
+            object_label=user.full_name_ar or user.email,
+            actor=_acting_user(request),
+            detail={"reissued": True},
+        )
+        # Once, like the PIN. The old card stopped working the moment this
+        # returned, which is the entire point of reprinting one.
+        return Response({"badge": token, "name": user.full_name_ar})
+
+    @extend_schema(
+        summary="What this person has been doing",
+        parameters=[
+            OpenApiParameter("days", OpenApiTypes.INT, description="Window, default 30."),
+        ],
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    @action(detail=True, methods=["get"], url_path="activity")
+    def activity(self, request: Request, pk=None) -> Response:
+        """
+        Orders rung, money taken, and every sensitive thing they did.
+
+        An owner asking "what has this person been doing" wants one number they
+        can compare across staff and one list they can read. Both come from
+        records that already exist — orders, payments, the audit trail — rather
+        than from a second tally kept alongside, which could disagree with them.
+        """
+        from datetime import timedelta
+
+        from apps.audit.models import AuditLog
+        from apps.orders.models import Order, OrderEvent
+        from apps.payments.models import Payment
+
+        user = self.get_object()
+        days = max(1, min(int(request.query_params.get("days", 30)), 365))
+        since = timezone.now() - timedelta(days=days)
+
+        events = OrderEvent.objects.filter(actor=user, recorded_at__gte=since)
+        trail = AuditLog.objects.filter(actor=user, occurred_at__gte=since)
+
+        return Response(
+            {
+                "user": {"id": str(user.id), "full_name_ar": user.full_name_ar},
+                "days": days,
+                "orders_opened": Order.objects.filter(opened_by=user, opened_at__gte=since).count(),
+                # Every event they appended MINUS the one that opens an order,
+                # which would otherwise count each order twice — once as an
+                # order and again as a change to it.
+                "changes_made": events.exclude(event_type="ORDER_OPENED").count(),
+                "payments_taken": Payment.objects.filter(
+                    received_by=user, paid_at__gte=since
+                ).count(),
+                # The three an owner actually watches, broken out rather than
+                # buried in a total: they are the ones that move money without
+                # selling anything.
+                "items_voided": events.filter(event_type="ITEM_VOIDED").count(),
+                "discounts_given": events.filter(event_type="DISCOUNT_APPLIED").count(),
+                "prices_overridden": events.filter(event_type="ITEM_PRICE_OVERRIDDEN").count(),
+                "approvals_given": trail.filter(action="auth.step_up_approved").count(),
+                "recent": [
+                    {
+                        "action": row.action,
+                        "label": row.object_label,
+                        "at": row.occurred_at,
+                        "severity": row.severity,
+                    }
+                    for row in trail.order_by("-occurred_at")[:50]
+                ],
+            }
+        )
+
+    @extend_schema(
         summary="Remove a role assignment",
         request=None,
         responses={200: StaffSerializer},
@@ -396,3 +528,63 @@ class StaffViewSet(viewsets.ModelViewSet):
                 "staff.user_deactivated", obj=user, object_label=user.full_name_ar or user.email
             )
         return Response(StaffSerializer(user).data)
+
+
+# ── badges and activity, appended to StaffViewSet below ──────────────────────
+
+
+def _next_free_pin(organization_id, length: int) -> str:
+    """
+    A PIN nobody in the organization is already using.
+
+    Uniqueness is not cosmetic here: `pos-login` identifies a person BY their
+    PIN, with no username to disambiguate. Two cashiers sharing 1234 would mean
+    whichever row the database returned first gets the sale — and the audit
+    trail would name the wrong human, silently, forever.
+
+    Random rather than sequential, because 1001, 1002, 1003 down the staff list
+    is a pattern anybody standing at the till can finish guessing.
+    """
+    import secrets
+
+    from apps.accounts.models import User as StaffUser
+
+    taken_hashes = StaffUser.objects.filter(organization_id=organization_id).exclude(pin_hash="")
+    span = 10**length
+
+    for _ in range(200):
+        candidate = str(secrets.randbelow(span)).zfill(length)
+        # Hashes are salted, so "is it taken" is a check against each, not a
+        # lookup. The staff list of a cafe is tens of rows, not thousands.
+        if not any(u.check_pin(candidate) for u in taken_hashes):
+            return candidate
+
+    raise AppError(
+        "تعذّر توليد رمز دخول غير مستخدم — وسّع طول الرمز من الإعدادات",
+        code="PIN_SPACE_EXHAUSTED",
+    )
+
+
+def _issue_badge(user, *, issued_by=None) -> str:
+    """
+    Mint a badge, revoking whatever the person held before.
+
+    One live badge per person, deliberately. Reprinting is what somebody does
+    when a card is lost or left on a counter, and a system that let both keep
+    working would make reprinting useless for the one case it exists for.
+    """
+    from apps.accounts.badges import Badge, fingerprint, mint
+
+    Badge.objects.filter(user=user, revoked_at__isnull=True).update(revoked_at=timezone.now())
+
+    raw = mint()
+    Badge.objects.create(
+        user=user,
+        token_hash=fingerprint(raw),
+        # The name is ON the card. A drawer of identical QR codes is a drawer
+        # nobody can sort, and the first thing a manager needs from a stack of
+        # badges is whose is whose.
+        label=user.full_name_ar or user.email,
+        issued_by=issued_by,
+    )
+    return raw

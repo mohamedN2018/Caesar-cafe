@@ -40,6 +40,7 @@ from .serializers import (
     MeSerializer,
     MFAConfirmSerializer,
     MFASetupSerializer,
+    PosSignInSerializer,
     RefreshRequestSerializer,
     SetPinSerializer,
     TokenPairSerializer,
@@ -527,3 +528,74 @@ class SessionListView(APIView):
             auth_context(request).user_id, reason="USER_REVOKED_ALL"
         )
         return Response({"detail": f"تم إنهاء {count} جلسة"}, status=status.HTTP_200_OK)
+
+
+class PosSignInView(APIView):
+    """
+    Sign a cashier in at an enrolled terminal, with a PIN or a badge.
+
+    The permission is `""` — explicitly public *within* an otherwise-guarded
+    view — because the caller is not a person yet. What guards this endpoint is
+    the DEVICE token: the request must already come from a terminal the branch
+    enrolled, and that requirement is what makes a four-digit PIN acceptable at
+    all. A PIN on the open internet is guessable in an afternoon.
+
+    A cashier therefore has **no account to log into**. Giving every one of them
+    an email and a password would mean a password typed on a shared screen in
+    front of a queue, which is a password written on the till within a week. The
+    admin still signs in with an email, from a different screen, because an
+    admin is doing a different job in a different place.
+    """
+
+    permission_classes = [IsAuthenticatedPrincipal]
+    required_permission = ""
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "pos_login"
+
+    @extend_schema(
+        summary="Sign in at a terminal with a PIN or badge",
+        request=PosSignInSerializer,
+        responses={200: TokenPairSerializer},
+    )
+    def post(self, request: Request) -> Response:
+        data = _validated(PosSignInSerializer, request)
+        context = auth_context(request)
+
+        if context.device_id is None:
+            raise PermissionDeniedError("الدخول بالرمز من جهاز مفعّل فقط", code="DEVICE_REQUIRED")
+
+        from apps.licensing.models import Device
+
+        # No status re-check here: `AuthzMiddleware._device_context` already
+        # refuses a revoked or suspended device on EVERY request and hands back
+        # an anonymous context, so a revoked till fails at the door with a 401
+        # rather than reaching this line. Re-checking would be a branch that can
+        # never run, and a guard that cannot fire is a guard nobody maintains.
+        device = Device.objects.select_related("license").filter(id=context.device_id).first()
+        if device is None:
+            raise PermissionDeniedError("هذا الجهاز غير مفعّل", code="DEVICE_REVOKED")
+
+        user = services.sign_in_at_terminal(
+            device=device,
+            pin=data.get("pin", ""),
+            badge_token=data.get("badge", ""),
+            ip_address=_client_ip(request),
+        )
+
+        # POS, not WEB: a person AND a device. Both land in the audit log, which
+        # is what makes "who rang this, on which till" answerable later.
+        pair = tokens.issue_pair(
+            user=user,
+            kind=PrincipalKind.POS,
+            organization_id=device.license.organization_id,
+            branch_id=device.branch_id,
+            device_id=device.id,
+            ip_address=_client_ip(request),
+            user_agent=request.headers.get("User-Agent", ""),
+        )
+        pair.pop("family_id", None)
+        pair["user"] = {
+            "id": str(user.id),
+            "full_name_ar": user.full_name_ar,
+        }
+        return Response(pair)

@@ -76,6 +76,11 @@ ACTIONS: tuple[ActionDef, ...] = (
     _a("staff.user_created", "staff", "إنشاء مستخدم", Severity.NOTICE),
     _a("staff.role_changed", "staff", "تغيير دور", Severity.WARNING),
     _a("staff.pin_reset", "staff", "إعادة تعيين رمز الدخول", Severity.WARNING),
+    # WARNING for the same reason as a PIN reset: a badge unlocks a till, so
+    # minting one is handing somebody the ability to ring up sales as another
+    # person. Reissuing also silently kills the previous card, and "why did my
+    # badge stop working" needs an answer.
+    _a("staff.badge_issued", "staff", "إصدار بطاقة دخول", Severity.WARNING),
     _a("staff.user_deactivated", "staff", "إيقاف مستخدم", Severity.WARNING),
     # ── Licensing ────────────────────────────────────────────────────────────
     _a("license.created", "licensing", "إنشاء ترخيص", Severity.NOTICE),

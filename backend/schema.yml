@@ -404,6 +404,60 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/auth/pos-login/:
+    post:
+      operationId: auth_pos_login_create
+      description: |-
+        Sign a cashier in at an enrolled terminal, with a PIN or a badge.
+
+        The permission is `""` — explicitly public *within* an otherwise-guarded
+        view — because the caller is not a person yet. What guards this endpoint is
+        the DEVICE token: the request must already come from a terminal the branch
+        enrolled, and that requirement is what makes a four-digit PIN acceptable at
+        all. A PIN on the open internet is guessable in an afternoon.
+
+        A cashier therefore has **no account to log into**. Giving every one of them
+        an email and a password would mean a password typed on a shared screen in
+        front of a queue, which is a password written on the till within a week. The
+        admin still signs in with an email, from a different screen, because an
+        admin is doing a different job in a different place.
+      summary: Sign in at a terminal with a PIN or badge
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PosSignInRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PosSignInRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PosSignInRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/TokenPair'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/auth/refresh/:
     post:
       operationId: auth_refresh_create
@@ -9910,6 +9964,56 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/staff/{id}/activity/:
+    get:
+      operationId: staff_activity_retrieve
+      description: |-
+        Orders rung, money taken, and every sensitive thing they did.
+
+        An owner asking "what has this person been doing" wants one number they
+        can compare across staff and one list they can read. Both come from
+        records that already exist — orders, payments, the audit trail — rather
+        than from a second tally kept alongside, which could disagree with them.
+      summary: What this person has been doing
+      parameters:
+      - in: query
+        name: days
+        schema:
+          type: integer
+        description: Window, default 30.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا user.
+        required: true
+      tags:
+      - staff
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/staff/{id}/assign-role/:
     post:
       operationId: staff_assign_role_create
@@ -9952,6 +10056,62 @@ paths:
                     - true
                   data:
                     $ref: '#/components/schemas/Staff'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/staff/{id}/badge/:
+    post:
+      operationId: staff_badge_create
+      description: |-
+        Gated on `staff.reset_pin`, not `staff.manage_users`.
+
+        A badge unlocks a till exactly as a PIN does, so it answers to the same
+        risk. Editing somebody's phone number is administration; minting the
+        thing that lets a person ring up sales as them is not.
+      summary: Print a new badge for this person
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا user.
+        required: true
+      tags:
+      - staff
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StaffRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/StaffRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/StaffRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
                   meta:
                     type: object
                     properties:
@@ -15113,6 +15273,25 @@ components:
       - area
       - entry_fee
       - name_ar
+    PosSignInRequest:
+      type: object
+      description: |-
+        One of the two, never neither.
+
+        Both are optional individually because a terminal offers a keypad and a
+        scanner side by side, and which one arrives depends on what the cashier
+        reached for.
+      properties:
+        pin:
+          oneOf:
+          - type: string
+            maxLength: 8
+            minLength: 4
+          - type: string
+            maxLength: 0
+        badge:
+          type: string
+          maxLength: 120
     PriceChangeRequest:
       type: object
       properties:
@@ -16757,8 +16936,30 @@ components:
       required:
       - email
       - full_name_ar
-      - password
       - role
+    StaffRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+        phone:
+          type: string
+          maxLength: 32
+        full_name_ar:
+          type: string
+          minLength: 1
+          maxLength: 200
+        full_name_en:
+          type: string
+          maxLength: 200
+        is_active:
+          type: boolean
+      required:
+      - email
+      - full_name_ar
     Station:
       type: object
       properties:

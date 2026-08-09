@@ -209,3 +209,9 @@ class LoginAttempt(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} {'ok' if self.succeeded else 'FAIL'} {self.identifier}"
+
+
+# `Badge` lives in `badges.py` beside the minting and hashing it belongs to.
+# Re-exported here so Django's app loader finds it and so `from
+# apps.accounts.models import Badge` reads the same as every other model.
+from .badges import Badge  # noqa: E402,F401  (import position is deliberate)
