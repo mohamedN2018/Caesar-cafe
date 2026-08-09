@@ -125,7 +125,7 @@ onMounted(load)
     <UiCard v-else>
       <UiEmpty
         v-if="!licenses.length"
-        icon="🔑"
+        icon="key"
         title="لا توجد تراخيص"
         description="أنشئ ترخيصاً ثم استخدم مفتاحه لتفعيل أول جهاز."
       />

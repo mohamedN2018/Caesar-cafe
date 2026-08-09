@@ -40,7 +40,7 @@ onMounted(async () => {
     <UiCard v-else>
       <UiEmpty
         v-if="!categories.length"
-        icon="🗂️"
+        icon="folders"
         title="لا توجد أقسام"
         description="القسم هو أول شيء يراه الكاشير — ابدأ بقهوة ومشروبات باردة وحلويات."
       />

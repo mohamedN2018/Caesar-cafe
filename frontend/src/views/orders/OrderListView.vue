@@ -102,7 +102,7 @@ onMounted(load)
     <UiCard v-else>
       <UiEmpty
         v-if="!orders.length"
-        icon="🧾"
+        icon="receipt"
         :title="openOnly ? 'لا توجد طلبات مفتوحة' : 'لا توجد طلبات'"
         description="ستظهر هنا الطلبات فور إنشائها من نقطة البيع."
       />

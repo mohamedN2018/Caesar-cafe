@@ -72,7 +72,7 @@ onMounted(async () => {
     <UiCard v-else>
       <UiEmpty
         v-if="!shifts.length"
-        icon="💵"
+        icon="cash"
         title="لا توجد ورديات"
         description="تُفتح الوردية من نقطة البيع قبل أول عملية بيع."
       />

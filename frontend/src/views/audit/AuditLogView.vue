@@ -158,7 +158,7 @@ onMounted(async () => {
 
     <UiEmpty
       v-else-if="!entries.length"
-      icon="📋"
+      icon="clipboard"
       title="لا توجد سجلات"
       description="لا يوجد شيء مطابق في آخر ٣٠ يوماً."
     />

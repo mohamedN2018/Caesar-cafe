@@ -172,7 +172,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">🧾 الوصفات والتكلفة</h1>
+      <h1 class="text-2xl font-bold text-slate-900">الوصفات والتكلفة</h1>
       <p class="mt-1 text-sm text-slate-500">
         الوصفة هي ما يخصم من المخزون عند البيع، وهي مصدر التكلفة — التكلفة تُحسب ولا تُكتب.
       </p>
@@ -188,7 +188,7 @@ onMounted(load)
     <template v-else>
       <UiEmpty
         v-if="!recipes.length"
-        icon="🧾"
+        icon="receipt"
         title="لا توجد وصفات"
         description="بدون وصفة، يبقى المخزون قائمة تُحدَّث يدوياً."
       />

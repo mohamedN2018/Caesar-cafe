@@ -127,7 +127,7 @@ onMounted(async () => {
 
     <UiEmpty
       v-else-if="!tariffs.length"
-      icon="🎟️"
+      icon="ticket"
       title="لا توجد تعريفات"
       description="أضف تعريفة واحدة على الأقل حتى يمكن تسجيل دخول طفل."
     />

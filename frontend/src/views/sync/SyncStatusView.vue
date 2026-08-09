@@ -173,7 +173,7 @@ onUnmounted(() => {
         <h2 class="mb-3 text-sm font-semibold text-slate-700">التعارضات</h2>
         <UiEmpty
           v-if="!conflicts.length"
-          icon="✅"
+          icon="check"
           title="لا توجد تعارضات"
           description="كل ما أرسلته الأجهزة تم تطبيقه."
         />
@@ -237,7 +237,7 @@ onUnmounted(() => {
         <h2 class="mb-3 text-sm font-semibold text-slate-700">الأجهزة</h2>
         <UiEmpty
           v-if="!status.devices.length"
-          icon="🖥️"
+          icon="monitor"
           title="لا توجد أجهزة مفعّلة"
           description="فعّل جهازاً بمفتاح ترخيص ليظهر هنا."
         />

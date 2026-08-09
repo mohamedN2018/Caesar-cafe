@@ -269,7 +269,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">📦 الشراء والاستلام</h1>
+      <h1 class="text-2xl font-bold text-slate-900">الشراء والاستلام</h1>
       <p class="mt-1 text-sm text-slate-500">
         أمر الشراء نيّة ولا يحرّك المخزون. سند الاستلام واقعة، وهو وحده ما يحرّكه.
       </p>
@@ -307,7 +307,7 @@ onMounted(load)
     <template v-else-if="tab === 'orders'">
       <UiEmpty
         v-if="!orders.length"
-        icon="📦"
+        icon="box"
         title="لا توجد أوامر شراء"
         description="أنشئ أمراً لتسجيل ما طلبته من المورد."
       />
@@ -483,7 +483,7 @@ onMounted(load)
     <template v-else-if="tab === 'receipts'">
       <UiEmpty
         v-if="!receipts.length"
-        icon="🧾"
+        icon="receipt"
         title="لا توجد سندات استلام"
         description="السند هو ما يزيد المخزون ويقيّد على المورد."
       />
@@ -541,7 +541,7 @@ onMounted(load)
     <template v-else>
       <UiEmpty
         v-if="!suggestions.length"
-        icon="✅"
+        icon="check"
         title="لا شيء تحت حد الطلب"
         description="كل الأصناف فوق حدودها المحددة."
       />

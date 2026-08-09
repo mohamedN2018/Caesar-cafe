@@ -138,7 +138,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">👨‍👩‍👧 أولياء الأمور والأطفال</h1>
+      <h1 class="text-2xl font-bold text-slate-900">أولياء الأمور والأطفال</h1>
       <p class="mt-1 text-sm text-slate-500">
         البحث بالهاتف — وهو ما لدى الموظف فعلاً؛ الاسم يُكتب بأكثر من صورة.
       </p>
@@ -159,7 +159,7 @@ onMounted(load)
     <template v-else>
       <UiEmpty
         v-if="!guardians.length"
-        icon="👨‍👩‍👧"
+        icon="guardians"
         title="لا توجد نتائج"
         description="سيظهر ولي الأمر هنا بعد أول دخول للطفل."
       />
@@ -206,7 +206,7 @@ onMounted(load)
 
           <UiEmpty
             v-if="!children.length"
-            icon="🧒"
+            icon="child"
             title="لا يوجد أطفال مسجلون"
             description="أضف طفلاً ليظهر تلقائياً عند الدخول القادم."
           />

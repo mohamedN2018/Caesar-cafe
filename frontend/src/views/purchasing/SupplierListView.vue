@@ -150,7 +150,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">🚚 الموردون</h1>
+      <h1 class="text-2xl font-bold text-slate-900">الموردون</h1>
       <p class="mt-1 text-sm text-slate-500">
         الرصيد محسوب من كشف الحساب ولا يُكتب يدوياً — تماماً كأرصدة المخزون.
       </p>
@@ -174,7 +174,7 @@ onMounted(load)
 
       <UiEmpty
         v-if="!suppliers.length"
-        icon="🚚"
+        icon="truck"
         title="لا يوجد موردون"
         description="أضف مورداً لتتمكن من تسجيل أوامر الشراء والاستلام."
       />
@@ -248,7 +248,7 @@ onMounted(load)
 
           <UiEmpty
             v-if="!statement.entries.length"
-            icon="🧾"
+            icon="receipt"
             title="لا توجد حركات"
             description="ستظهر الفواتير والسداد هنا."
           />

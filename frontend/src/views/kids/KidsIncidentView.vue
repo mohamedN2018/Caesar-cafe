@@ -133,7 +133,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">📋 سجل الوقائع</h1>
+      <h1 class="text-2xl font-bold text-slate-900">سجل الوقائع</h1>
       <p class="mt-1 text-sm text-slate-500">
         القيد لا يُعدَّل ولا يُحذَف. سجل يمكن ترتيبه لاحقاً هو سجل لا يُعتمد عليه.
       </p>
@@ -220,7 +220,7 @@ onMounted(load)
 
       <UiEmpty
         v-if="!visible.length"
-        icon="🎈"
+        icon="balloon"
         title="لا توجد وقائع"
         description="لا شيء مسجَّل — وهذا هو المطلوب."
       />

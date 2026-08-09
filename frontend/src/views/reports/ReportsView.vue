@@ -249,7 +249,7 @@ onMounted(async () => {
 
     <UiEmpty
       v-if="!visibleTabs.length"
-      icon="🔒"
+      icon="shield"
       title="لا توجد تقارير متاحة"
       description="لا تملك صلاحية أي تقرير في هذا الفرع."
     />
@@ -302,7 +302,7 @@ onMounted(async () => {
         <UiSkeleton v-if="loading" :rows="6" />
         <UiEmpty
           v-else-if="!rows.length"
-          icon="📄"
+          icon="receipt"
           title="لا توجد بيانات"
           description="لا توجد حركة في هذه الفترة."
         />

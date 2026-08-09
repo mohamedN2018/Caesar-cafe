@@ -10,6 +10,7 @@
 import { computed, ref } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
+import UiIcon from '@/components/ui/UiIcon.vue'
 import { useAuthStore } from '@/stores/auth'
 
 const auth = useAuthStore()
@@ -32,66 +33,66 @@ interface NavGroup {
 const groups: NavGroup[] = [
   {
     label: '',
-    items: [{ label: 'لوحة التحكم', to: '/', icon: '📊' }],
+    items: [{ label: 'لوحة التحكم', to: '/', icon: 'dashboard' }],
   },
   {
     label: 'المبيعات',
     items: [
       // First in the group, because for a cashier it is the only entry that
       // matters and the sidebar is read top-down.
-      { label: 'نقطة البيع', to: '/pos', icon: '🧮', permission: 'orders.create' },
-      { label: 'الطلبات', to: '/orders', icon: '🧾', permission: 'orders.view' },
-      { label: 'الورديات', to: '/shifts', icon: '💵', permission: 'shifts.view_all' },
-      { label: 'التقارير', to: '/reports', icon: '📈', permission: 'reports.sales' },
+      { label: 'نقطة البيع', to: '/pos', icon: 'pos', permission: 'orders.create' },
+      { label: 'الطلبات', to: '/orders', icon: 'receipt', permission: 'orders.view' },
+      { label: 'الورديات', to: '/shifts', icon: 'cash', permission: 'shifts.view_all' },
+      { label: 'التقارير', to: '/reports', icon: 'chart', permission: 'reports.sales' },
     ],
   },
   {
     label: 'الصالة والمطبخ',
     items: [
-      { label: 'مخطط الصالة', to: '/floor', icon: '🪑', permission: 'floor.view' },
-      { label: 'المطبخ الآن', to: '/kitchen', icon: '🍳', permission: 'kitchen.view' },
-      { label: 'المحطات', to: '/kitchen/stations', icon: '🔥', permission: 'kitchen.view' },
+      { label: 'مخطط الصالة', to: '/floor', icon: 'table', permission: 'floor.view' },
+      { label: 'المطبخ الآن', to: '/kitchen', icon: 'kitchen', permission: 'kitchen.view' },
+      { label: 'المحطات', to: '/kitchen/stations', icon: 'station', permission: 'kitchen.view' },
     ],
   },
   {
     label: 'صالة الأطفال',
     items: [
-      { label: 'اللوحة المباشرة', to: '/kids', icon: '🧸', permission: 'kids.view' },
-      { label: 'الجلسات', to: '/kids/sessions', icon: '⏱️', permission: 'kids.view' },
-      { label: 'أولياء الأمور', to: '/kids/guardians', icon: '👨‍👩‍👧', permission: 'kids.view' },
-      { label: 'سجل الوقائع', to: '/kids/incidents', icon: '📋', permission: 'kids.view' },
-      { label: 'التعريفات', to: '/kids/tariffs', icon: '🎟️', permission: 'kids.view' },
+      { label: 'اللوحة المباشرة', to: '/kids', icon: 'kids', permission: 'kids.view' },
+      { label: 'الجلسات', to: '/kids/sessions', icon: 'clock', permission: 'kids.view' },
+      { label: 'أولياء الأمور', to: '/kids/guardians', icon: 'guardians', permission: 'kids.view' },
+      { label: 'سجل الوقائع', to: '/kids/incidents', icon: 'clipboard', permission: 'kids.view' },
+      { label: 'التعريفات', to: '/kids/tariffs', icon: 'ticket', permission: 'kids.view' },
     ],
   },
   {
     label: 'المنتجات والمخزون',
     items: [
-      { label: 'المنتجات', to: '/products', icon: '☕', permission: 'catalog.view' },
-      { label: 'الأقسام', to: '/categories', icon: '🗂️', permission: 'catalog.view' },
-      { label: 'الوصفات والتكلفة', to: '/recipes', icon: '🧾', permission: 'catalog.view' },
-      { label: 'أرصدة المخزون', to: '/stock', icon: '📦', permission: 'inventory.view' },
-      { label: 'حركة المخزون', to: '/stock/movements', icon: '📜', permission: 'inventory.view' },
+      { label: 'المنتجات', to: '/products', icon: 'cup', permission: 'catalog.view' },
+      { label: 'الأقسام', to: '/categories', icon: 'folders', permission: 'catalog.view' },
+      { label: 'الوصفات والتكلفة', to: '/recipes', icon: 'receipt', permission: 'catalog.view' },
+      { label: 'أرصدة المخزون', to: '/stock', icon: 'box', permission: 'inventory.view' },
+      { label: 'حركة المخزون', to: '/stock/movements', icon: 'history', permission: 'inventory.view' },
     ],
   },
   {
     label: 'الشراء',
     items: [
-      { label: 'الموردون', to: '/suppliers', icon: '🚚', permission: 'purchasing.view' },
-      { label: 'الشراء والاستلام', to: '/purchasing', icon: '📥', permission: 'purchasing.view' },
+      { label: 'الموردون', to: '/suppliers', icon: 'truck', permission: 'purchasing.view' },
+      { label: 'الشراء والاستلام', to: '/purchasing', icon: 'inbox', permission: 'purchasing.view' },
     ],
   },
   {
     label: 'النظام',
     items: [
-      { label: 'الإشعارات', to: '/notifications', icon: '🔔' },
-      { label: 'الموظفون', to: '/staff', icon: '👥', permission: 'staff.view' },
-      { label: 'التراخيص', to: '/licensing', icon: '🔑', permission: 'licenses.view' },
-      { label: 'الأجهزة', to: '/devices', icon: '🖥️', permission: 'devices.view' },
-      { label: 'المزامنة', to: '/sync', icon: '🔄', permission: 'sync.view' },
-      { label: 'سجل التدقيق', to: '/audit', icon: '📋', permission: 'audit.view' },
-      { label: 'النسخ الاحتياطي', to: '/backups', icon: '💾', permission: 'backups.manage' },
-      { label: 'الطابعات', to: '/printers', icon: '🖨️', permission: 'branch.manage_printers' },
-      { label: 'الإعدادات', to: '/settings', icon: '⚙️', permission: 'branch.view' },
+      { label: 'الإشعارات', to: '/notifications', icon: 'bell' },
+      { label: 'الموظفون', to: '/staff', icon: 'users', permission: 'staff.view' },
+      { label: 'التراخيص', to: '/licensing', icon: 'key', permission: 'licenses.view' },
+      { label: 'الأجهزة', to: '/devices', icon: 'monitor', permission: 'devices.view' },
+      { label: 'المزامنة', to: '/sync', icon: 'sync', permission: 'sync.view' },
+      { label: 'سجل التدقيق', to: '/audit', icon: 'clipboard', permission: 'audit.view' },
+      { label: 'النسخ الاحتياطي', to: '/backups', icon: 'save', permission: 'backups.manage' },
+      { label: 'الطابعات', to: '/printers', icon: 'printer', permission: 'branch.manage_printers' },
+      { label: 'الإعدادات', to: '/settings', icon: 'settings', permission: 'branch.view' },
     ],
   },
 ]
@@ -131,8 +132,17 @@ async function signOut() {
              start-0 border-e"
       :class="sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'"
     >
-      <div class="flex h-16 items-center gap-2 border-b border-slate-100 px-5">
-        <span class="text-2xl" aria-hidden="true">☕</span>
+      <div class="flex h-16 items-center gap-3 border-b border-slate-100 px-5">
+        <!--
+          A monogram, not a picture of a coffee cup. Every cafe system on earth
+          uses the cup; the letter is the one mark that is actually this cafe's.
+        -->
+        <span
+          class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-base font-bold text-gold-300"
+          aria-hidden="true"
+        >
+          ق
+        </span>
         <div>
           <p class="text-sm font-bold leading-tight text-slate-900">القيصر</p>
           <p class="text-xs text-slate-500">نظام الإدارة</p>
@@ -159,7 +169,7 @@ async function signOut() {
                 "
                 @click="sidebarOpen = false"
               >
-                <span aria-hidden="true">{{ item.icon }}</span>
+                <UiIcon :name="item.icon" size="1.15rem" />
                 {{ item.label }}
               </RouterLink>
             </li>
@@ -178,7 +188,18 @@ async function signOut() {
           aria-label="القائمة"
           @click="sidebarOpen = !sidebarOpen"
         >
-          ☰
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.6"
+            stroke-linecap="round"
+            aria-hidden="true"
+          >
+            <path d="M4 7h16M4 12h16M4 17h16" />
+          </svg>
         </button>
 
         <div class="flex-1" />

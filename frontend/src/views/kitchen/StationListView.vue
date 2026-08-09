@@ -130,7 +130,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">🔥 محطات المطبخ</h1>
+      <h1 class="text-2xl font-bold text-slate-900">محطات المطبخ</h1>
       <p class="mt-1 text-sm text-slate-500">
         المحطة تحدّد أين يُحضَّر الصنف وأين تُطبع تذكرته. الوقت المستهدف هو أساس حساب التأخير.
       </p>
@@ -143,7 +143,7 @@ onMounted(load)
     <template v-else>
       <UiEmpty
         v-if="!stations.length"
-        icon="🔥"
+        icon="station"
         title="لا توجد محطات"
         description="أضف محطة واحدة على الأقل، وإلا لن يُوجَّه أي صنف إلى المطبخ."
       />

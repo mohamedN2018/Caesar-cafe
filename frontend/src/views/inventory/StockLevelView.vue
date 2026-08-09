@@ -94,7 +94,7 @@ onMounted(async () => {
       <UiCard>
         <UiEmpty
           v-if="!shown.length"
-          icon="📦"
+          icon="box"
           :title="lowOnly ? 'لا توجد نواقص' : 'لا توجد أصناف'"
           :description="
             lowOnly

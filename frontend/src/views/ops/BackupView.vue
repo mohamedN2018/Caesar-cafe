@@ -186,7 +186,7 @@ onMounted(async () => {
       <UiCard>
         <UiEmpty
           v-if="!state.backups.length"
-          icon="💾"
+          icon="save"
           title="لا توجد نسخ بعد"
           description="ستظهر أول نسخة بعد تشغيل المهمة الليلية، أو اضغط «خُذ نسخة الآن»."
         />

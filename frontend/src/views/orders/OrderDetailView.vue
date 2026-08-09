@@ -11,6 +11,7 @@ import { useRoute } from 'vue-router'
 import { ApiError, api } from '@/api/client'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiBadge from '@/components/ui/UiBadge.vue'
+import UiIcon from '@/components/ui/UiIcon.vue'
 import UiCard from '@/components/ui/UiCard.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import { dateTime, money, percent, quantity } from '@/lib/format'
@@ -145,7 +146,9 @@ onMounted(async () => {
                 <p v-if="item.modifiers.length" class="text-sm text-slate-500">
                   {{ item.modifiers.map((m) => m.name_snapshot).join('، ') }}
                 </p>
-                <p v-if="item.note" class="text-sm text-slate-500">📝 {{ item.note }}</p>
+                <p v-if="item.note" class="flex items-center gap-1.5 text-sm text-slate-500">
+                  <UiIcon name="note" size="0.9rem" /> {{ item.note }}
+                </p>
                 <p v-if="item.void_reason" class="text-sm text-red-600">
                   سبب الإلغاء: {{ item.void_reason }}
                 </p>

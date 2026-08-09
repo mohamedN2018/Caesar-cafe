@@ -219,7 +219,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">🖨️ الطابعات</h1>
+      <h1 class="text-2xl font-bold text-slate-900">الطابعات</h1>
       <p class="mt-1 text-sm text-slate-500">
         تُعرَّف الطابعة هنا مرة واحدة للفرع، وتصل إلى كل كاشير في المزامنة التالية — بدل كتابتها
         على كل جهاز على حدة.
@@ -238,7 +238,7 @@ onMounted(load)
     <template v-else>
       <UiEmpty
         v-if="!printers.length"
-        icon="🖨️"
+        icon="printer"
         title="لا توجد طابعات معرَّفة"
         description="حتى تُعرَّف طابعة، يطبع كل كاشير على طابعته المحلية كما كان."
       />

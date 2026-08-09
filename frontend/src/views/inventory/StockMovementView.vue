@@ -103,7 +103,7 @@ onMounted(load)
     <UiCard v-else>
       <UiEmpty
         v-if="!movements.length"
-        icon="📜"
+        icon="history"
         title="لا توجد حركات"
         description="ستظهر هنا كل عمليات الشراء والبيع والهالك والتسويات."
       />

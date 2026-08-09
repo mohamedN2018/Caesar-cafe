@@ -45,11 +45,11 @@ interface Alert {
 
 /** What the switch will actually send. Answering this is most of the screen. */
 const WHAT_IT_SENDS = [
-  { icon: '💵', title: 'فرق في الدرج', body: 'وردية أُغلقت بعجز أو زيادة فوق الحد المسموح.' },
-  { icon: '🍳', title: 'تأخير في المطبخ', body: 'تذكرة تجاوزت الوقت المستهدف لمحطتها بفارق كبير.' },
-  { icon: '🧸', title: 'طفل تجاوز وقته', body: 'جلسة لعب استمرت بعد وقتها المتوقع.' },
-  { icon: '🖥️', title: 'جهاز غير متصل', body: 'كاشير توقف عن المزامنة لفترة طويلة.' },
-  { icon: '💾', title: 'فشل نسخة احتياطية', body: 'أهدأ عطل خطير في النظام — يصل حتى في ساعات الصمت.' },
+  { icon: 'cash', title: 'فرق في الدرج', body: 'وردية أُغلقت بعجز أو زيادة فوق الحد المسموح.' },
+  { icon: 'kitchen', title: 'تأخير في المطبخ', body: 'تذكرة تجاوزت الوقت المستهدف لمحطتها بفارق كبير.' },
+  { icon: 'kids', title: 'طفل تجاوز وقته', body: 'جلسة لعب استمرت بعد وقتها المتوقع.' },
+  { icon: 'monitor', title: 'جهاز غير متصل', body: 'كاشير توقف عن المزامنة لفترة طويلة.' },
+  { icon: 'save', title: 'فشل نسخة احتياطية', body: 'أهدأ عطل خطير في النظام — يصل حتى في ساعات الصمت.' },
 ]
 
 const auth = useAuthStore()
@@ -122,7 +122,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-ink">🔔 الإشعارات</h1>
+      <h1 class="text-2xl font-bold text-ink">الإشعارات</h1>
       <p class="mt-1 text-sm text-ink-muted">
         تابع الكافيه وأنت بعيد. الإشعارات تصل حتى والتطبيق مقفول.
       </p>
@@ -232,7 +232,7 @@ onMounted(load)
 
         <UiEmpty
           v-if="!history.length"
-          icon="🔕"
+          icon="silent"
           title="لا توجد تنبيهات"
           description="مفيش حاجة استدعت تنبيهاً — وده هو المطلوب."
         />

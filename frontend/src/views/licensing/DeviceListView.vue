@@ -95,7 +95,7 @@ onMounted(load)
     <UiCard v-else>
       <UiEmpty
         v-if="!devices.length"
-        icon="🖥️"
+        icon="monitor"
         title="لا توجد أجهزة مفعّلة"
         description="ثبّت تطبيق الديسكتوب وفعّله بمفتاح الترخيص."
       />

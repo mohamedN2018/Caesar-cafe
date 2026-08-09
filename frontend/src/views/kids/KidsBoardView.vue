@@ -134,7 +134,7 @@ onUnmounted(() => {
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">🧸 صالة الأطفال</h1>
+        <h1 class="text-2xl font-bold text-slate-900">صالة الأطفال</h1>
         <p class="mt-1 text-sm text-slate-500">
           يتحدّث كل {{ REFRESH_MS / 1000 }} ثانية. القيمة المعروضة محسوبة على الخادم.
         </p>
@@ -163,7 +163,7 @@ onUnmounted(() => {
 
     <UiEmpty
       v-else-if="!areas.length"
-      icon="🧸"
+      icon="kids"
       title="لا توجد صالة أطفال"
       description="أضف صالة من الإعدادات لتظهر هنا."
     />
@@ -204,7 +204,7 @@ onUnmounted(() => {
 
       <UiEmpty
         v-if="!board.sessions.length"
-        icon="🎈"
+        icon="balloon"
         title="الصالة فارغة"
         description="لا يوجد أطفال بالداخل الآن."
       />

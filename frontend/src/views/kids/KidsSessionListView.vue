@@ -167,7 +167,7 @@ onMounted(async () => {
       <UiCard>
         <UiEmpty
           v-if="!shown.length"
-          icon="🧸"
+          icon="kids"
           title="لا توجد جلسات"
           description="ستظهر هنا فور تسجيل أول دخول."
         />

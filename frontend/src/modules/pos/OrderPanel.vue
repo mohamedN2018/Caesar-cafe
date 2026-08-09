@@ -19,6 +19,7 @@
  */
 import { computed, ref } from 'vue'
 
+import UiIcon from '@/components/ui/UiIcon.vue'
 import { usePosStore } from '@/stores/pos'
 import { useAuthStore } from '@/stores/auth'
 
@@ -143,7 +144,9 @@ async function discount() {
             <small v-if="item.modifiers.length" class="mods">
               {{ item.modifiers.map((m) => m.name_snapshot).join('، ') }}
             </small>
-            <small v-if="item.note" class="mods">📝 {{ item.note }}</small>
+            <small v-if="item.note" class="mods">
+              <UiIcon name="note" size="0.85rem" /> {{ item.note }}
+            </small>
             <small v-if="item.price_override !== null" class="manual">
               سعر يدوي{{ item.price_override_reason ? ` — ${item.price_override_reason}` : '' }}
             </small>

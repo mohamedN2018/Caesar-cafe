@@ -232,7 +232,7 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">👥 الموظفون والصلاحيات</h1>
+      <h1 class="text-2xl font-bold text-slate-900">الموظفون والصلاحيات</h1>
       <p class="mt-1 text-sm text-slate-500">
         رمز الدخول لا يُعرض أبداً بعد تعيينه — يُخزَّن مُجزّأً، تماماً ككلمة المرور.
       </p>
@@ -270,7 +270,7 @@ onMounted(load)
     <template v-else-if="tab === 'people'">
       <UiEmpty
         v-if="!staff.length"
-        icon="👥"
+        icon="users"
         title="لا يوجد موظفون"
         description="أنشئ حساباً لأول كاشير ليبدأ العمل."
       />

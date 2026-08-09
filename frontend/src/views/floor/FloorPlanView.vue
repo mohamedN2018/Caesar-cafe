@@ -199,7 +199,7 @@ onUnmounted(() => window.clearInterval(polling))
   <div class="space-y-5">
     <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 class="text-2xl font-bold text-ink">🪑 الطاولات</h1>
+        <h1 class="text-2xl font-bold text-ink">الطاولات</h1>
         <p class="mt-1 text-sm text-ink-muted">
           {{ busyCount }} مشغولة من {{ shown.length }}
         </p>
@@ -235,7 +235,7 @@ onUnmounted(() => window.clearInterval(polling))
     <template v-else>
       <UiEmpty
         v-if="!shown.length"
-        icon="🪑"
+        icon="table"
         title="لا توجد طاولات"
         description="أضف طاولة لتظهر هنا وعلى شاشة الكاشير."
       />

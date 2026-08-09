@@ -211,7 +211,7 @@ function setList(key: string, text: string) {
         <input
           v-model="search"
           type="search"
-          placeholder="🔍 بحث في الإعدادات…"
+          placeholder="بحث في الإعدادات…"
           class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm
                  focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
         />
