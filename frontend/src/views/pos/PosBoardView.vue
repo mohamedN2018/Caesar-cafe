@@ -124,7 +124,18 @@ onMounted(async () => {
             @click="tap(product)"
           >
             <span class="tile-name">{{ product.name_ar }}</span>
-            <span class="tile-price tabular-nums">{{ priceOf(product) }}</span>
+            <span class="tile-foot">
+              <span class="tile-price tabular-nums">{{ priceOf(product) }}</span>
+              <!--
+                Where it gets MADE, not which tab it sits under. The two are
+                different axes on purpose — a caesar salad is filed under food
+                and made at the cold bar — and this is the line that tells a
+                cashier a ticket is about to print somewhere nobody is standing.
+              -->
+              <span v-if="product.station_name" class="tile-station">
+                {{ product.station_name }}
+              </span>
+            </span>
             <span v-if="needsChoice(product)" class="tile-hint">أحجام</span>
           </button>
         </div>
@@ -252,10 +263,26 @@ onMounted(async () => {
   line-height: 1.3;
 }
 
+.tile-foot {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.4rem;
+  width: 100%;
+}
+
 .tile-price {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--brand-700);
+}
+
+.tile-station {
+  font-size: 0.68rem;
+  color: var(--ink-faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .tile-hint {

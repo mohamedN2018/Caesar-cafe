@@ -42,6 +42,7 @@ from apps.kitchen.models import Station
 from apps.orders.models import EventType, Order
 from apps.organizations.models import Branch, Organization
 from apps.payments.models import PaymentMethod
+from apps.printing.models import Printer
 from apps.purchasing.models import GoodsReceipt, GRLine
 from apps.recipes.models import Recipe, RecipeLine
 from apps.shifts.models import Shift
@@ -69,24 +70,50 @@ STAFF = [
     ("accountant@caesar.test", "نهى مصطفى", "ACCOUNTANT", "8888"),
 ]
 
+#: (code, name, target prep minutes, auto-accept)
+#:
+#: The targets differ on purpose and the difference is the whole point: an
+#: espresso is late at four minutes and a grilled order is not late at ten. One
+#: global target would leave the kitchen permanently red and the bar permanently
+#: green, and at that point nobody reads the colour at all.
+#:
+#: Auto-accept is on for the two bars, off for the two that cook. A barista
+#: standing at the machine sees the ticket appear and starts; there is nothing
+#: for a tap to add. A kitchen accepting a ticket is a cook saying "mine", which
+#: is real information on a line with three people on it.
 STATIONS = [
     ("COFFEE", "بار القهوة", 4, True),
+    ("COLD", "بار العصائر والبارد", 5, True),
     ("HOT", "المطبخ الساخن", 12, False),
-    ("COLD", "البارد والعصائر", 5, True),
-    ("DESSERT", "الحلويات", 8, False),
+    ("DESSERT", "بار الحلويات", 8, False),
 ]
 
 #: (category, colour, [(sku, name, station, [(variant, price)])])
+#:
+#: **The station on every line is the routing rule, not a label.** It decides
+#: which bar the ticket prints at when the order is fired, so a dessert filed
+#: under the coffee bar is a waffle nobody is making while the barista wonders
+#: why there is a cake on their slip. The categories are how a cashier finds an
+#: item; the stations are how the kitchen finds out about it, and the two are
+#: deliberately not the same axis — a caesar salad lives under food and is made
+#: at the cold bar.
 MENU = [
     (
         "مشروبات ساخنة",
         "#7b1e28",
         [
             ("ESP", "إسبريسو", "COFFEE", [("سنجل", "35.00"), ("دوبل", "50.00")]),
+            ("AMER", "أمريكانو", "COFFEE", [("", "45.00")]),
             ("CAPP", "كابتشينو", "COFFEE", [("وسط", "60.00"), ("كبير", "75.00")]),
             ("LATTE", "لاتيه", "COFFEE", [("وسط", "65.00"), ("كبير", "80.00")]),
-            ("TURK", "قهوة تركي", "COFFEE", [("", "40.00")]),
+            ("MOCHA", "موكا", "COFFEE", [("", "80.00")]),
+            ("MACCH", "ماكياتو", "COFFEE", [("", "55.00")]),
+            ("TURK", "قهوة تركي", "COFFEE", [("سادة", "40.00"), ("مضبوط", "40.00")]),
+            ("FRENCH", "قهوة فرنساوي", "COFFEE", [("", "55.00")]),
             ("TEA", "شاي", "COFFEE", [("", "25.00")]),
+            ("GREENTEA", "شاي أخضر", "COFFEE", [("", "35.00")]),
+            ("HERBAL", "أعشاب", "COFFEE", [("ينسون", "30.00"), ("نعناع", "30.00")]),
+            ("SAHLAB", "سحلب", "COFFEE", [("", "65.00")]),
             ("HOTCHOC", "هوت شوكليت", "COFFEE", [("", "70.00")]),
         ],
     ),
@@ -95,9 +122,15 @@ MENU = [
         "#1f6f8b",
         [
             ("ICEDLAT", "آيس لاتيه", "COLD", [("", "75.00")]),
-            ("FRAPP", "فرابتشينو", "COLD", [("", "85.00")]),
+            ("ICEDAM", "آيس أمريكانو", "COLD", [("", "60.00")]),
+            ("FRAPP", "فرابتشينو", "COLD", [("كراميل", "85.00"), ("شوكولاتة", "85.00")]),
+            ("MILKSH", "ميلك شيك", "COLD", [("فراولة", "80.00"), ("شوكولاتة", "80.00")]),
             ("MANGO", "عصير مانجو", "COLD", [("", "55.00")]),
+            ("ORANGE", "عصير برتقال", "COLD", [("", "50.00")]),
+            ("STRAW", "عصير فراولة", "COLD", [("", "55.00")]),
+            ("COCKTAIL", "كوكتيل فواكه", "COLD", [("", "70.00")]),
             ("LEMON", "ليمون بالنعناع", "COLD", [("", "45.00")]),
+            ("SOFT", "مشروب غازي", "COLD", [("", "30.00")]),
             ("WATER", "مياه معدنية", "COLD", [("صغير", "15.00"), ("كبير", "25.00")]),
         ],
     ),
@@ -107,9 +140,17 @@ MENU = [
         [
             ("CLUB", "كلوب ساندوتش", "HOT", [("", "150.00")]),
             ("BURGER", "برجر لحم", "HOT", [("سنجل", "165.00"), ("دوبل", "230.00")]),
+            ("CHICKSAND", "ساندوتش فراخ", "HOT", [("", "140.00")]),
             ("PASTA", "مكرونة بالفراخ", "HOT", [("", "180.00")]),
-            ("FRIES", "بطاطس", "HOT", [("", "60.00")]),
+            ("PENNE", "بيني بالصوص الأحمر", "HOT", [("", "160.00")]),
+            ("GRILL", "صدور مشوية", "HOT", [("", "210.00")]),
+            ("FRIES", "بطاطس", "HOT", [("عادي", "60.00"), ("بالجبنة", "85.00")]),
+            ("WEDGES", "بطاطس ودجز", "HOT", [("", "70.00")]),
+            ("OMLET", "أومليت", "HOT", [("", "90.00")]),
+            # Made at the cold bar, sold under food. The category is how the
+            # cashier finds it; the station is who makes it.
             ("SALAD", "سلطة سيزر", "COLD", [("", "120.00")]),
+            ("TUNASAL", "سلطة تونة", "COLD", [("", "115.00")]),
         ],
     ),
     (
@@ -118,9 +159,34 @@ MENU = [
         [
             ("CHEESE", "تشيز كيك", "DESSERT", [("", "95.00")]),
             ("BROWNIE", "براوني", "DESSERT", [("", "85.00")]),
-            ("WAFFLE", "وافل", "DESSERT", [("", "110.00")]),
+            ("WAFFLE", "وافل", "DESSERT", [("نوتيلا", "110.00"), ("عسل", "95.00")]),
+            ("PANCAKE", "بان كيك", "DESSERT", [("", "100.00")]),
+            ("CREPE", "كريب", "DESSERT", [("نوتيلا", "105.00"), ("فراولة", "115.00")]),
+            ("KONAFA", "كنافة بالمانجو", "DESSERT", [("", "120.00")]),
+            ("UMALI", "أم علي", "DESSERT", [("", "90.00")]),
+            ("ICECREAM", "آيس كريم", "DESSERT", [("كورة", "35.00"), ("٣ كور", "90.00")]),
         ],
     ),
+]
+
+#: (code, name, kind, station codes it serves, is the default for its kind)
+#:
+#: Seeded so the printer registry is populated on a fresh demo rather than being
+#: a screen with nothing in it. One receipt roll at the till, and a printer at
+#: each bar that makes something — which is what makes the routing rule in
+#: `printing/registry.py` observable instead of theoretical.
+#:
+#: The two bars that make drinks share a printer: they stand next to each other,
+#: and a second machine two feet away is a cost with no benefit. That is exactly
+#: the case a per-station `printer_name` string could not express and the
+#: registry's many-to-many can.
+PRINTERS = [
+    ("CASHIER", "طابعة الكاشير", "RECEIPT", [], True),
+    # The default for KITCHEN, so a ticket from a station nobody assigned still
+    # prints somewhere a person is standing rather than waiting in the queue.
+    ("BAR", "طابعة البار", "KITCHEN", ["COFFEE", "COLD"], True),
+    ("KITCHEN", "طابعة المطبخ", "KITCHEN", ["HOT"], False),
+    ("SWEETS", "طابعة الحلويات", "KITCHEN", ["DESSERT"], False),
 ]
 
 #: (code, name, base unit, purchase unit, cost per purchase unit)
@@ -223,6 +289,7 @@ class Command(BaseCommand):
             roles = ensure_system_roles(org)
             staff = self._staff(org, branch, roles)
             stations = self._stations(org, branch)
+            self._printers(org, branch, stations)
             units = self._units(org)
             items = self._stock(org, branch, units)
             menu = self._menu(org, branch, stations)
@@ -265,9 +332,15 @@ class Command(BaseCommand):
         reviewable, and a new model that this misses fails loudly on the next
         reset rather than quietly leaving half a cafe behind.
 
-        Master data (menu, floor, staff, stock items) is LEFT ALONE — the seed's
-        builders are all `get_or_create`, so they adopt what is already there.
-        Only the trading is thrown away, which is the part that collides.
+        **The catalogue goes too, and that is not the same call as the rest.**
+        Staff, floor, stock items and units are things a person may have edited
+        in the demo and would be annoyed to lose. The menu is not: it is defined
+        by the `MENU` table in this file, the seed owns it outright, and
+        `get_or_create` adopting a STALE menu is a real bug rather than a
+        courtesy — adding a second variant to a product whose old single variant
+        is still flagged default collides on `one_default_variant_per_product`,
+        and the seed refuses to run at all. Data this command authors, this
+        command rebuilds.
         """
         org = Organization.objects.filter(name_ar="كافيه القيصر").first()
         if org is None:
@@ -304,6 +377,25 @@ class Command(BaseCommand):
         for rollup in (SalesDaily, ProductDaily, HourlyDaily):
             rollup.objects.filter(branch_id__in=branches).delete()
         ChangeLog.objects.filter(branch_id__in=branches).delete()
+
+        # The catalogue, which this command authors — bottom up, because every
+        # link in the chain is PROTECT. That is the right setting for a live
+        # cafe (a product that has ever been sold must not vanish and orphan its
+        # line items) and it means a reset has to name each level rather than
+        # lean on a cascade that deliberately is not there.
+        #
+        # A play area points at the variant its sessions are billed as, and a
+        # recipe at the variant it makes; both let go first.
+        PlayArea.objects.filter(branch_id__in=branches).update(
+            billing_variant=None, socks_variant=None
+        )
+        Recipe.objects.filter(variant__product__branch_id__in=branches).delete()
+        Printer.all_objects.filter(branch_id__in=branches).delete()
+        ProductVariant.objects.filter(product__branch_id__in=branches).delete()
+        Product.all_objects.filter(branch_id__in=branches).delete()
+        Category.all_objects.filter(branch_id__in=branches).delete()
+        Modifier.objects.filter(group__branch_id__in=branches).delete()
+        ModifierGroup.objects.filter(branch_id__in=branches).delete()
 
         # The audit trail is NOT touched. `AuditLog.delete()` raises on purpose,
         # and a reset command that reached around that would be the first crack
@@ -388,8 +480,17 @@ class Command(BaseCommand):
         return people
 
     def _stations(self, org, branch) -> dict[str, Station]:
+        """
+        `update_or_create`, not `get_or_create`.
+
+        A station is seed-owned data like the menu is: renaming one in the
+        `STATIONS` table above and having the database keep the old name is not
+        a courtesy, it is the seed lying about what it just built. Deleting them
+        instead would take the kitchen tickets with them, which is a worse
+        answer for a rename.
+        """
         return {
-            code: Station.objects.get_or_create(
+            code: Station.objects.update_or_create(
                 organization=org,
                 branch=branch,
                 code=code,
@@ -402,6 +503,33 @@ class Command(BaseCommand):
             )[0]
             for index, (code, name, target, auto) in enumerate(STATIONS)
         }
+
+    def _printers(self, org, branch, stations) -> None:
+        """
+        Give the branch its printers, so the registry screen has something true
+        on it and firing an order actually routes somewhere.
+
+        The device paths are the Linux defaults, which will be wrong on a real
+        Windows till — deliberately. Each terminal overrides its own port from
+        the local binding screen, because a serial port is a property of a
+        machine and not of a cafe, and a branch-wide guess would be wrong on two
+        terminals out of three.
+        """
+        for index, (code, name, kind, station_codes, is_default) in enumerate(PRINTERS):
+            printer, _ = Printer.objects.get_or_create(
+                organization=org,
+                branch=branch,
+                code=code,
+                defaults={
+                    "name_ar": name,
+                    "kind": kind,
+                    "connection": "USB",
+                    "device_path": f"/dev/usb/lp{index}",
+                    "paper_width_mm": 80,
+                    "is_default": is_default,
+                },
+            )
+            printer.stations.set([stations[c] for c in station_codes])
 
     def _units(self, org) -> dict[str, Unit]:
         specs = [

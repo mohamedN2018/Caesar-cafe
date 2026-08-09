@@ -35,6 +35,8 @@ export interface Product {
   category: string
   category_name: string
   station: string | null
+  /** Where it is MADE. The routing rule, shown on the tile. */
+  station_name: string | null
   name_ar: string
   sku: string
   is_sellable: boolean
