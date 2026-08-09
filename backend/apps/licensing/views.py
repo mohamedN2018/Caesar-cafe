@@ -66,7 +66,7 @@ def _acting_user(request: Request):
 
 def _org_licenses(request: Request):
     """Every licence query is scoped to the caller's organization (threat I1)."""
-    return License.objects.filter(organization_id=auth_context(request).organization_id)
+    return License.objects.filter(organization_id=auth_context(request).require_organization())
 
 
 # ── device-facing ────────────────────────────────────────────────────────────
@@ -273,7 +273,7 @@ class LicenseListView(APIView):
 
         from apps.organizations.models import Branch, Organization
 
-        organization = Organization.objects.get(id=principal.organization_id)
+        organization = Organization.objects.get(id=principal.require_organization())
         branch = None
         if branch_id := data.get("branch_id"):
             branch = Branch.objects.filter(id=branch_id, organization=organization).first()
@@ -422,7 +422,7 @@ class DeviceListView(APIView):
     @extend_schema(summary="List activated devices", responses={200: DeviceSerializer(many=True)})
     def get(self, request: Request) -> Response:
         devices = Device.objects.filter(
-            license__organization_id=auth_context(request).organization_id
+            license__organization_id=auth_context(request).require_organization()
         ).select_related("license", "branch")
         return Response(DeviceSerializer(devices, many=True).data)
 
@@ -437,7 +437,7 @@ class DeviceActionView(APIView):
     def post(self, request: Request, pk, action: str) -> Response:
         device = (
             Device.objects.filter(
-                id=pk, license__organization_id=auth_context(request).organization_id
+                id=pk, license__organization_id=auth_context(request).require_organization()
             )
             .select_related("license")
             .first()

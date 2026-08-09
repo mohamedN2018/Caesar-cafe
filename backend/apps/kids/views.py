@@ -407,7 +407,9 @@ class TariffPreviewView(APIView):
     )
     def get(self, request: Request, pk) -> Response:
         principal = auth_context(request)
-        tariff = PlayTariff.objects.filter(id=pk, area__branch_id=principal.branch_id).first()
+        tariff = PlayTariff.objects.filter(
+            id=pk, area__branch_id=principal.require_branch()
+        ).first()
         if tariff is None:
             raise NotFoundError("التعريفة غير موجودة", code="TARIFF_NOT_FOUND")
 
@@ -441,7 +443,7 @@ class KidsReportView(APIView):
         from apps.organizations.models import Branch
 
         principal = auth_context(request)
-        branch = Branch.objects.filter(id=principal.branch_id).first()
+        branch = Branch.objects.filter(id=principal.require_branch()).first()
         if branch is None:
             raise NotFoundError("الفرع غير موجود", code="BRANCH_NOT_FOUND")
 

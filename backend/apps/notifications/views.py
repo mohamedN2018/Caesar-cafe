@@ -153,5 +153,5 @@ class AlertHistoryView(APIView):
     @extend_schema(summary="Recent alerts", responses={200: SentAlertSerializer(many=True)})
     def get(self, request: Request) -> Response:
         principal = auth_context(request)
-        rows = SentAlert.objects.filter(branch_id=principal.branch_id)[:100]
+        rows = SentAlert.objects.filter(branch_id=principal.require_branch())[:100]
         return Response(SentAlertSerializer(rows, many=True).data)

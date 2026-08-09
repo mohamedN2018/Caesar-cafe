@@ -115,9 +115,9 @@ class PaymentView(APIView):
         elif not principal.has("payments.view_all"):
             raise PermissionDeniedError("ليس لديك صلاحية: payments.view_all")
 
-        payments = Payment.objects.filter(order__branch_id=principal.branch_id).select_related(
-            "method", "order", "received_by"
-        )
+        payments = Payment.objects.filter(
+            order__branch_id=principal.require_branch()
+        ).select_related("method", "order", "received_by")
 
         if order_id:
             payments = payments.filter(order_id=order_id)
@@ -184,7 +184,7 @@ class RefundView(APIView):
     @extend_schema(summary="List refunds", responses={200: RefundSerializer(many=True)})
     def get(self, request: Request) -> Response:
         principal = auth_context(request)
-        refunds = Refund.objects.filter(order__branch_id=principal.branch_id).select_related(
+        refunds = Refund.objects.filter(order__branch_id=principal.require_branch()).select_related(
             "order", "refunded_by", "approved_by"
         )
         return Response(RefundSerializer(refunds[:200], many=True).data)
@@ -225,9 +225,9 @@ class InvoiceListView(APIView):
     @extend_schema(summary="List invoices", responses={200: InvoiceSerializer(many=True)})
     def get(self, request: Request) -> Response:
         principal = auth_context(request)
-        invoices = Invoice.objects.filter(order__branch_id=principal.branch_id).select_related(
-            "order"
-        )
+        invoices = Invoice.objects.filter(
+            order__branch_id=principal.require_branch()
+        ).select_related("order")
 
         if date_from := request.query_params.get("date_from"):
             invoices = invoices.filter(issued_at__gte=date_from)
@@ -245,7 +245,7 @@ class InvoiceDetailView(APIView):
     def get(self, request: Request, pk) -> Response:
         principal = auth_context(request)
         invoice = (
-            Invoice.objects.filter(id=pk, order__branch_id=principal.branch_id)
+            Invoice.objects.filter(id=pk, order__branch_id=principal.require_branch())
             .select_related("order")
             .first()
         )

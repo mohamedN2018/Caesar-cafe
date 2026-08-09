@@ -197,7 +197,7 @@ class MeView(APIView):
     @extend_schema(summary="Current principal", responses={200: MeSerializer})
     def get(self, request: Request) -> Response:
         context = auth_context(request)
-        user = User.objects.get(id=context.user_id)
+        user = User.objects.get(id=context.require_user())
 
         roles = list(RoleAssignment.objects.filter(user=user).values_list("role__code", flat=True))
 
@@ -230,7 +230,7 @@ class ChangePasswordView(APIView):
     )
     def post(self, request: Request) -> Response:
         data = _validated(ChangePasswordSerializer, request)
-        user = User.objects.get(id=auth_context(request).user_id)
+        user = User.objects.get(id=auth_context(request).require_user())
 
         if not user.check_password(data["current_password"]):
             raise services.AuthenticationFailed("كلمة المرور الحالية غير صحيحة")
@@ -259,7 +259,7 @@ class SetPinView(APIView):
     )
     def post(self, request: Request) -> Response:
         data = _validated(SetPinSerializer, request)
-        user = User.objects.get(id=auth_context(request).user_id)
+        user = User.objects.get(id=auth_context(request).require_user())
 
         if not user.check_password(data["current_password"]):
             raise services.AuthenticationFailed("كلمة المرور غير صحيحة")
@@ -321,7 +321,7 @@ class VerifyPinView(APIView):
             raise AppError("صلاحية غير معروفة", code="UNKNOWN_PERMISSION")
 
         approver = User.objects.filter(
-            id=data["user_id"], is_active=True, organization_id=context.organization_id
+            id=data["user_id"], is_active=True, organization_id=context.require_organization()
         ).first()
         if approver is None:
             raise services.AuthenticationFailed()
@@ -398,7 +398,7 @@ class MFASetupView(APIView):
         responses={200: MFASetupSerializer},
     )
     def post(self, request: Request) -> Response:
-        user = User.objects.get(id=auth_context(request).user_id)
+        user = User.objects.get(id=auth_context(request).require_user())
 
         if user.mfa_enabled:
             raise AppError("التحقق بخطوتين مفعّل بالفعل", code="MFA_ALREADY_ENABLED")
@@ -433,7 +433,7 @@ class MFAConfirmView(APIView):
     @transaction.atomic
     def post(self, request: Request) -> Response:
         data = _validated(MFAConfirmSerializer, request)
-        user = User.objects.select_for_update().get(id=auth_context(request).user_id)
+        user = User.objects.select_for_update().get(id=auth_context(request).require_user())
 
         if not user.mfa_secret:
             raise AppError("ابدأ التفعيل أولاً", code="MFA_NOT_STARTED")
@@ -465,7 +465,7 @@ class MFADisableView(APIView):
         responses={200: SimpleResultSerializer, 403: None},
     )
     def post(self, request: Request) -> Response:
-        user = User.objects.get(id=auth_context(request).user_id)
+        user = User.objects.get(id=auth_context(request).require_user())
         password = request.data.get("current_password", "")
 
         if not user.check_password(password):
@@ -497,7 +497,7 @@ class SessionListView(APIView):
         from .models import TokenFamily
 
         families = TokenFamily.objects.filter(
-            user_id=auth_context(request).user_id, revoked_at__isnull=True
+            user_id=auth_context(request).require_user(), revoked_at__isnull=True
         ).order_by("-created_at")[:50]
 
         return Response(

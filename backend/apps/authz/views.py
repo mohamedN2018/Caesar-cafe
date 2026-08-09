@@ -194,7 +194,7 @@ class StaffViewSet(viewsets.ModelViewSet):
             )
 
         role = Role.objects.filter(
-            organization_id=principal.organization_id, code=data["role"]
+            organization_id=principal.require_organization(), code=data["role"]
         ).first()
         if role is None:
             raise NotFoundError("الدور غير موجود", code="ROLE_NOT_FOUND")
@@ -298,14 +298,17 @@ class StaffViewSet(viewsets.ModelViewSet):
 
         user = self.get_object()
         role = Role.objects.filter(
-            id=request.data.get("role"), organization_id=principal.organization_id
+            id=request.data.get("role"), organization_id=principal.require_organization()
         ).first()
         if role is None:
             raise NotFoundError("الدور غير موجود", code="ROLE_NOT_FOUND")
 
         branch_id = request.data.get("branch") or None
         RoleAssignment.objects.get_or_create(
-            user=user, role=role, branch_id=branch_id, defaults={"created_by_id": principal.user_id}
+            user=user,
+            role=role,
+            branch_id=branch_id,
+            defaults={"created_by_id": principal.require_user()},
         )
         services.invalidate_user(user.id)
 

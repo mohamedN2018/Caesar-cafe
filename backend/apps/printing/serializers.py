@@ -54,7 +54,7 @@ class PrinterSerializer(serializers.ModelSerializer):
         sharing one in a branch makes those lines ambiguous forever.
         """
         principal = auth_context(self.context["request"])
-        clash = Printer.all_objects.filter(branch_id=principal.branch_id, code=value)
+        clash = Printer.all_objects.filter(branch_id=principal.require_branch(), code=value)
         if self.instance:
             clash = clash.exclude(pk=self.instance.pk)
 

@@ -57,7 +57,7 @@ class StockLevelView(APIView):
     def get(self, request: Request) -> Response:
         principal = auth_context(request)
         levels = StockLevel.objects.select_related("item", "item__base_unit").filter(
-            item__branch_id=principal.branch_id, item__is_active=True
+            item__branch_id=principal.require_branch(), item__is_active=True
         )
 
         if request.query_params.get("low_stock") == "true":
@@ -76,7 +76,7 @@ class StockMovementView(APIView):
     def get(self, request: Request) -> Response:
         principal = auth_context(request)
         movements = StockMovement.objects.select_related("item", "user").filter(
-            branch_id=principal.branch_id
+            branch_id=principal.require_branch()
         )
 
         if item_id := request.query_params.get("item"):
@@ -185,7 +185,7 @@ class ReconciliationView(APIView):
         from apps.organizations.models import Branch
 
         principal = auth_context(request)
-        branch = Branch.objects.filter(id=principal.branch_id).first()
+        branch = Branch.objects.filter(id=principal.require_branch()).first()
         drifts = services.reconcile(branch)
 
         return Response(
@@ -211,7 +211,7 @@ class ReconciliationView(APIView):
 def _get_item(request: Request, item_id) -> InventoryItem:
     principal = auth_context(request)
     item = (
-        InventoryItem.all_objects.filter(id=item_id, branch_id=principal.branch_id)
+        InventoryItem.all_objects.filter(id=item_id, branch_id=principal.require_branch())
         .select_related("base_unit")
         .first()
     )

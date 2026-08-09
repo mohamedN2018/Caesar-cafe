@@ -49,7 +49,7 @@ class AuditLogListView(APIView):
     )
     def get(self, request: Request) -> Response:
         principal = auth_context(request)
-        rows = AuditLog.objects.filter(organization_id=principal.organization_id)
+        rows = AuditLog.objects.filter(organization_id=principal.require_organization())
 
         if principal.is_superuser:
             # Org-less rows — a failed login against an address that belongs to
@@ -94,7 +94,7 @@ class AuditLogDetailView(APIView):
     def get(self, request: Request, pk: int) -> Response:
         principal = auth_context(request)
         row = (
-            AuditLog.objects.filter(id=pk, organization_id=principal.organization_id)
+            AuditLog.objects.filter(id=pk, organization_id=principal.require_organization())
             .select_related("actor")
             .first()
         )

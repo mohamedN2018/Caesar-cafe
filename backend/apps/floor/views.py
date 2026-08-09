@@ -39,7 +39,7 @@ def _acting_user(request: Request):
 
 
 def _tables(request: Request):
-    return Table.objects.filter(area__branch_id=auth_context(request).branch_id)
+    return Table.objects.filter(area__branch_id=auth_context(request).require_branch())
 
 
 class AreaViewSet(BranchScopedViewSet):
@@ -197,7 +197,7 @@ class SessionCloseView(APIView):
         principal = auth_context(request)
         session = (
             TableSession.objects.filter(
-                id=pk, table__area__branch_id=principal.branch_id, closed_at__isnull=True
+                id=pk, table__area__branch_id=principal.require_branch(), closed_at__isnull=True
             )
             .select_related("table")
             .first()
@@ -254,7 +254,7 @@ class SessionTransferView(APIView):
         principal = auth_context(request)
         session = (
             TableSession.objects.filter(
-                id=pk, table__area__branch_id=principal.branch_id, closed_at__isnull=True
+                id=pk, table__area__branch_id=principal.require_branch(), closed_at__isnull=True
             )
             .select_related("table")
             .first()
@@ -319,7 +319,7 @@ def _open_session(request: Request, session_id) -> TableSession:
     session = (
         TableSession.objects.filter(
             id=session_id,
-            table__area__branch_id=auth_context(request).branch_id,
+            table__area__branch_id=auth_context(request).require_branch(),
             closed_at__isnull=True,
         )
         .select_related("table")

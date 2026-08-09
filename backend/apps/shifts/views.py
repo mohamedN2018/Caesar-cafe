@@ -84,7 +84,9 @@ class OpenShiftView(APIView):
         principal = auth_context(request)
 
         branch = (
-            Branch.objects.filter(id=principal.branch_id).select_related("organization").first()
+            Branch.objects.filter(id=principal.require_branch())
+            .select_related("organization")
+            .first()
         )
         if branch is None:
             raise AppError("يجب اختيار الفرع أولاً", code="BRANCH_REQUIRED")

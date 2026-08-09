@@ -51,7 +51,9 @@ def _branch(request: Request):
     from apps.organizations.models import Branch
 
     principal = auth_context(request)
-    branch = Branch.objects.filter(id=principal.branch_id).select_related("organization").first()
+    branch = (
+        Branch.objects.filter(id=principal.require_branch()).select_related("organization").first()
+    )
     if branch is None:
         raise AppError("يجب اختيار الفرع أولاً", code="BRANCH_REQUIRED")
     return branch
@@ -115,7 +117,7 @@ class OrderListView(APIView):
             from apps.floor.models import TableSession
 
             table_session = TableSession.objects.filter(
-                id=session_id, table__area__branch_id=principal.branch_id
+                id=session_id, table__area__branch_id=principal.require_branch()
             ).first()
             if table_session is None:
                 raise NotFoundError("الجلسة غير موجودة", code="SESSION_NOT_FOUND")

@@ -37,7 +37,7 @@ def _acting_user(request: Request):
 def _get_ticket(request: Request, pk) -> KitchenTicket:
     principal = auth_context(request)
     ticket = (
-        KitchenTicket.objects.filter(id=pk, branch_id=principal.branch_id)
+        KitchenTicket.objects.filter(id=pk, branch_id=principal.require_branch())
         .select_related("station", "order", "order__table_session__table")
         .prefetch_related("lines")
         .first()
@@ -62,7 +62,7 @@ class TicketListView(APIView):
     def get(self, request: Request) -> Response:
         principal = auth_context(request)
         tickets = (
-            KitchenTicket.objects.filter(branch_id=principal.branch_id)
+            KitchenTicket.objects.filter(branch_id=principal.require_branch())
             .select_related("station", "order", "order__table_session__table")
             .prefetch_related("lines")
         )
@@ -155,7 +155,7 @@ class PerformanceView(APIView):
         from apps.organizations.models import Branch
 
         principal = auth_context(request)
-        branch = Branch.objects.filter(id=principal.branch_id).first()
+        branch = Branch.objects.filter(id=principal.require_branch()).first()
         if branch is None:
             raise NotFoundError("الفرع غير موجود", code="BRANCH_NOT_FOUND")
 

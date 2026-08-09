@@ -124,7 +124,7 @@ class VariantRecipeView(APIView):
         principal = auth_context(request)
         recipe = (
             Recipe.objects.filter(
-                variant_id=variant_id, variant__product__branch_id=principal.branch_id
+                variant_id=variant_id, variant__product__branch_id=principal.require_branch()
             )
             .select_related("variant")
             .prefetch_related("lines__item", "lines__unit")

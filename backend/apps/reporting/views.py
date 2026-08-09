@@ -49,7 +49,7 @@ DATE_PARAMS = [
 
 def _branch(request: Request) -> Branch:
     principal = auth_context(request)
-    branch = Branch.objects.filter(id=principal.branch_id).first()
+    branch = Branch.objects.filter(id=principal.require_branch()).first()
     if branch is None:
         raise AppError("يجب اختيار الفرع أولاً", code="BRANCH_REQUIRED", status_code=400)
     return branch

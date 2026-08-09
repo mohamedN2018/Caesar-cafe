@@ -51,7 +51,7 @@ def _acting_user(request: Request):
 def _branch(request: Request):
     from apps.organizations.models import Branch
 
-    branch = Branch.objects.filter(id=auth_context(request).branch_id).first()
+    branch = Branch.objects.filter(id=auth_context(request).require_branch()).first()
     if branch is None:
         raise NotFoundError("الفرع غير موجود", code="BRANCH_NOT_FOUND")
     return branch
