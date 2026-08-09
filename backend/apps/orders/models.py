@@ -21,10 +21,8 @@ from decimal import Decimal
 from django.db import models
 
 from apps.core.models import BaseModel, TenantScopedModel, uuid7
-
-MONEY = {"max_digits": 12, "decimal_places": 2}
-QUANTITY = {"max_digits": 10, "decimal_places": 3}
-PERCENT = {"max_digits": 5, "decimal_places": 2}
+from apps.core.precision import LINE_QUANTITY as QUANTITY
+from apps.core.precision import MONEY, PERCENT
 
 
 class OrderType(models.TextChoices):

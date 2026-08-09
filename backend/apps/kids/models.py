@@ -21,8 +21,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import BaseModel, SoftDeletableModel, TenantScopedModel, uuid7
-
-MONEY = {"max_digits": 12, "decimal_places": 2}
+from apps.core.precision import MONEY
 
 
 class PlayArea(TenantScopedModel, SoftDeletableModel):

@@ -92,6 +92,14 @@ warn_redundant_casts = true
 disallow_untyped_defs = false
 exclude = ["migrations/"]
 
+[[tool.mypy.overrides]]
+# None of these ship type information, and no stubs package exists for them.
+# Reporting that fact sixty times a run does not make it any more true; it just
+# buries the errors that are about our own code, which is the only reason to run
+# a type checker at all.
+module = ["channels.*", "celery.*", "django_celery_beat.*", "escpos.*", "arabic_reshaper.*"]
+ignore_missing_imports = true
+
 [tool.django-stubs]
 django_settings_module = "config.settings.test"
 

@@ -1385,6 +1385,99 @@ the class `TestNoReservedKeysInLogExtra` was written for in Phase 10, and it cau
 
 ---
 
+## The last two permission codes ✅ COMPLETE (2026-08-09)
+
+**Verified:** ruff + format clean · **998 backend tests** (37 new) · **525 desktop tests** (30 new) ·
+**25 frontend tests** · migrations clean · `spectacular --fail-on-warn` clean · `eslint` clean ·
+`vue-tsc` clean · `vite build` clean · vendored/brand/geometry parity clean · a clean re-seed.
+
+`NOT_YET_BUILT` is now empty. Every code in the permission catalogue is enforced by something the
+coverage guard can find, which is the point at which that guard starts being worth having.
+
+### The printer registry — `branch.manage_printers`
+
+A printer was a string typed into each Desktop. Three terminals meant three places to fix a typo,
+the day the receipt printer was replaced somebody walked to every till, and nothing on the server
+could say what the cafe owned.
+
+Printers are now branch objects on the CONFIG stream. **The device path stays per-terminal**, and
+that split is the whole design: `\\.\COM3` by the door is not the same port as at the back, so a
+branch-wide value would be wrong on two terminals out of three. The registry says what a printer IS
+and where it belongs in the workflow; `l_printer_bindings` says how this box reaches it.
+
+**Routing resolves at drain time, not enqueue.** The queue outlives the decision, and a job frozen
+onto a printer that was swapped this morning goes to a machine nobody has plugged in. The order is
+station printer → default for the kind → any active of that kind → **left queued**. Sending a
+kitchen ticket to the receipt roll puts an order slip in a customer's hand while the kitchen waits,
+so an unrouted job sitting visibly in the queue is the better failure.
+
+The exception matters more than the rule: **an empty registry means "not configured yet", not
+"configured wrong"**, and falls back to the terminal's local default. The first version did not make
+that distinction, and it would have silently stopped printing on every existing install the moment
+it upgraded — caught because six tests failed, not because anybody reasoned it through in advance.
+
+Three real defects found while building it, each one a case of a layer doing another layer's job:
+
+- The API returned **500** for a bad paper width and for a duplicate code. The database constraint
+  was correct and the interface had nothing, so a form error arrived as a crash. Both validate to
+  400 now, with the constraint kept as the backstop it should always have been.
+- **"Make this the default" collided with its own unique index**, because the demotion ran after the
+  insert. It clears the slot first now — and saves each demoted row rather than issuing one
+  `.update()`, because a queryset update fires no signals, so the change log would never learn about
+  the demotion and every terminal would go on believing in two defaults.
+- **`post_save` fires before a serializer writes a many-to-many.** Every kitchen printer therefore
+  synced with an empty station list: the one fact the whole feature exists to carry was the one fact
+  that never arrived. An `m2m_changed` receiver re-emits it.
+
+### The manual price — `orders.change_price`
+
+Discounts nearly covered this, which was exactly the problem. "Damaged cake", "staff meal" and
+"remade after a complaint" went through the discount field, and that made the discount rate
+meaningless — and the discount rate is the number an owner watches for loss.
+
+`price_override` sits **beside** `unit_price_snapshot`, never in place of it, so "what was it
+supposed to be?" is still answerable a month later after the menu changed. Zero is a legitimate
+override — a comped item — so every check is `is None` rather than falsiness; `if price:` would
+quietly charge full price for every giveaway in the cafe while looking correct. A null price clears
+it, because undoing a typo must not mean voiding a fired line and having the kitchen cook it twice.
+
+Folded identically on both sides, audited at WARNING (a step above a discount: a discount is bounded
+by a ceiling somebody set, an override is any number at all), and **step-up only** — not even a
+branch manager holds it in their role, per the catalogue's deliberate absence. Route-level
+`HasPermission` could not do it: the endpoint takes a batch, most events in it need only
+`orders.edit_items`, and gating the whole route on the rarest permission would stop ordinary selling.
+
+The invoice snapshot now prints the price **charged**. It was printing the catalogue price next to an
+overridden line total, which is a slip that visibly does not add up in a customer's hand.
+
+### Things that had never run
+
+- **`npm run lint` had never executed.** The script was written for ESLint 8's `.eslintrc`; ESLint 9
+  wants a flat config, and nothing failed loudly enough for anybody to notice. Three findings across
+  the whole codebase, all in the standard Vue shim.
+- **The frontend tests had never run in CI.** The job type-checked and built, which passes whether or
+  not the floor geometry still agrees with the Desktop's copy of it. Both are wired in now.
+
+### `seed_demo --reset`
+
+`--force` answers a different question ("mix demo data into a ledger that already has trading") and
+deliberately deletes nothing, so the second run collided on `uniq_local_number_per_branch` and a
+command written to be run repeatedly could only ever be run once.
+
+The reset deletes in explicit dependency order rather than cascading — almost every foreign key into
+an organization is `PROTECT` on purpose, and a cascade would be that same accident with a friendlier
+name. It leaves the audit trail alone: `AuditLog.delete()` raises, and a demo convenience is nowhere
+near a good enough reason to reach around the one record whose entire value is that nothing can edit
+it.
+
+### [14 — دليل التدريب](14-training.md)
+
+In Arabic, for cashier, waiter, kitchen, kids area, manager and owner. Every step says **why**,
+because a member of staff who understands the reason handles the case nobody trained them on, and
+one who memorised the steps stops the first time the screen looks different.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

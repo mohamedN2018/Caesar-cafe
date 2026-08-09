@@ -7,8 +7,7 @@ from decimal import Decimal
 from django.db import models
 
 from apps.core.models import SequentialBaseModel, SoftDeletableModel, TenantScopedModel
-
-MONEY = {"max_digits": 12, "decimal_places": 2}
+from apps.core.precision import MONEY
 
 
 class Supplier(TenantScopedModel, SoftDeletableModel):

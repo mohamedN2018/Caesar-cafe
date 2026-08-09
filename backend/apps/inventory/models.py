@@ -14,14 +14,7 @@ from decimal import Decimal
 from django.db import models
 
 from apps.core.models import BaseModel, SequentialBaseModel, SoftDeletableModel, TenantScopedModel
-
-#: Quantities carry 3 decimals: a recipe uses 18g of beans and 150ml of milk,
-#: and 2 decimals would lose grams on every drink.
-QUANTITY = {"max_digits": 14, "decimal_places": 3}
-#: Unit costs carry 4: cost per gram is fractions of a piaster, and rounding to
-#: 2 would corrupt COGS on every recipe.
-UNIT_COST = {"max_digits": 12, "decimal_places": 4}
-MONEY = {"max_digits": 12, "decimal_places": 2}
+from apps.core.precision import QUANTITY, UNIT_COST
 
 
 class Unit(BaseModel):

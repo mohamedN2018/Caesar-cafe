@@ -16,9 +16,7 @@ from django.core.validators import MinValueValidator
 from django.db import models
 
 from apps.core.models import BaseModel, SoftDeletableModel, TenantScopedModel
-
-MONEY = {"max_digits": 12, "decimal_places": 2}
-PERCENT = {"max_digits": 5, "decimal_places": 2}
+from apps.core.precision import MONEY, PERCENT
 
 
 class Category(TenantScopedModel, SoftDeletableModel):

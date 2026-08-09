@@ -13,8 +13,7 @@ from decimal import Decimal
 from django.db import models
 
 from apps.core.models import BaseModel
-
-QUANTITY = {"max_digits": 14, "decimal_places": 3}
+from apps.core.precision import QUANTITY
 
 
 class Recipe(BaseModel):

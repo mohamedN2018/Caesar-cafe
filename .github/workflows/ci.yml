@@ -101,8 +101,17 @@ jobs:
       - name: Install
         run: npm ci || npm install
 
+      - name: Lint
+        run: npm run lint
+
       - name: Type check
         run: npm run typecheck
+
+      # These were written in the same batch as the floor geometry and then
+      # never ran here — the job type-checked and built, which passes whether or
+      # not the geometry agrees with the Desktop's copy of it.
+      - name: Test
+        run: npm test
 
       - name: Build
         run: npm run build

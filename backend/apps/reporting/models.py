@@ -23,8 +23,8 @@ from decimal import Decimal
 
 from django.db import models
 
-MONEY = {"max_digits": 14, "decimal_places": 2}
-QUANTITY = {"max_digits": 14, "decimal_places": 3}
+from apps.core.precision import QUANTITY
+from apps.core.precision import WIDE_MONEY as MONEY
 
 
 class RollupBase(models.Model):

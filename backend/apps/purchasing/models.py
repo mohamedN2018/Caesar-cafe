@@ -17,10 +17,7 @@ from decimal import Decimal
 from django.db import models
 
 from apps.core.models import BaseModel, TenantScopedModel
-
-MONEY = {"max_digits": 12, "decimal_places": 2}
-QUANTITY = {"max_digits": 14, "decimal_places": 3}
-UNIT_COST = {"max_digits": 12, "decimal_places": 4}
+from apps.core.precision import QUANTITY, UNIT_COST
 
 
 class POStatus(models.TextChoices):
