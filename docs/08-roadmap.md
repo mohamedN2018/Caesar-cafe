@@ -1320,6 +1320,71 @@ now driven through the non-modal path with the guard clauses tested separately.
 
 ---
 
+## C11 — the owner watches from home ✅ COMPLETE (2026-08-09)
+
+**Verified:** ruff + format clean · **961 backend tests** (63 new) · **495 desktop tests** ·
+**25 frontend tests** · migrations clean · `spectacular --fail-on-warn` clean · `vue-tsc` clean ·
+`vite build` clean.
+
+The last named commitment with an unbuilt half. The dashboard and public TLS landed in Phases 8 and
+10; the Web Admin was not installable and there were no notifications, so "monitor the cafe from
+anywhere" meant "remember to open a browser and look".
+
+### Web Push, implemented rather than depended on
+
+RFC 8291 (message encryption) and RFC 8292 (VAPID), about a hundred lines on primitives
+`cryptography` already provides. `pywebpush` would have been four packages deep for the same thing.
+
+The reason this is defensible rather than reckless: **a Web Push encryption bug is invisible.** The
+push service accepts the request, returns 201, and the notification never appears. No error, nothing
+in a log. Both RFCs publish complete worked examples, and `tests/test_webpush.py` reproduces RFC
+8291 §5 byte for byte — which is a stronger guarantee than any amount of manual testing on a phone.
+Same reasoning as the TOTP module in Phase 2.
+
+The mistakes vectors do not catch are tested separately: a reused salt (which repeats an AES-GCM
+nonce — the one thing GCM does not survive), a DER signature where JWS wants raw R||S, and a VAPID
+audience with the subscription path in it.
+
+### Restraint is the feature
+
+An owner who gets nine notifications a night mutes the app, and then the one that mattered — the
+drawer that closed four hundred short — is muted too. So:
+
+- **Five alert kinds, not fifteen.** Cash variance, kitchen late, kids overdue, terminal offline,
+  backup failed. Sync conflicts exist but are **off by default**: the Desktop already shows them in
+  its header, and the cashier standing at the terminal is better placed than the owner at home.
+- **`SentAlert` dedupes on the SUBJECT.** The sweep runs every five minutes and re-reads the same
+  conditions; without this one late order becomes twelve notifications before anybody cooks it. The
+  INSERT is the claim, not a prior SELECT that two workers could both pass.
+- **Every threshold is a setting.** A 25-minute grill is normal in one kitchen and a complaint in
+  another. The kitchen rule adds its grace to the *station's own target*, so a coffee bar and a
+  grill cannot share one definition of late.
+- **Quiet hours silence everything except a failed backup.** Knowing at 03:00 that there is no
+  backup leaves a morning to fix it; knowing at 09:00 does not. A malformed quiet-hours window
+  fails *towards* delivery — silence is the dangerous direction for an alert system.
+
+### The install, and the one prompt you get
+
+A browser gives a site **one** notification prompt. Dismissed, the only way back is through settings
+nobody finds. So nothing is asked on page load: the service worker registers silently (which buys
+the offline shell) and the ask lives behind a button on a screen that lists what it will send.
+
+The service worker **never caches an API response**. A cached `/reports/dashboard/` is yesterday's
+takings presented as today's, and an owner making a staffing decision on a stale number is worse off
+than one who cannot load the page. Money is never served from a cache.
+
+Three platform details that are easy to miss and fatal to skip: a **maskable** icon variant, because
+Android crops to the launcher's shape and an `any`-only icon arrives with its wreath sliced off; the
+`apple-mobile-web-app-*` tags, because Safari still reads those rather than the manifest and an iOS
+install would otherwise be called "index.html"; and an explicit "add to home screen first" message
+on iOS, where Safari refuses Web Push until the site is installed.
+
+**One bug, caught by an existing guard.** `extra={"created": …}` in the subscribe view — `created`
+is a `LogRecord` attribute, and shadowing it raises `KeyError` from inside the logging call. Exactly
+the class `TestNoReservedKeysInLogExtra` was written for in Phase 10, and it caught it.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

@@ -184,6 +184,14 @@ const router = createRouter({
           meta: { permission: 'sync.view' },
         },
         {
+          // No permission: anybody signed in may ask to be told about their own
+          // branch, and gating it would mean a manager added last week
+          // wondering why their phone is silent.
+          path: 'notifications',
+          name: 'notifications',
+          component: () => import('@/views/notifications/NotificationsView.vue'),
+        },
+        {
           path: 'settings',
           name: 'settings',
           component: () => import('@/views/settings/SettingsView.vue'),

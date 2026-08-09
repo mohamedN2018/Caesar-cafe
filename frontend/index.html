@@ -3,8 +3,24 @@
 <html lang="ar" dir="rtl">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- `viewport-fit=cover` so a standalone install reaches under the notch
+         rather than sitting in a letterbox. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <title>القيصر — نظام الإدارة</title>
+
+    <!-- Installable (C11): the owner adds this to a home screen and watches the
+         cafe from it. -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <meta name="theme-color" content="#7b1e28" />
+
+    <!-- Safari still reads these rather than the manifest for the home-screen
+         title and status bar. Without them an iOS install is called
+         "index.html". -->
+    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="القيصر" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   </head>
   <body>
     <div id="app"></div>

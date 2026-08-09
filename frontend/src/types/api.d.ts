@@ -1937,6 +1937,103 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/notifications/alerts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Recent alerts
+         * @description What has been raised recently.
+         *
+         *     Management information — every cash variance and late ticket — so it needs
+         *     `reports.sales` rather than the bare session that subscribing needs.
+         */
+        get: operations["notifications_alerts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/subscriptions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Devices subscribed to alerts
+         * @description A browser asking to be told, and the list of devices already asking.
+         *
+         *     Requires a human principal: a device token belongs to a terminal in the
+         *     cafe, and a terminal does not have a pocket to buzz in.
+         */
+        get: operations["notifications_subscriptions_list"];
+        put?: never;
+        /**
+         * Subscribe this browser
+         * @description A browser asking to be told, and the list of devices already asking.
+         *
+         *     Requires a human principal: a device token belongs to a terminal in the
+         *     cafe, and a terminal does not have a pocket to buzz in.
+         */
+        post: operations["notifications_subscriptions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/subscriptions/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove a subscription
+         * @description Unsubscribing one device — "stop telling the phone I sold".
+         */
+        delete: operations["notifications_subscriptions_destroy"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/vapid-key/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * The VAPID public key
+         * @description The public application-server key.
+         *
+         *     Public by design — it is what `applicationServerKey` needs and it ends up in
+         *     every subscription the browser creates. Knowing it lets somebody create a
+         *     subscription, not read one.
+         */
+        get: operations["notifications_vapid_key_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ops/backups/": {
         parameters: {
             query?: never;
@@ -4604,6 +4701,16 @@ export interface components {
          */
         ItemTypeEnum: "RAW" | "CONSUMABLE" | "PACKAGING" | "FINISHED";
         /**
+         * @description * `CASH_VARIANCE` - CASH_VARIANCE
+         *     * `KITCHEN_LATE` - KITCHEN_LATE
+         *     * `KIDS_OVERDUE` - KIDS_OVERDUE
+         *     * `TERMINAL_OFFLINE` - TERMINAL_OFFLINE
+         *     * `BACKUP_FAILED` - BACKUP_FAILED
+         *     * `SYNC_CONFLICT` - SYNC_CONFLICT
+         * @enum {string}
+         */
+        KindEnum: "CASH_VARIANCE" | "KITCHEN_LATE" | "KIDS_OVERDUE" | "TERMINAL_OFFLINE" | "BACKUP_FAILED" | "SYNC_CONFLICT";
+        /**
          * @description * `INVOICE` - INVOICE
          *     * `PAYMENT` - PAYMENT
          *     * `RETURN` - RETURN
@@ -5896,6 +6003,15 @@ export interface components {
             failed: number;
             results: components["schemas"]["OperationResult"][];
         };
+        PushSubscription: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly label: string;
+            /** Format: date-time */
+            readonly last_sent_at: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         Recipe: {
             /** Format: uuid */
             readonly id: string;
@@ -6143,6 +6259,18 @@ export interface components {
          * @enum {string}
          */
         ScopeEnum: "ORGANIZATION" | "BRANCH" | "DEVICE" | "ROLE";
+        SentAlert: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["KindEnum"];
+            readonly kind_label: string;
+            readonly title: string;
+            readonly body: string;
+            readonly url: string;
+            readonly delivered: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         SetActiveRequest: {
             is_active: boolean;
         };
@@ -6414,6 +6542,19 @@ export interface components {
          * @enum {string}
          */
         StockMovementTypeEnum: "OPENING" | "PURCHASE" | "SALE" | "WASTE" | "ADJUSTMENT" | "RETURN" | "TRANSFER" | "COUNT";
+        /**
+         * @description Exactly what `PushSubscription.toJSON()` gives a browser, flattened.
+         *
+         *     The three fields are opaque to us and useless apart: `endpoint` names the
+         *     push service, `p256dh` is the key the payload is encrypted to, `auth` salts
+         *     the derivation.
+         */
+        SubscribeRequest: {
+            endpoint: string;
+            p256dh: string;
+            auth: string;
+            label?: string;
+        };
         Supplier: {
             /** Format: uuid */
             readonly id: string;
@@ -6689,6 +6830,11 @@ export interface components {
             by_type: {
                 [key: string]: string;
             };
+        };
+        /** @description The public half, which the browser needs to create a subscription. */
+        VapidKey: {
+            public_key: string | null;
+            configured: boolean;
         };
         /** @description Step-up approval: a manager authorizes one action for one target. */
         VerifyPinRequestRequest: {
@@ -10829,6 +10975,140 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["LicenseEvent"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    notifications_alerts_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["SentAlert"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    notifications_subscriptions_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PushSubscription"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    notifications_subscriptions_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubscribeRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["SubscribeRequest"];
+                "multipart/form-data": components["schemas"]["SubscribeRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PushSubscription"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    notifications_subscriptions_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    notifications_vapid_key_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["VapidKey"];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

@@ -36,6 +36,7 @@ api_v1 = [
     path("reports/", include("apps.reporting.urls")),
     path("audit/", include("apps.audit.urls")),
     path("ops/", include("apps.ops.urls")),
+    path("notifications/", include("apps.notifications.urls")),
     path("settings/", include("apps.configuration.urls")),
 ]
 

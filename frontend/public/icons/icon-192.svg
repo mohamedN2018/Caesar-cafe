@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="192" height="192">
+  <!--
+    كافيه القيصر. A laurel wreath around a coffee cup: the name is imperial and
+    the business is coffee, and the two together are recognisable at 48px on a
+    home screen, which is the only size that actually matters for an app icon.
+
+    SVG rather than PNG so one file serves every density. Every browser that
+    supports installable PWAs has supported SVG icons since 2021.
+  -->
+  <rect width="192" height="192" rx="112" fill="#7b1e28" />
+
+  <!-- Laurel, left and right. Drawn as leaves rather than an arc so it reads as
+       a wreath rather than a circle when the icon is scaled right down. -->
+  <g fill="none" stroke="#c9a227" stroke-width="14" stroke-linecap="round">
+    <path d="M150 340 A130 130 0 0 1 150 172" />
+    <path d="M362 340 A130 130 0 0 0 362 172" />
+  </g>
+  <g fill="#c9a227">
+    <ellipse cx="140" cy="196" rx="19" ry="11" transform="rotate(-38 140 196)" />
+    <ellipse cx="128" cy="238" rx="19" ry="11" transform="rotate(-14 128 238)" />
+    <ellipse cx="130" cy="282" rx="19" ry="11" transform="rotate(12 130 282)" />
+    <ellipse cx="148" cy="322" rx="19" ry="11" transform="rotate(38 148 322)" />
+    <ellipse cx="372" cy="196" rx="19" ry="11" transform="rotate(38 372 196)" />
+    <ellipse cx="384" cy="238" rx="19" ry="11" transform="rotate(14 384 238)" />
+    <ellipse cx="382" cy="282" rx="19" ry="11" transform="rotate(-12 382 282)" />
+    <ellipse cx="364" cy="322" rx="19" ry="11" transform="rotate(-38 364 322)" />
+  </g>
+
+  <!-- The cup. -->
+  <path
+    d="M186 206h134v58a67 67 0 0 1-67 67 67 67 0 0 1-67-67z"
+    fill="#fbf7f0"
+  />
+  <path
+    d="M320 224h20a34 34 0 0 1 0 68h-20"
+    fill="none"
+    stroke="#fbf7f0"
+    stroke-width="16"
+    stroke-linecap="round"
+  />
+  <rect x="170" y="342" width="166" height="16" rx="8" fill="#fbf7f0" />
+
+  <!-- Steam, so it reads as hot coffee rather than a bowl. -->
+  <g fill="none" stroke="#e0c268" stroke-width="11" stroke-linecap="round">
+    <path d="M222 176c-12-14 12-24 0-38" />
+    <path d="M253 170c-12-14 12-26 0-40" />
+    <path d="M284 176c-12-14 12-24 0-38" />
+  </g>
+</svg>

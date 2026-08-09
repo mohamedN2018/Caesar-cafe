@@ -1173,3 +1173,86 @@ register(
     pushes_to_desktop=True,
     high_impact=True,
 )
+
+# ── notifications (C11) ──────────────────────────────────────────────────────
+# Every threshold below is a setting because the right number is a property of
+# the cafe, not of the software. A 25-minute grill in one kitchen is normal and
+# in another is a complaint, and hardcoding either would make the alerts wrong
+# somewhere. The defaults are chosen to be quiet: an alert nobody trusts gets
+# muted, and then the one that mattered is muted too.
+
+register(
+    key="alerts.enabled",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="تفعيل التنبيهات",
+    label_en="Enable alerts",
+    help_ar="إيقافها يوقف كل الإشعارات لهذا الفرع دون حذف الاشتراكات.",
+)
+register(
+    key="alerts.kinds",
+    type=SettingType.LIST,
+    default=[
+        "CASH_VARIANCE",
+        "KITCHEN_LATE",
+        "KIDS_OVERDUE",
+        "TERMINAL_OFFLINE",
+        "BACKUP_FAILED",
+    ],
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="أنواع التنبيهات المفعّلة",
+    label_en="Enabled alert kinds",
+    help_ar="SYNC_CONFLICT مطفأة افتراضياً — التعارضات ظاهرة على الكاشير بالفعل.",
+)
+register(
+    key="alerts.cash_variance_threshold",
+    type=SettingType.DECIMAL,
+    default="50.00",
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="حد الفرق النقدي للتنبيه",
+    label_en="Cash variance alert threshold",
+    help_ar="بالجنيه. الفروق الصغيرة عادية؛ التنبيه على كل قرش يُفقد معناه.",
+)
+register(
+    key="alerts.kitchen_late_minutes",
+    type=SettingType.INTEGER,
+    default=20,
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="تأخير المطبخ الذي يستحق تنبيهاً (دقيقة)",
+    label_en="Kitchen late alert threshold",
+    help_ar="فوق الوقت المستهدف للمحطة. شاشة المطبخ تلوّن التأخير الأقل من ذلك.",
+)
+register(
+    key="alerts.kids_overdue_minutes",
+    type=SettingType.INTEGER,
+    default=30,
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="تجاوز وقت الطفل الذي يستحق تنبيهاً (دقيقة)",
+    label_en="Kids overdue alert threshold",
+)
+register(
+    key="alerts.terminal_offline_minutes",
+    type=SettingType.INTEGER,
+    default=45,
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="انقطاع الجهاز الذي يستحق تنبيهاً (دقيقة)",
+    label_en="Terminal offline alert threshold",
+    help_ar="أقل من ذلك يعني انقطاعاً عابراً؛ الجهاز يعمل ويصطف بالعمليات.",
+)
+register(
+    key="alerts.quiet_hours",
+    type=SettingType.STRING,
+    default="",
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="ساعات الصمت",
+    label_en="Quiet hours",
+    help_ar="مثل 02:00-09:00. التنبيهات تُسجَّل ولا تُرسَل خلالها — عدا فشل النسخ الاحتياطي.",
+)

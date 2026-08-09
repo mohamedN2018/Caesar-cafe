@@ -5542,6 +5542,175 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/notifications/alerts/:
+    get:
+      operationId: notifications_alerts_list
+      description: |-
+        What has been raised recently.
+
+        Management information — every cash variance and late ticket — so it needs
+        `reports.sales` rather than the bare session that subscribing needs.
+      summary: Recent alerts
+      tags:
+      - notifications
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SentAlert'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/notifications/subscriptions/:
+    get:
+      operationId: notifications_subscriptions_list
+      description: |-
+        A browser asking to be told, and the list of devices already asking.
+
+        Requires a human principal: a device token belongs to a terminal in the
+        cafe, and a terminal does not have a pocket to buzz in.
+      summary: Devices subscribed to alerts
+      tags:
+      - notifications
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PushSubscription'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: notifications_subscriptions_create
+      description: |-
+        A browser asking to be told, and the list of devices already asking.
+
+        Requires a human principal: a device token belongs to a terminal in the
+        cafe, and a terminal does not have a pocket to buzz in.
+      summary: Subscribe this browser
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SubscribeRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PushSubscription'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/notifications/subscriptions/{id}/:
+    delete:
+      operationId: notifications_subscriptions_destroy
+      description: Unsubscribing one device — "stop telling the phone I sold".
+      summary: Remove a subscription
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - notifications
+      responses:
+        '204':
+          description: No response body
+  /api/v1/notifications/vapid-key/:
+    get:
+      operationId: notifications_vapid_key_retrieve
+      description: |-
+        The public application-server key.
+
+        Public by design — it is what `applicationServerKey` needs and it ends up in
+        every subscription the browser creates. Knowing it lets somebody create a
+        subscription, not read one.
+      summary: The VAPID public key
+      tags:
+      - notifications
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/VapidKey'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/ops/backups/:
     get:
       operationId: ops_backups_retrieve
@@ -12216,6 +12385,22 @@ components:
         * `CONSUMABLE` - CONSUMABLE
         * `PACKAGING` - PACKAGING
         * `FINISHED` - FINISHED
+    KindEnum:
+      enum:
+      - CASH_VARIANCE
+      - KITCHEN_LATE
+      - KIDS_OVERDUE
+      - TERMINAL_OFFLINE
+      - BACKUP_FAILED
+      - SYNC_CONFLICT
+      type: string
+      description: |-
+        * `CASH_VARIANCE` - CASH_VARIANCE
+        * `KITCHEN_LATE` - KITCHEN_LATE
+        * `KIDS_OVERDUE` - KIDS_OVERDUE
+        * `TERMINAL_OFFLINE` - TERMINAL_OFFLINE
+        * `BACKUP_FAILED` - BACKUP_FAILED
+        * `SYNC_CONFLICT` - SYNC_CONFLICT
     LedgerEntryTypeEnum:
       enum:
       - INVOICE
@@ -15090,6 +15275,30 @@ components:
       - applied
       - failed
       - results
+    PushSubscription:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        last_sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - label
+      - last_sent_at
     Recipe:
       type: object
       properties:
@@ -15636,6 +15845,45 @@ components:
         * `BRANCH` - BRANCH
         * `DEVICE` - DEVICE
         * `ROLE` - ROLE
+    SentAlert:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/KindEnum'
+          readOnly: true
+        kind_label:
+          type: string
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        body:
+          type: string
+          readOnly: true
+        url:
+          type: string
+          readOnly: true
+        delivered:
+          type: integer
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - body
+      - created_at
+      - delivered
+      - id
+      - kind
+      - kind_label
+      - title
+      - url
     SetActiveRequest:
       type: object
       properties:
@@ -16314,6 +16562,34 @@ components:
         * `RETURN` - RETURN
         * `TRANSFER` - TRANSFER
         * `COUNT` - COUNT
+    SubscribeRequest:
+      type: object
+      description: |-
+        Exactly what `PushSubscription.toJSON()` gives a browser, flattened.
+
+        The three fields are opaque to us and useless apart: `endpoint` names the
+        push service, `p256dh` is the key the payload is encrypted to, `auth` salts
+        the derivation.
+      properties:
+        endpoint:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        p256dh:
+          type: string
+          minLength: 1
+          maxLength: 200
+        auth:
+          type: string
+          minLength: 1
+          maxLength: 100
+        label:
+          type: string
+          maxLength: 120
+      required:
+      - auth
+      - endpoint
+      - p256dh
     Supplier:
       type: object
       properties:
@@ -16986,6 +17262,18 @@ components:
       required:
       - by_type
       - total
+    VapidKey:
+      type: object
+      description: The public half, which the browser needs to create a subscription.
+      properties:
+        public_key:
+          type: string
+          nullable: true
+        configured:
+          type: boolean
+      required:
+      - configured
+      - public_key
     VerifyPinRequestRequest:
       type: object
       description: 'Step-up approval: a manager authorizes one action for one target.'

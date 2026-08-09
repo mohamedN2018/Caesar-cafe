@@ -87,6 +87,7 @@ INSTALLED_APPS = [
     "apps.reporting",
     "apps.audit",
     "apps.ops",
+    "apps.notifications",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -179,7 +180,25 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(hour=5, minute=15),
         "kwargs": {"days": 2},
     },
+    # Every five minutes. A late ticket noticed a minute sooner rarely changes
+    # the outcome, and a job running every thirty seconds would spend its life
+    # re-reading conditions that had not moved. Deduplication in `SentAlert` is
+    # what makes a repeating sweep safe.
+    "alert-sweep": {
+        "task": "notifications.sweep",
+        "schedule": crontab(minute="*/5"),
+    },
 }
+
+# ── Web Push (C11) ───────────────────────────────────────────────────────────
+# Generated once per deployment with `manage.py generate_vapid_keys`. Rotating
+# the pair invalidates every existing subscription, because a push service
+# validates each assertion against the key the subscription was made with.
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", "")
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", "")
+#: How a push service reaches the operator when deliveries start failing. Read
+#: exactly once, on the bad day — so it should be a real address.
+VAPID_SUBJECT = env("VAPID_SUBJECT", "")
 
 # Where `pg_dump` writes. A volume in production; a temp path in dev, because a
 # dev machine should not accumulate database dumps nobody asked for.
