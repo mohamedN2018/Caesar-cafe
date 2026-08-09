@@ -248,7 +248,17 @@ def build_receipt(order: Order) -> dict:
             {
                 "name": item.name_snapshot,
                 "quantity": str(item.quantity),
-                "unit_price": str(item.unit_price_snapshot),
+                # The price CHARGED, so the arithmetic on the slip in the
+                # customer's hand adds up. Printing the catalogue price beside
+                # an overridden line total reads as a mistake, and a receipt
+                # that looks wrong is argued about at the counter.
+                "unit_price": str(item.effective_unit_price),
+                # Kept beside it, not instead of it: the tax record still has to
+                # be able to say what the item normally sells for.
+                "catalog_price": (
+                    str(item.unit_price_snapshot) if item.price_was_overridden else None
+                ),
+                "price_override_reason": item.price_override_reason or None,
                 "line_total": str(item.line_total),
                 "note": item.note,
                 "modifiers": [m.name_snapshot for m in item.modifiers.all()],

@@ -583,3 +583,162 @@ def test_reload_rebuilds_the_projection_from_the_events(db, settings, menu) -> N
     assert (
         db.scalar("SELECT COUNT(*) FROM l_order_items WHERE order_id = ?", (order.order_id,)) == 1
     )
+
+
+# ── the manual price ─────────────────────────────────────────────────────────
+
+
+class TestPriceOverride:
+    """
+    A manual unit price on one line, folded here exactly as the server folds it.
+
+    Not a discount, and the distinction is the reason it exists. A discount is a
+    percentage off a known price and reports as one; an override is a different
+    price entirely — the damaged cake, the staff meal, the drink remade after a
+    complaint. Routing those through the discount field made the discount rate
+    meaningless, and the discount rate is the number an owner watches for loss.
+
+    The PERMISSION is the server's business. This is a terminal, and a
+    terminal's copy of an authorization rule is a suggestion. What is defended
+    here is that the local total matches what the server will compute, so a
+    cashier is never told one figure and the customer charged another.
+    """
+
+    def test_the_line_is_charged_at_the_new_price(self, db, menu, settings) -> None:
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+
+        order = service.override_price(db, order.order_id, line, price=Decimal("40.00"))
+
+        assert order.totals.subtotal == Decimal("40.00")
+
+    def test_the_catalogue_price_survives_it(self, db, menu, settings) -> None:
+        """
+        The only question anybody asks afterwards is what it was supposed to be.
+        Overwriting the snapshot destroys the answer.
+        """
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+
+        order = service.override_price(db, order.order_id, line, price=Decimal("40.00"))
+        item = order.item(line)
+
+        assert item.unit_price_snapshot == Decimal("60.00")
+        assert item.effective_unit_price == Decimal("40.00")
+
+    def test_zero_is_a_real_price(self, db, menu, settings) -> None:
+        """
+        A comped item. Tested because `if price:` instead of `if price is None:`
+        would charge full price for every giveaway in the cafe, and the fold
+        would look correct while doing it.
+        """
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+
+        order = service.override_price(
+            db, order.order_id, line, price=Decimal("0.00"), reason="ضيافة"
+        )
+
+        assert order.item(line).effective_unit_price == Decimal("0.00")
+        assert order.totals.subtotal == Decimal("0.00")
+        assert order.totals.grand_total == Decimal("0.00")
+
+    def test_a_negative_price_is_refused(self, db, menu, settings) -> None:
+        """Money out of the drawer with no refund record."""
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+
+        with pytest.raises(ValueError):
+            service.override_price(db, order.order_id, line, price=Decimal("-5.00"))
+
+    def test_it_multiplies_by_quantity(self, db, menu, settings) -> None:
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp", quantity=Decimal("3"))
+        line = order.items[0].line_id
+
+        order = service.override_price(db, order.order_id, line, price=Decimal("40.00"))
+
+        assert order.totals.subtotal == Decimal("120.00")
+
+    def test_a_null_price_returns_the_line_to_the_catalogue(self, db, menu, settings) -> None:
+        """
+        Undoing a typo must not require voiding the line. On an order already
+        fired, voiding and re-ringing has the kitchen make the item twice.
+        """
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+        service.override_price(db, order.order_id, line, price=Decimal("40.00"))
+
+        order = service.override_price(db, order.order_id, line, price=None)
+
+        assert order.item(line).price_override is None
+        assert order.totals.subtotal == Decimal("60.00")
+
+    def test_clearing_wipes_the_reason(self, db, menu, settings) -> None:
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+        service.override_price(db, order.order_id, line, price=Decimal("40.00"), reason="تالف")
+
+        order = service.override_price(db, order.order_id, line, price=None)
+
+        assert order.item(line).price_override_reason == ""
+
+    def test_it_survives_a_reload_from_the_events(self, db, menu, settings) -> None:
+        """
+        The fold is the truth and the projection is a cache, so the override has
+        to come back from the event stream — not from the row it also wrote.
+        """
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+        service.override_price(db, order.order_id, line, price=Decimal("40.00"), reason="تالف")
+
+        reloaded = service.load(db, order.order_id)
+
+        assert reloaded.item(line).price_override == Decimal("40.00")
+        assert reloaded.item(line).price_override_reason == "تالف"
+        assert reloaded.totals.subtotal == Decimal("40.00")
+
+    def test_the_event_is_queued_for_the_server(self, db, menu, settings) -> None:
+        """
+        The server folds the same event and re-derives the same total. An
+        override that stayed on the terminal would make the two disagree about
+        what the customer paid.
+        """
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+        service.override_price(db, order.order_id, line, price=Decimal("40.00"))
+
+        events = db.query(
+            "SELECT payload FROM l_order_events WHERE event_type = ?",
+            ("ITEM_PRICE_OVERRIDDEN",),
+        )
+        assert len(events) == 1
+        assert json.loads(events[0]["payload"])["price"] == "40.00"
+
+    def test_a_discount_comes_off_the_overridden_price(self, db, menu, settings) -> None:
+        """
+        Anything else is a discount computed against a price the customer was
+        never charged.
+        """
+        order = an_order(db, settings)
+        order = service.add_item(db, order.order_id, variant_id="v-capp")
+        line = order.items[0].line_id
+        service.override_price(db, order.order_id, line, price=Decimal("40.00"))
+
+        order = service.apply_discount(db, order.order_id, percent=Decimal("10"), line_id=line)
+
+        assert order.totals.subtotal == Decimal("36.00")
+
+    def test_an_unknown_line_is_refused(self, db, menu, settings) -> None:
+        order = an_order(db, settings)
+
+        with pytest.raises(ValueError):
+            service.override_price(db, order.order_id, "no-such-line", price=Decimal("40.00"))

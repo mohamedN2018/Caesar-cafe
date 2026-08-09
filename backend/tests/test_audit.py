@@ -379,6 +379,35 @@ class TestCatalogueCoverage:
         order_services.void_order(order, reason="إلغاء كامل", actor=user)
         self._assert("order.voided")
 
+    def test_a_manual_price_is_recorded(self, branch, menu, make_user) -> None:
+        """
+        A step above a discount in severity, and it earns it: a discount is
+        bounded by a ceiling somebody set, an override is any number at all.
+        The row has to carry BOTH prices, or a month later "the cake sold for
+        50" leaves somebody looking up what a cake cost before the menu changed.
+        """
+        import uuid
+
+        user = make_user(email="p@caesar.test")
+        order, line_id = order_with_item(branch, menu, user)
+
+        order_services.apply_events(
+            order,
+            [
+                {
+                    "id": str(uuid.uuid4()),
+                    "type": EventType.ITEM_PRICE_OVERRIDDEN,
+                    "payload": {"line_id": line_id, "price": "40.00", "reason": "تالف"},
+                }
+            ],
+            actor=user,
+        )
+
+        row = self._assert("order.price_overridden")
+        assert row.detail["new_price"] == "40.00"
+        assert row.detail["catalog_price"] != row.detail["new_price"]
+        assert row.detail["reason"] == "تالف"
+
     def test_merging_two_tables_is_recorded(self, branch, make_user) -> None:
         """
         Merging moves orders between records — one bill where there were two.

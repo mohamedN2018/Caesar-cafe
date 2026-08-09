@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from apps.audit import services as audit
+from apps.authz.approval import consume_approval_token
 from apps.authz.drf import HasPermission, IsAuthenticatedPrincipal, RequiresHuman, auth_context
 from apps.core.exceptions import AppError, NotFoundError, PermissionDeniedError
 
@@ -236,6 +237,13 @@ class OrderEventView(APIView):
                     raise PermissionDeniedError("ليس لديك صلاحية: orders.discount")
                 _assert_within_discount_limit(principal, context, event)
 
+            elif event_type == EventType.ITEM_PRICE_OVERRIDDEN:
+                # No ceiling to check, unlike a discount. There is no "10% of
+                # arbitrary" — either somebody may set a price or they may not,
+                # which is why it is its own permission and not a generous
+                # discount limit.
+                _assert_may_change_price(request, principal, order)
+
             elif event_type == EventType.ITEM_VOIDED:
                 if not principal.has("orders.void_item"):
                     raise PermissionDeniedError("ليس لديك صلاحية: orders.void_item")
@@ -249,6 +257,37 @@ class OrderEventView(APIView):
 
             elif event_type == EventType.ORDER_FIRED:
                 _assert_can_fire(principal, context)
+
+
+def _assert_may_change_price(request, principal, order) -> None:
+    """
+    `orders.change_price` is a step-up permission by design.
+
+    Not even a branch manager holds it in their role — the catalogue lists it as
+    a deliberate absence. Setting an arbitrary price is the shortest path from
+    the till to the drawer, so it is meant to be a decision somebody stands over
+    and approves, not a button one person quietly has all shift.
+
+    The route-level `HasPermission` cannot do this for us: this endpoint takes a
+    BATCH, most events in it need only `orders.edit_items`, and gating the whole
+    route on the rarest permission would stop ordinary selling.
+    """
+    if principal.has("orders.change_price"):
+        return
+
+    token = request.headers.get("X-Approval-Token")
+    granted = (
+        consume_approval_token(token, permission="orders.change_price", target=str(order.id))
+        if token
+        else None
+    )
+    if granted is None:
+        raise PermissionDeniedError("ليس لديك صلاحية: orders.change_price")
+
+    # Both identities end up on the event: who rang it, and who stood over it.
+    from apps.accounts.models import User
+
+    request.approval_user = User.objects.filter(id=granted.approver_id).first()
 
 
 def _assert_within_discount_limit(principal, context, event) -> None:

@@ -46,7 +46,7 @@ from ..kids import service as kids
 from ..local import outbox
 from ..local.db import Database
 from ..orders import service
-from ..printing import spooler
+from ..printing import registry, spooler
 from ..security.session import Session
 from ..shifts import service as shifts
 from ..sync.engine import SyncEngine
@@ -56,6 +56,7 @@ from .kids.checkin import CheckInDialog
 from .kids.window import KidsWindow
 from .kitchen.window import KitchenWindow
 from .pos.window import PosWindow
+from .printing import PrinterBindingDialog
 from .shift import CashMovementDialog, CloseShiftDialog, OpenShiftDialog, XReportDialog
 from .sync import ConflictsDialog
 
@@ -220,6 +221,14 @@ class Shell(QWidget):
         self.print_label = QLabel("", objectName="ShellPrint")
         self.print_label.hide()
         row.addWidget(self.print_label)
+
+        # Shown for the same reason and at the same moment: a job the branch has
+        # printers for but none that fits is a ticket nobody is cooking, and the
+        # fix — pointing this till at its port — is one button away.
+        self.printers_button = QPushButton("الطابعات", objectName="Shift")
+        self.printers_button.clicked.connect(self.show_printers)
+        self.printers_button.hide()
+        row.addWidget(self.printers_button)
 
         # The drawer, permanently. A terminal selling into no shift produces
         # sales that reconcile against nothing, and the cashier finds out at
@@ -612,6 +621,15 @@ class Shell(QWidget):
         dialog.exec()
         self.refresh_status()
 
+    def show_printers(self) -> None:
+        dialog = PrinterBindingDialog(self.db, parent=self)
+        # Draining immediately is the point: somebody opened this because paper
+        # was not coming out, and making them wait for the next timer tick to
+        # find out whether they fixed it is a screen that teaches nothing.
+        dialog.bound.connect(self.tick_print)
+        dialog.exec()
+        self.refresh_status()
+
     def refresh_status(self) -> None:
         status = self.engine.status()
         self.sync_label.setText(str(status))
@@ -645,6 +663,12 @@ class Shell(QWidget):
         self.print_label.setVisible(bool(backlog))
         if backlog:
             self.print_label.setText(f"🖨 في انتظار الطباعة ({backlog})")
+
+        # The button appears with the backlog, not permanently. A control that
+        # is always there is a control nobody reads; one that turns up exactly
+        # when paper stopped coming out is the answer to the question being
+        # asked at that moment.
+        self.printers_button.setVisible(bool(backlog) and registry.is_configured(self.db))
 
     def closeEvent(self, event) -> None:
         for timer in (self.sync_timer, self.print_timer, self.board_timer):

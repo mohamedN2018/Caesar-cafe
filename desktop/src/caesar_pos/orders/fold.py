@@ -44,9 +44,30 @@ class FoldedItem:
     fired_at: str | None = None
     line_total: Decimal = ZERO
 
+    #: A manually set unit price. Kept BESIDE the snapshot, never in place of
+    #: it, so the receipt and the audit trail can both say what it was supposed
+    #: to be — see `apps.orders.models.OrderItem.price_override`.
+    price_override: Decimal | None = None
+    price_override_reason: str = ""
+
     @property
     def is_active(self) -> bool:
         return self.status == ItemStatus.ACTIVE
+
+    @property
+    def effective_unit_price(self) -> Decimal:
+        """
+        What this line is charged at.
+
+        Tested against None, not falsiness: zero is a legitimate override — a
+        comped item — and `if self.price_override:` would quietly charge full
+        price for every giveaway in the cafe.
+        """
+        return self.unit_price_snapshot if self.price_override is None else self.price_override
+
+    @property
+    def price_was_overridden(self) -> bool:
+        return self.price_override is not None
 
     @property
     def modifier_deltas(self) -> tuple[Decimal, ...]:
@@ -121,7 +142,8 @@ def recalculate(order: FoldedOrder, rules: TaxRules) -> FoldedOrder:
 
     lines = [
         OrderLine(
-            unit_price=item.unit_price_snapshot,
+            # The override when there is one — see `FoldedItem.effective_unit_price`.
+            unit_price=item.effective_unit_price,
             quantity=item.quantity,
             discount_percent=item.discount_percent,
             modifier_deltas=item.modifier_deltas,
@@ -201,6 +223,32 @@ def _note_set(order: FoldedOrder, payload: dict) -> None:
         item.note = payload.get("note", "")
 
 
+def _price_overridden(order: FoldedOrder, payload: dict) -> None:
+    """
+    A manual unit price on one line.
+
+    Not a discount. A discount is a percentage off a known price and reports as
+    one; an override is a different price entirely, and pushing those through
+    the discount field would make the discount rate — the number watched for
+    loss — mean nothing.
+
+    A null price clears the override and the line returns to the catalogue
+    price. Without that, undoing a typo means voiding the line and re-ringing
+    it, which on a fired order makes the kitchen cook it twice.
+    """
+    item = order.item(payload["line_id"])
+    if item is None:
+        return
+
+    raw = payload.get("price")
+    if raw is None:
+        item.price_override = None
+        item.price_override_reason = ""
+    else:
+        item.price_override = Decimal(str(raw))
+        item.price_override_reason = payload.get("reason", "")
+
+
 def _discount_applied(order: FoldedOrder, payload: dict) -> None:
     percent = Decimal(str(payload.get("percent", "0")))
 
@@ -244,6 +292,7 @@ _HANDLERS = {
     EventType.ITEM_QUANTITY_CHANGED: _quantity_changed,
     EventType.ITEM_VOIDED: _item_voided,
     EventType.ITEM_NOTE_SET: _note_set,
+    EventType.ITEM_PRICE_OVERRIDDEN: _price_overridden,
     EventType.DISCOUNT_APPLIED: _discount_applied,
     EventType.ORDER_FIRED: _order_fired,
     EventType.TABLE_ASSIGNED: _table_assigned,

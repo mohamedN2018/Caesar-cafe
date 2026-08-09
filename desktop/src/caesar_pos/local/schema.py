@@ -103,6 +103,36 @@ MIGRATIONS: list[str] = [
         payload  TEXT NOT NULL
     );
 
+    -- The branch's printers, defined once in the Web Admin instead of typed
+    -- into every terminal. `device_path` may be overridden locally, because a
+    -- serial port is a property of a machine and not of a cafe.
+    CREATE TABLE m_printers (
+        id             TEXT PRIMARY KEY,
+        name_ar        TEXT NOT NULL,
+        code           TEXT NOT NULL,
+        kind           TEXT NOT NULL DEFAULT 'RECEIPT',
+        connection     TEXT NOT NULL DEFAULT 'NETWORK',
+        host           TEXT NOT NULL DEFAULT '',
+        port           INTEGER NOT NULL DEFAULT 9100,
+        device_path    TEXT NOT NULL DEFAULT '',
+        paper_width_mm INTEGER NOT NULL DEFAULT 80,
+        dots           INTEGER NOT NULL DEFAULT 576,
+        copies         INTEGER NOT NULL DEFAULT 1,
+        cut_after      INTEGER NOT NULL DEFAULT 1,
+        is_default     INTEGER NOT NULL DEFAULT 0,
+        is_active      INTEGER NOT NULL DEFAULT 1,
+        payload        TEXT NOT NULL
+    );
+
+    -- This terminal's own binding for a printer whose port differs here. Local
+    -- (`l_`) rather than mirrored, because it is the one printer fact the
+    -- server cannot know.
+    CREATE TABLE l_printer_bindings (
+        printer_id   TEXT PRIMARY KEY,
+        device_path  TEXT NOT NULL,
+        bound_at     TEXT NOT NULL
+    );
+
     CREATE TABLE m_stations (
         id       TEXT PRIMARY KEY,
         code     TEXT NOT NULL,
@@ -220,6 +250,10 @@ MIGRATIONS: list[str] = [
         tax_exempt_snapshot  INTEGER NOT NULL DEFAULT 0,
         quantity             TEXT NOT NULL DEFAULT '1',
         discount_percent     TEXT NOT NULL DEFAULT '0',
+        -- NULL means "no override", which is why it is not defaulted to '0':
+        -- zero is a real price here (a comped item) and the two must not blur.
+        price_override       TEXT,
+        price_override_reason TEXT NOT NULL DEFAULT '',
         line_total           TEXT NOT NULL DEFAULT '0.00',
         modifiers            TEXT NOT NULL DEFAULT '[]',
         note                 TEXT NOT NULL DEFAULT '',

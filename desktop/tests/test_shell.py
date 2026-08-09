@@ -468,6 +468,45 @@ class TestTimers:
         assert printer.printed
         assert spooler.counts(db)["pending"] == 0
 
+    def test_the_printers_button_appears_only_when_it_would_help(
+        self, qtbot, db, menu, engine
+    ) -> None:
+        """
+        Two conditions, and both matter.
+
+        A control that is always on screen is a control nobody reads. And on a
+        branch with no printer registry there is nothing to bind, so offering
+        the screen would send a cashier to fix something that is not broken —
+        their jam is paper or power, not routing.
+        """
+        shell = make_shell(db, engine, printer=None)
+        qtbot.addWidget(shell)
+
+        order = service.open_order(db, settings=service.settings_from_mirror(db))
+        order = service.add_item(db, order.order_id, variant_id="v1")
+        spooler.enqueue(db, receipt.build(order))
+
+        shell.refresh_status()
+        assert not shell.printers_button.isVisibleTo(shell), "no registry, nothing to bind"
+
+        db.upsert_mirror(
+            "m_printers",
+            {
+                "id": "pr1",
+                "name_ar": "كاشير",
+                "code": "C1",
+                "kind": "RECEIPT",
+                "connection": "USB",
+                "device_path": "/dev/usb/lp0",
+                "is_default": 1,
+                "is_active": 1,
+                "payload": "{}",
+            },
+        )
+        shell.refresh_status()
+
+        assert shell.printers_button.isVisibleTo(shell)
+
     def test_only_the_open_board_is_refreshed(self, qtbot, db, menu, engine) -> None:
         """
         Rebuilding four boards on a timer is work nobody sees, and on the hardware

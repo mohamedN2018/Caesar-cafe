@@ -44,6 +44,10 @@ ACTIONS: tuple[ActionDef, ...] = (
     _a("order.item_voided", "orders", "إلغاء صنف", Severity.NOTICE),
     _a("order.voided", "orders", "إلغاء طلب", Severity.WARNING),
     _a("order.discount_applied", "orders", "تطبيق خصم", Severity.NOTICE),
+    # WARNING, a step above a discount. A discount is bounded by a percentage
+    # ceiling somebody set; an override is any number at all, which makes it the
+    # shorter path from the till to the drawer.
+    _a("order.price_overridden", "orders", "تعديل سعر يدوياً", Severity.WARNING),
     _a("order.reopen_attempt", "orders", "محاولة إعادة فتح طلب مدفوع", Severity.WARNING),
     # ── Payments ─────────────────────────────────────────────────────────────
     _a("order.receipt_reprinted", "orders", "إعادة طباعة فاتورة", Severity.NOTICE),

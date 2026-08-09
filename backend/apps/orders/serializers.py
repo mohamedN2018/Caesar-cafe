@@ -24,6 +24,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "variant",
             "name_snapshot",
             "unit_price_snapshot",
+            # Both, always. The override alone cannot answer "what was it
+            # supposed to be", and the snapshot alone hides that anything
+            # happened at all.
+            "price_override",
+            "price_override_reason",
             "quantity",
             "discount_percent",
             "line_gross",

@@ -25,6 +25,7 @@ Architecture Dossier — v0.1 (pre-implementation)
 | 11 | [Configuration Framework](11-configuration.md) | Settings registry, scope resolution, the full ~180-setting catalog |
 | 12 | [Kids Area](12-kids-area.md) | Time-based billing, tariff engine, capacity & child-safety rules |
 | 13 | [Operations Runbook](13-operations.md) | Secret rotation, the restore drill, reading the audit trail during an incident |
+| 14 | [دليل التدريب](14-training.md) | **In Arabic**, for the people who will actually use it: cashier, waiter, kitchen, kids area, manager, owner. Every step says why |
 
 ---
 

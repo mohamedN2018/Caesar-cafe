@@ -2334,6 +2334,81 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/printers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Printers a terminal should know about
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["printers_list"];
+        put?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        post: operations["printers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/printers/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        get: operations["printers_retrieve"];
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        put: operations["printers_update"];
+        post?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        delete: operations["printers_destroy"];
+        options?: never;
+        head?: never;
+        /**
+         * @description Reads and writes are confined to the caller's branch.
+         *
+         *     `branch` and `organization` are injected from the authenticated principal
+         *     and NEVER read from the request body — otherwise any authenticated user
+         *     could write into another tenant by editing a payload (threat I1).
+         */
+        patch: operations["printers_partial_update"];
+        trace?: never;
+    };
     "/api/v1/purchasing/outstanding/": {
         parameters: {
             query?: never;
@@ -4258,6 +4333,13 @@ export interface components {
             counted_cash: string;
             reason?: string;
         };
+        /**
+         * @description * `NETWORK` - NETWORK
+         *     * `USB` - USB
+         *     * `WINDOWS` - WINDOWS
+         * @enum {string}
+         */
+        ConnectionEnum: "NETWORK" | "USB" | "WINDOWS";
         CostLine: {
             item_code: string;
             item_name: string;
@@ -4701,16 +4783,6 @@ export interface components {
          */
         ItemTypeEnum: "RAW" | "CONSUMABLE" | "PACKAGING" | "FINISHED";
         /**
-         * @description * `CASH_VARIANCE` - CASH_VARIANCE
-         *     * `KITCHEN_LATE` - KITCHEN_LATE
-         *     * `KIDS_OVERDUE` - KIDS_OVERDUE
-         *     * `TERMINAL_OFFLINE` - TERMINAL_OFFLINE
-         *     * `BACKUP_FAILED` - BACKUP_FAILED
-         *     * `SYNC_CONFLICT` - SYNC_CONFLICT
-         * @enum {string}
-         */
-        KindEnum: "CASH_VARIANCE" | "KITCHEN_LATE" | "KIDS_OVERDUE" | "TERMINAL_OFFLINE" | "BACKUP_FAILED" | "SYNC_CONFLICT";
-        /**
          * @description * `INVOICE` - INVOICE
          *     * `PAYMENT` - PAYMENT
          *     * `RETURN` - RETURN
@@ -4999,6 +5071,7 @@ export interface components {
          *     * `ITEM_QUANTITY_CHANGED` - ITEM_QUANTITY_CHANGED
          *     * `ITEM_VOIDED` - ITEM_VOIDED
          *     * `ITEM_NOTE_SET` - ITEM_NOTE_SET
+         *     * `ITEM_PRICE_OVERRIDDEN` - ITEM_PRICE_OVERRIDDEN
          *     * `DISCOUNT_APPLIED` - DISCOUNT_APPLIED
          *     * `ORDER_FIRED` - ORDER_FIRED
          *     * `PLAY_SESSION_CHARGED` - PLAY_SESSION_CHARGED
@@ -5009,7 +5082,7 @@ export interface components {
          *     * `ORDER_VOIDED` - ORDER_VOIDED
          * @enum {string}
          */
-        OrderEventTypeEnum: "ORDER_OPENED" | "ITEM_ADDED" | "ITEM_QUANTITY_CHANGED" | "ITEM_VOIDED" | "ITEM_NOTE_SET" | "DISCOUNT_APPLIED" | "ORDER_FIRED" | "PLAY_SESSION_CHARGED" | "TABLE_ASSIGNED" | "CUSTOMER_ASSIGNED" | "PAYMENT_TAKEN" | "ORDER_CLOSED" | "ORDER_VOIDED";
+        OrderEventTypeEnum: "ORDER_OPENED" | "ITEM_ADDED" | "ITEM_QUANTITY_CHANGED" | "ITEM_VOIDED" | "ITEM_NOTE_SET" | "ITEM_PRICE_OVERRIDDEN" | "DISCOUNT_APPLIED" | "ORDER_FIRED" | "PLAY_SESSION_CHARGED" | "TABLE_ASSIGNED" | "CUSTOMER_ASSIGNED" | "PAYMENT_TAKEN" | "ORDER_CLOSED" | "ORDER_VOIDED";
         OrderItem: {
             /** Format: uuid */
             readonly id: string;
@@ -5023,6 +5096,9 @@ export interface components {
             readonly name_snapshot: string;
             /** Format: decimal */
             readonly unit_price_snapshot: string;
+            /** Format: decimal */
+            readonly price_override: string | null;
+            readonly price_override_reason: string;
             /** Format: decimal */
             readonly quantity: string;
             /** Format: decimal */
@@ -5435,6 +5511,24 @@ export interface components {
             is_default?: boolean;
             is_active?: boolean;
         };
+        PatchedPrinterRequest: {
+            /** @description طابعة الكاشير / طابعة المطبخ */
+            name_ar?: string;
+            /** @description RECEIPT1, KITCHEN_HOT */
+            code?: string;
+            kind?: components["schemas"]["PrinterKindEnum"];
+            connection?: components["schemas"]["ConnectionEnum"];
+            host?: string;
+            port?: number;
+            device_path?: string;
+            paper_width_mm?: number;
+            copies?: number;
+            cut_after?: boolean;
+            stations?: string[];
+            /** @description Where a job of this kind goes when nothing else claims it. */
+            is_default?: boolean;
+            is_active?: boolean;
+        };
         PatchedProductRequest: {
             /** Format: uuid */
             category?: string;
@@ -5809,6 +5903,53 @@ export interface components {
             /** Format: decimal */
             new_price: string;
             reason?: string;
+        };
+        Printer: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description طابعة الكاشير / طابعة المطبخ */
+            name_ar: string;
+            /** @description RECEIPT1, KITCHEN_HOT */
+            code: string;
+            kind?: components["schemas"]["PrinterKindEnum"];
+            connection?: components["schemas"]["ConnectionEnum"];
+            host?: string;
+            port?: number;
+            device_path?: string;
+            paper_width_mm?: number;
+            readonly dots: number;
+            copies?: number;
+            cut_after?: boolean;
+            stations?: string[];
+            readonly station_names: string[];
+            /** @description Where a job of this kind goes when nothing else claims it. */
+            is_default?: boolean;
+            is_active?: boolean;
+        };
+        /**
+         * @description * `RECEIPT` - RECEIPT
+         *     * `KITCHEN` - KITCHEN
+         *     * `REPORT` - REPORT
+         * @enum {string}
+         */
+        PrinterKindEnum: "RECEIPT" | "KITCHEN" | "REPORT";
+        PrinterRequest: {
+            /** @description طابعة الكاشير / طابعة المطبخ */
+            name_ar: string;
+            /** @description RECEIPT1, KITCHEN_HOT */
+            code: string;
+            kind?: components["schemas"]["PrinterKindEnum"];
+            connection?: components["schemas"]["ConnectionEnum"];
+            host?: string;
+            port?: number;
+            device_path?: string;
+            paper_width_mm?: number;
+            copies?: number;
+            cut_after?: boolean;
+            stations?: string[];
+            /** @description Where a job of this kind goes when nothing else claims it. */
+            is_default?: boolean;
+            is_active?: boolean;
         };
         Product: {
             /** Format: uuid */
@@ -6262,7 +6403,7 @@ export interface components {
         SentAlert: {
             /** Format: uuid */
             readonly id: string;
-            readonly kind: components["schemas"]["KindEnum"];
+            readonly kind: components["schemas"]["SentAlertKindEnum"];
             readonly kind_label: string;
             readonly title: string;
             readonly body: string;
@@ -6271,6 +6412,16 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `CASH_VARIANCE` - CASH_VARIANCE
+         *     * `KITCHEN_LATE` - KITCHEN_LATE
+         *     * `KIDS_OVERDUE` - KIDS_OVERDUE
+         *     * `TERMINAL_OFFLINE` - TERMINAL_OFFLINE
+         *     * `BACKUP_FAILED` - BACKUP_FAILED
+         *     * `SYNC_CONFLICT` - SYNC_CONFLICT
+         * @enum {string}
+         */
+        SentAlertKindEnum: "CASH_VARIANCE" | "KITCHEN_LATE" | "KIDS_OVERDUE" | "TERMINAL_OFFLINE" | "BACKUP_FAILED" | "SYNC_CONFLICT";
         SetActiveRequest: {
             is_active: boolean;
         };
@@ -11791,6 +11942,201 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["PermissionDef"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    printers_list: {
+        parameters: {
+            query?: {
+                is_active?: boolean;
+                /**
+                 * @description * `RECEIPT` - RECEIPT
+                 *     * `KITCHEN` - KITCHEN
+                 *     * `REPORT` - REPORT
+                 */
+                kind?: "KITCHEN" | "RECEIPT" | "REPORT";
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Printer"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    printers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrinterRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PrinterRequest"];
+                "multipart/form-data": components["schemas"]["PrinterRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Printer"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    printers_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا printer. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Printer"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    printers_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا printer. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrinterRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PrinterRequest"];
+                "multipart/form-data": components["schemas"]["PrinterRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Printer"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    printers_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا printer. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    printers_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا printer. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedPrinterRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedPrinterRequest"];
+                "multipart/form-data": components["schemas"]["PatchedPrinterRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Printer"];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

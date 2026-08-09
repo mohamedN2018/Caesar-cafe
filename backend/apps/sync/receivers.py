@@ -22,7 +22,7 @@ every 5 minutes and the device re-checks on every heartbeat.
 
 from __future__ import annotations
 
-from django.db.models.signals import post_delete, post_save
+from django.db.models.signals import m2m_changed, post_delete, post_save
 from django.dispatch import receiver
 
 from . import payloads
@@ -119,6 +119,48 @@ _register(
 _register(
     "kitchen.Station", stream=Stream.FLOOR, entity_type="station", payload_fn=payloads.station
 )
+# Printers ride the CONFIG stream rather than FLOOR: they change rarely and a
+# terminal that is a minute behind on which printer is the default has lost
+# nothing, whereas an open table one minute stale is a double-seated party.
+_register(
+    "printing.Printer", stream=Stream.CONFIG, entity_type="printer", payload_fn=payloads.printer
+)
+
+
+@receiver(
+    m2m_changed,
+    # The through table only, or this fires for every many-to-many in the system.
+    sender="printing.Printer_stations",
+    weak=False,
+    dispatch_uid="sync:m2m:printer_stations",
+)
+def _on_printer_stations_changed(sender, instance, action, reverse, **kwargs):
+    """
+    Re-emit a printer when its stations change.
+
+    `post_save` fires BEFORE a serializer writes a many-to-many, so the payload
+    that receiver produced carries an empty `station_ids`. Without this, a
+    kitchen printer assigned to the grill would sync as belonging to no station
+    at all — and the terminal, finding no match, would route every grill ticket
+    to the branch default instead. The one fact this feature exists to carry
+    would be the one fact that never arrives.
+    """
+    from apps.printing.models import Printer
+
+    if action not in {"post_add", "post_remove", "post_clear"}:
+        return
+
+    printers = [instance] if not reverse else Printer.objects.filter(stations=instance)
+    for printer in printers:
+        _emit(
+            printer,
+            stream=Stream.CONFIG,
+            entity_type="printer",
+            payload_fn=payloads.printer,
+            operation=Operation.UPSERT,
+            branch_id=printer.branch_id,
+        )
+
 
 # ── config ───────────────────────────────────────────────────────────────────
 

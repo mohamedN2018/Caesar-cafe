@@ -19,6 +19,9 @@ interface Item {
   id: string
   name_snapshot: string
   unit_price_snapshot: string
+  /** null when the line is at the catalogue price. `'0.00'` is a comped item. */
+  price_override: string | null
+  price_override_reason: string
   quantity: string
   discount_percent: string
   line_total: string
@@ -67,6 +70,7 @@ const EVENT_LABELS: Record<string, string> = {
   ITEM_QUANTITY_CHANGED: 'تغيير الكمية',
   ITEM_VOIDED: 'إلغاء صنف',
   ITEM_NOTE_SET: 'إضافة ملاحظة',
+  ITEM_PRICE_OVERRIDDEN: 'تعديل سعر يدوياً',
   DISCOUNT_APPLIED: 'تطبيق خصم',
   ORDER_FIRED: 'إرسال للمطبخ',
   TABLE_ASSIGNED: 'تحديد طاولة',
@@ -145,11 +149,27 @@ onMounted(async () => {
                 <p v-if="item.void_reason" class="text-sm text-red-600">
                   سبب الإلغاء: {{ item.void_reason }}
                 </p>
+                <p v-if="item.price_override !== null" class="text-sm text-amber-700">
+                  سعر يدوي
+                  <span v-if="item.price_override_reason">— {{ item.price_override_reason }}</span>
+                </p>
               </div>
               <div class="text-end">
                 <p class="font-medium tabular-nums">{{ money(item.line_total) }}</p>
+                <!--
+                  When a price was overridden, showing the catalogue price here
+                  would make the line look like it added up wrong. Show what was
+                  charged, and strike through what it should have been — the
+                  comparison is the whole point of recording both.
+                -->
                 <p class="text-xs text-slate-500 tabular-nums">
-                  {{ money(item.unit_price_snapshot) }} للوحدة
+                  {{ money(item.price_override ?? item.unit_price_snapshot) }} للوحدة
+                </p>
+                <p
+                  v-if="item.price_override !== null"
+                  class="text-xs text-slate-400 line-through tabular-nums"
+                >
+                  {{ money(item.unit_price_snapshot) }}
                 </p>
               </div>
             </li>

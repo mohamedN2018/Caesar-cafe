@@ -53,6 +53,7 @@ class OrderPanel(QWidget):
     void_requested = Signal(str)  # line_id
     quantity_requested = Signal(str, object)  # line_id, Decimal
     note_requested = Signal(str)  # line_id
+    price_requested = Signal(str)  # line_id
     discount_requested = Signal()
     fire_requested = Signal()
     pay_requested = Signal()
@@ -178,6 +179,12 @@ class OrderPanel(QWidget):
                 font.setStrikeOut(True)
                 name.setFont(font)
 
+            if item.price_was_overridden:
+                # Marked on the line, not only in the total. A cashier handing
+                # over a bill needs to see WHY it is cheaper than the menu says
+                # — at a glance, without opening anything.
+                name.setText(f"{item.name_snapshot}  ✎{item.effective_unit_price}")
+
             quantity = QTableWidgetItem(_trim(item.quantity))
             total = QTableWidgetItem("—" if voided else str(item.line_total))
             for cell in (quantity, total):
@@ -186,15 +193,27 @@ class OrderPanel(QWidget):
             self.table.setItem(row, 0, name)
             self.table.setItem(row, 1, quantity)
             self.table.setItem(row, 2, total)
+            self.table.setCellWidget(row, 3, QWidget() if voided else self._row_actions(item))
 
-            if not voided:
-                remove = QPushButton("حذف", objectName="Secondary")
-                remove.clicked.connect(
-                    lambda _=False, line_id=item.line_id: self.void_requested.emit(line_id)
-                )
-                self.table.setCellWidget(row, 3, remove)
-            else:
-                self.table.setCellWidget(row, 3, QWidget())
+    def _row_actions(self, item) -> QWidget:
+        holder = QWidget()
+        row = QHBoxLayout(holder)
+        row.setContentsMargins(0, 0, 0, 0)
+        row.setSpacing(4)
+
+        price = QPushButton("سعر", objectName="Secondary")
+        price.clicked.connect(
+            lambda _=False, line_id=item.line_id: self.price_requested.emit(line_id)
+        )
+        row.addWidget(price)
+
+        remove = QPushButton("حذف", objectName="Secondary")
+        remove.clicked.connect(
+            lambda _=False, line_id=item.line_id: self.void_requested.emit(line_id)
+        )
+        row.addWidget(remove)
+
+        return holder
 
     def _render_totals(self, order: FoldedOrder | None) -> None:
         if order is None or order.totals is None:

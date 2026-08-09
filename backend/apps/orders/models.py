@@ -145,6 +145,7 @@ class EventType(models.TextChoices):
     ITEM_QUANTITY_CHANGED = "ITEM_QUANTITY_CHANGED", "ITEM_QUANTITY_CHANGED"
     ITEM_VOIDED = "ITEM_VOIDED", "ITEM_VOIDED"
     ITEM_NOTE_SET = "ITEM_NOTE_SET", "ITEM_NOTE_SET"
+    ITEM_PRICE_OVERRIDDEN = "ITEM_PRICE_OVERRIDDEN", "ITEM_PRICE_OVERRIDDEN"
     DISCOUNT_APPLIED = "DISCOUNT_APPLIED", "DISCOUNT_APPLIED"
     ORDER_FIRED = "ORDER_FIRED", "ORDER_FIRED"
     PLAY_SESSION_CHARGED = "PLAY_SESSION_CHARGED", "PLAY_SESSION_CHARGED"
@@ -229,6 +230,14 @@ class OrderItem(BaseModel):
     cost_snapshot = models.DecimalField(**MONEY, default=Decimal("0"))
     tax_exempt_snapshot = models.BooleanField(default=False)
 
+    #: A manually set unit price, and never a replacement for the snapshot.
+    #: Overwriting `unit_price_snapshot` would erase the answer to the only
+    #: question anybody asks about an override afterwards: what was it SUPPOSED
+    #: to be? Keeping both makes "sold at 40 instead of 60" a fact the reports
+    #: can name, rather than a line that merely looks cheap.
+    price_override = models.DecimalField(**MONEY, null=True, blank=True)
+    price_override_reason = models.CharField(max_length=200, blank=True)
+
     quantity = models.DecimalField(**QUANTITY, default=Decimal("1"))
     discount_percent = models.DecimalField(**PERCENT, default=Decimal("0"))
 
@@ -255,6 +264,21 @@ class OrderItem(BaseModel):
     @property
     def is_active(self) -> bool:
         return self.status == ItemStatus.ACTIVE
+
+    @property
+    def effective_unit_price(self) -> Decimal:
+        """
+        What this line is actually charged at.
+
+        `Decimal("0")` is a legitimate override — a comped item — so the test is
+        for None, not for falsiness. `if self.price_override:` would silently
+        charge full price for every giveaway.
+        """
+        return self.unit_price_snapshot if self.price_override is None else self.price_override
+
+    @property
+    def price_was_overridden(self) -> bool:
+        return self.price_override is not None
 
 
 class OrderItemModifier(models.Model):

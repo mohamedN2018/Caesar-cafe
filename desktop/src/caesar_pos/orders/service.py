@@ -251,6 +251,49 @@ def apply_discount(
     return _record(db, order, EventType.DISCOUNT_APPLIED, payload)
 
 
+def override_price(
+    db: Database,
+    order_id: str,
+    line_id: str,
+    *,
+    price: Decimal | None,
+    reason: str = "",
+) -> FoldedOrder:
+    """
+    Set one line to a manual unit price, or clear it back to the catalogue.
+
+    `price=None` clears. That path exists because the alternative for a mistyped
+    override is voiding the line and re-ringing it, and on an order already
+    fired that has the kitchen make the item a second time.
+
+    Zero is allowed — a comped item is a real thing and recording it honestly is
+    better than a 100% discount that muddies the discount rate. Below zero is
+    not: that is money leaving the drawer with no refund record.
+
+    The permission (`orders.change_price`) is the SERVER's to enforce; this is a
+    terminal and a terminal's copy of a rule is a suggestion. What this function
+    guarantees is that the event is well-formed and the local fold matches what
+    the server will compute.
+    """
+    if price is not None and price < 0:
+        raise ValueError("السعر لا يمكن أن يكون سالباً")
+
+    order = _editable(db, order_id)
+    if order.item(line_id) is None:
+        raise ValueError("الصنف غير موجود في الطلب")
+
+    return _record(
+        db,
+        order,
+        EventType.ITEM_PRICE_OVERRIDDEN,
+        {
+            "line_id": line_id,
+            "price": None if price is None else str(price),
+            "reason": reason,
+        },
+    )
+
+
 def set_note(db: Database, order_id: str, line_id: str, note: str) -> FoldedOrder:
     order = _editable(db, order_id)
     return _record(db, order, EventType.ITEM_NOTE_SET, {"line_id": line_id, "note": note})
@@ -572,6 +615,13 @@ def _persist_projection(db: Database, order: FoldedOrder) -> None:
                     "tax_exempt_snapshot": item.tax_exempt_snapshot,
                     "quantity": str(item.quantity),
                     "discount_percent": str(item.discount_percent),
+                    # None stays None. A comped line is priced at zero and an
+                    # un-overridden line has no price of its own; storing '0'
+                    # for both would make them indistinguishable.
+                    "price_override": (
+                        None if item.price_override is None else str(item.price_override)
+                    ),
+                    "price_override_reason": item.price_override_reason,
                     "line_total": str(item.line_total),
                     "modifiers": item.modifiers,
                     "note": item.note,

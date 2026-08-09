@@ -18,7 +18,7 @@ import pytest
 
 from caesar_pos.local.db import Database, connect
 from caesar_pos.orders import service
-from caesar_pos.printing import arabic, receipt, spooler
+from caesar_pos.printing import arabic, receipt, registry, spooler
 
 
 @pytest.fixture
@@ -224,6 +224,7 @@ class TestKitchenTicket:
 class FakePrinter:
     def __init__(self, *, fail_times: int = 0) -> None:
         self.printed: list[list[str]] = []
+        self.targets: list[str] = []
         self.fail_times = fail_times
 
     def print_document(self, lines, printer_name=""):
@@ -231,6 +232,7 @@ class FakePrinter:
             self.fail_times -= 1
             raise OSError("printer is out of paper")
         self.printed.append(lines)
+        self.targets.append(printer_name)
 
 
 class TestSpooler:
@@ -238,7 +240,7 @@ class TestSpooler:
         spooler.enqueue(db, receipt.build(order))
         printer = FakePrinter()
 
-        assert spooler.drain(db, printer) == {"printed": 1, "failed": 0}
+        assert spooler.drain(db, printer) == {"printed": 1, "failed": 0, "unrouted": 0}
         assert printer.printed
         assert spooler.counts(db)["pending"] == 0
 
@@ -250,7 +252,7 @@ class TestSpooler:
         spooler.enqueue(db, receipt.build(order))
         result = spooler.drain(db, FakePrinter(fail_times=1))
 
-        assert result == {"printed": 0, "failed": 1}
+        assert result == {"printed": 0, "failed": 1, "unrouted": 0}
         assert spooler.counts(db)["pending"] == 1, "still queued, not lost"
 
     def test_it_drains_when_the_printer_comes_back(self, db, order) -> None:
@@ -299,3 +301,159 @@ class TestSpooler:
         jobs = spooler.pending(db)
         assert {job.kind for job in jobs} == {"RECEIPT", "KITCHEN"}
         assert {job.printer for job in jobs} == {"", "kitchen"}
+
+
+def _printer(db, **overrides) -> str:
+    """A printer as the config stream would leave it in the mirror."""
+    row = {
+        "id": overrides.pop("id", "pr1"),
+        "name_ar": "كاشير",
+        "code": "CASHIER",
+        "kind": "RECEIPT",
+        "connection": "USB",
+        "host": "",
+        "port": 9100,
+        "device_path": "/dev/usb/lp0",
+        "paper_width_mm": 80,
+        "dots": 576,
+        "copies": 1,
+        "cut_after": 1,
+        "is_default": 0,
+        "is_active": 1,
+    }
+    stations = overrides.pop("stations", ())
+    row.update(overrides)
+    row["payload"] = json.dumps({"station_ids": list(stations)}, ensure_ascii=False)
+    db.upsert_mirror("m_printers", row)
+    return row["id"]
+
+
+class TestRegistry:
+    """
+    Where a job goes.
+
+    The rule worth defending is the LAST one: a branch that has printers but
+    none that fits the job leaves it queued, because a kitchen ticket on the
+    receipt roll ends up in a customer's hand while the kitchen waits.
+    """
+
+    def test_a_station_printer_beats_the_default(self, db) -> None:
+        _printer(db, id="p-any", kind="KITCHEN", code="K1", is_default=1, device_path="/dev/any")
+        _printer(
+            db,
+            id="p-grill",
+            kind="KITCHEN",
+            code="K2",
+            stations=("st-grill",),
+            device_path="/dev/grill",
+        )
+
+        resolved = registry.resolve(db, kind="KITCHEN", station_id="st-grill")
+
+        assert resolved is not None
+        assert resolved.target == "/dev/grill"
+
+    def test_it_falls_back_to_the_default_for_the_kind(self, db) -> None:
+        _printer(db, id="p-a", code="A", device_path="/dev/a")
+        _printer(db, id="p-b", code="B", is_default=1, device_path="/dev/b")
+
+        resolved = registry.resolve(db, kind="RECEIPT", station_id="st-nobody")
+
+        assert resolved is not None
+        assert resolved.target == "/dev/b"
+
+    def test_a_kind_with_no_printer_resolves_to_nothing(self, db) -> None:
+        """A receipt printer is not a licence to print kitchen tickets on it."""
+        _printer(db, kind="RECEIPT")
+
+        assert registry.resolve(db, kind="KITCHEN") is None
+
+    def test_an_inactive_printer_is_not_a_candidate(self, db) -> None:
+        _printer(db, is_active=0)
+
+        assert registry.resolve(db, kind="RECEIPT") is None
+
+    def test_a_network_printer_targets_host_and_port(self, db) -> None:
+        _printer(db, connection="NETWORK", host="10.0.0.7", port=9100)
+
+        assert registry.resolve(db, kind="RECEIPT").target == "10.0.0.7:9100"
+
+    def test_the_local_binding_overrides_the_shared_device_path(self, db) -> None:
+        r"""
+        The cable is a fact about THIS till.
+
+        `\\.\COM3` by the door is a different machine from `\\.\COM3` at the
+        back, so the branch-wide row cannot be right for both terminals.
+        """
+        printer_id = _printer(db, device_path="/dev/from-server")
+        registry.bind(db, printer_id, "/dev/on-this-till")
+
+        assert registry.resolve(db, kind="RECEIPT").target == "/dev/on-this-till"
+
+    def test_binding_the_same_printer_twice_moves_it(self, db) -> None:
+        printer_id = _printer(db)
+        registry.bind(db, printer_id, "/dev/first")
+        registry.bind(db, printer_id, "/dev/second")
+
+        assert registry.resolve(db, kind="RECEIPT").target == "/dev/second"
+
+
+class TestRouting:
+    def test_a_job_goes_to_the_printer_the_registry_names(self, db, order) -> None:
+        _printer(db, is_default=1, device_path="/dev/till-1")
+        spooler.enqueue(db, receipt.build(order))
+        printer = FakePrinter()
+
+        spooler.drain(db, printer)
+
+        assert printer.targets == ["/dev/till-1"]
+
+    def test_an_unconfigured_branch_still_prints(self, db, order) -> None:
+        """
+        The upgrade path.
+
+        A cafe that installs this release has no printer rows until somebody
+        adds them. A till that stopped printing receipts the moment it updated
+        would be a far worse bug than any routing mistake, so an empty registry
+        means "use the local default", not "stop".
+        """
+        spooler.enqueue(db, receipt.build(order))
+        printer = FakePrinter()
+
+        assert spooler.drain(db, printer)["printed"] == 1
+
+    def test_a_kitchen_ticket_with_no_kitchen_printer_waits(self, db, order) -> None:
+        """
+        Configured, but not for this. The job stays visible in the queue rather
+        than surfacing on the receipt roll in front of a customer.
+        """
+        _printer(db, kind="RECEIPT", is_default=1)
+        spooler.enqueue(db, receipt.build_kitchen_ticket(order))
+
+        printer = FakePrinter()
+        result = spooler.drain(db, printer)
+
+        assert result == {"printed": 0, "failed": 0, "unrouted": 1}
+        assert not printer.printed
+        assert spooler.counts(db)["pending"] == 1, "waiting, not lost"
+
+    def test_an_explicit_printer_on_the_job_is_never_overridden(self, db, order) -> None:
+        _printer(db, is_default=1, device_path="/dev/registry-says")
+        spooler.enqueue(db, receipt.build(order), printer="/dev/caller-says")
+
+        printer = FakePrinter()
+        spooler.drain(db, printer)
+
+        assert printer.targets == ["/dev/caller-says"]
+
+    def test_the_station_on_the_job_reaches_the_registry(self, db, order) -> None:
+        _printer(db, id="p-main", kind="KITCHEN", code="K1", is_default=1, device_path="/dev/main")
+        _printer(
+            db, id="p-bar", kind="KITCHEN", code="K2", stations=("st-bar",), device_path="/dev/bar"
+        )
+        spooler.enqueue(db, receipt.build_kitchen_ticket(order), station_id="st-bar")
+
+        printer = FakePrinter()
+        spooler.drain(db, printer)
+
+        assert printer.targets == ["/dev/bar"]

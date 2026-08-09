@@ -6576,6 +6576,285 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/printers/:
+    get:
+      operationId: printers_list
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      summary: Printers a terminal should know about
+      parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - in: query
+        name: kind
+        schema:
+          type: string
+          enum:
+          - KITCHEN
+          - RECEIPT
+          - REPORT
+        description: |-
+          * `RECEIPT` - RECEIPT
+          * `KITCHEN` - KITCHEN
+          * `REPORT` - REPORT
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - printers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Printer'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: printers_create
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      tags:
+      - printers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Printer'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/printers/{id}/:
+    get:
+      operationId: printers_retrieve
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا printer.
+        required: true
+      tags:
+      - printers
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Printer'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: printers_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا printer.
+        required: true
+      tags:
+      - printers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PrinterRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Printer'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: printers_partial_update
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا printer.
+        required: true
+      tags:
+      - printers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPrinterRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPrinterRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPrinterRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Printer'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: printers_destroy
+      description: |-
+        Reads and writes are confined to the caller's branch.
+
+        `branch` and `organization` are injected from the authenticated principal
+        and NEVER read from the request body — otherwise any authenticated user
+        could write into another tenant by editing a payload (threat I1).
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا printer.
+        required: true
+      tags:
+      - printers
+      responses:
+        '204':
+          description: No response body
   /api/v1/purchasing/outstanding/:
     get:
       operationId: purchasing_outstanding_list
@@ -11347,6 +11626,16 @@ components:
           maxLength: 200
       required:
       - counted_cash
+    ConnectionEnum:
+      enum:
+      - NETWORK
+      - USB
+      - WINDOWS
+      type: string
+      description: |-
+        * `NETWORK` - NETWORK
+        * `USB` - USB
+        * `WINDOWS` - WINDOWS
     CostLine:
       type: object
       properties:
@@ -12385,22 +12674,6 @@ components:
         * `CONSUMABLE` - CONSUMABLE
         * `PACKAGING` - PACKAGING
         * `FINISHED` - FINISHED
-    KindEnum:
-      enum:
-      - CASH_VARIANCE
-      - KITCHEN_LATE
-      - KIDS_OVERDUE
-      - TERMINAL_OFFLINE
-      - BACKUP_FAILED
-      - SYNC_CONFLICT
-      type: string
-      description: |-
-        * `CASH_VARIANCE` - CASH_VARIANCE
-        * `KITCHEN_LATE` - KITCHEN_LATE
-        * `KIDS_OVERDUE` - KIDS_OVERDUE
-        * `TERMINAL_OFFLINE` - TERMINAL_OFFLINE
-        * `BACKUP_FAILED` - BACKUP_FAILED
-        * `SYNC_CONFLICT` - SYNC_CONFLICT
     LedgerEntryTypeEnum:
       enum:
       - INVOICE
@@ -13084,6 +13357,7 @@ components:
       - ITEM_QUANTITY_CHANGED
       - ITEM_VOIDED
       - ITEM_NOTE_SET
+      - ITEM_PRICE_OVERRIDDEN
       - DISCOUNT_APPLIED
       - ORDER_FIRED
       - PLAY_SESSION_CHARGED
@@ -13099,6 +13373,7 @@ components:
         * `ITEM_QUANTITY_CHANGED` - ITEM_QUANTITY_CHANGED
         * `ITEM_VOIDED` - ITEM_VOIDED
         * `ITEM_NOTE_SET` - ITEM_NOTE_SET
+        * `ITEM_PRICE_OVERRIDDEN` - ITEM_PRICE_OVERRIDDEN
         * `DISCOUNT_APPLIED` - DISCOUNT_APPLIED
         * `ORDER_FIRED` - ORDER_FIRED
         * `PLAY_SESSION_CHARGED` - PLAY_SESSION_CHARGED
@@ -13130,6 +13405,15 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+        price_override:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        price_override_reason:
+          type: string
           readOnly: true
         quantity:
           type: string
@@ -13200,6 +13484,8 @@ components:
       - modifiers
       - name_snapshot
       - note
+      - price_override
+      - price_override_reason
       - quantity
       - station
       - station_name
@@ -13949,6 +14235,53 @@ components:
           description: Highest matching priority wins at check-in.
         is_default:
           type: boolean
+        is_active:
+          type: boolean
+    PatchedPrinterRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          description: طابعة الكاشير / طابعة المطبخ
+          maxLength: 100
+        code:
+          type: string
+          minLength: 1
+          description: RECEIPT1, KITCHEN_HOT
+          maxLength: 32
+        kind:
+          $ref: '#/components/schemas/PrinterKindEnum'
+        connection:
+          $ref: '#/components/schemas/ConnectionEnum'
+        host:
+          type: string
+          maxLength: 100
+        port:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        device_path:
+          type: string
+          maxLength: 200
+        paper_width_mm:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        copies:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        cut_after:
+          type: boolean
+        stations:
+          type: array
+          items:
+            type: string
+            format: uuid
+        is_default:
+          type: boolean
+          description: Where a job of this kind goes when nothing else claims it.
         is_active:
           type: boolean
     PatchedProductRequest:
@@ -14796,6 +15129,129 @@ components:
       required:
       - new_price
       - variant
+    Printer:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name_ar:
+          type: string
+          description: طابعة الكاشير / طابعة المطبخ
+          maxLength: 100
+        code:
+          type: string
+          description: RECEIPT1, KITCHEN_HOT
+          maxLength: 32
+        kind:
+          $ref: '#/components/schemas/PrinterKindEnum'
+        connection:
+          $ref: '#/components/schemas/ConnectionEnum'
+        host:
+          type: string
+          maxLength: 100
+        port:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        device_path:
+          type: string
+          maxLength: 200
+        paper_width_mm:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        dots:
+          type: integer
+          readOnly: true
+        copies:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        cut_after:
+          type: boolean
+        stations:
+          type: array
+          items:
+            type: string
+            format: uuid
+        station_names:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        is_default:
+          type: boolean
+          description: Where a job of this kind goes when nothing else claims it.
+        is_active:
+          type: boolean
+      required:
+      - code
+      - dots
+      - id
+      - name_ar
+      - station_names
+    PrinterKindEnum:
+      enum:
+      - RECEIPT
+      - KITCHEN
+      - REPORT
+      type: string
+      description: |-
+        * `RECEIPT` - RECEIPT
+        * `KITCHEN` - KITCHEN
+        * `REPORT` - REPORT
+    PrinterRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          description: طابعة الكاشير / طابعة المطبخ
+          maxLength: 100
+        code:
+          type: string
+          minLength: 1
+          description: RECEIPT1, KITCHEN_HOT
+          maxLength: 32
+        kind:
+          $ref: '#/components/schemas/PrinterKindEnum'
+        connection:
+          $ref: '#/components/schemas/ConnectionEnum'
+        host:
+          type: string
+          maxLength: 100
+        port:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        device_path:
+          type: string
+          maxLength: 200
+        paper_width_mm:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        copies:
+          type: integer
+          maximum: 32767
+          minimum: 0
+        cut_after:
+          type: boolean
+        stations:
+          type: array
+          items:
+            type: string
+            format: uuid
+        is_default:
+          type: boolean
+          description: Where a job of this kind goes when nothing else claims it.
+        is_active:
+          type: boolean
+      required:
+      - code
+      - name_ar
     Product:
       type: object
       properties:
@@ -15854,7 +16310,7 @@ components:
           readOnly: true
         kind:
           allOf:
-          - $ref: '#/components/schemas/KindEnum'
+          - $ref: '#/components/schemas/SentAlertKindEnum'
           readOnly: true
         kind_label:
           type: string
@@ -15884,6 +16340,22 @@ components:
       - kind_label
       - title
       - url
+    SentAlertKindEnum:
+      enum:
+      - CASH_VARIANCE
+      - KITCHEN_LATE
+      - KIDS_OVERDUE
+      - TERMINAL_OFFLINE
+      - BACKUP_FAILED
+      - SYNC_CONFLICT
+      type: string
+      description: |-
+        * `CASH_VARIANCE` - CASH_VARIANCE
+        * `KITCHEN_LATE` - KITCHEN_LATE
+        * `KIDS_OVERDUE` - KIDS_OVERDUE
+        * `TERMINAL_OFFLINE` - TERMINAL_OFFLINE
+        * `BACKUP_FAILED` - BACKUP_FAILED
+        * `SYNC_CONFLICT` - SYNC_CONFLICT
     SetActiveRequest:
       type: object
       properties:

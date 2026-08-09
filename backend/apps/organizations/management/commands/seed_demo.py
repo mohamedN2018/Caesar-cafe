@@ -197,13 +197,21 @@ class Command(BaseCommand):
             action="store_true",
             help="Run even though orders already exist. Mixes demo data into real trading.",
         )
+        parser.add_argument(
+            "--reset",
+            action="store_true",
+            help="DELETE the demo organization first, then seed it fresh. Demo databases only.",
+        )
 
     def handle(self, *args, **options):
-        if Order.objects.exists() and not options["force"]:
+        if options["reset"]:
+            self._reset()
+        elif Order.objects.exists() and not options["force"]:
             raise CommandError(
                 f"This database already holds {Order.objects.count()} orders. Seeding would mix "
                 "demo trading into a real ledger, and nothing afterwards can tell the two apart. "
-                "Re-run with --force only on a database you are willing to lose."
+                "Re-run with --force only on a database you are willing to lose, or --reset to "
+                "delete the demo organization and start it over."
             )
 
         self.random = random.Random(SEED)  # noqa: S311 — presentation data, not security
@@ -237,6 +245,78 @@ class Command(BaseCommand):
         self._summary(branch, days)
 
     # ── the cafe ─────────────────────────────────────────────────────────────
+
+    def _reset(self) -> None:
+        """
+        Empty the demo organization's trading, then let the seed refill it.
+
+        `--force` answers a different question ("mix demo data into a ledger
+        that already has trading") and deliberately deletes nothing. Re-seeding
+        needs the opposite. Without a reset the second run collides on
+        `uniq_local_number_per_branch` — the invoice counter restarts at 1 while
+        yesterday's MB-01-00001 is still there — so a command written to be run
+        repeatedly could only ever be run once.
+
+        **Deleted in an explicit order rather than with `org.delete()`.** Almost
+        every foreign key into an organization is `PROTECT`, on purpose: an org
+        with financial history must not vanish because somebody deleted a row
+        two tables away. A cascade here would be that same accident with a
+        friendlier name. Naming each model in dependency order keeps the list
+        reviewable, and a new model that this misses fails loudly on the next
+        reset rather than quietly leaving half a cafe behind.
+
+        Master data (menu, floor, staff, stock items) is LEFT ALONE — the seed's
+        builders are all `get_or_create`, so they adopt what is already there.
+        Only the trading is thrown away, which is the part that collides.
+        """
+        org = Organization.objects.filter(name_ar="كافيه القيصر").first()
+        if org is None:
+            return
+
+        from apps.audit.models import AuditLog
+        from apps.floor.models import TableSession
+        from apps.inventory.models import StockMovement
+        from apps.kids.models import PlaySession
+        from apps.orders.models import OrderEvent, OrderItem
+        from apps.payments.models import Invoice, Payment
+        from apps.reporting.models import HourlyDaily, ProductDaily, SalesDaily
+        from apps.shifts.models import CashMovement, Shift
+        from apps.sync.models import ChangeLog
+
+        branches = list(org.branches.values_list("id", flat=True))
+        orders = Order.objects.filter(organization=org)
+
+        # Children first, then their parents. Anything referencing an order has
+        # to go before the order does, or PROTECT stops us mid-way and leaves
+        # the database in a state that is neither seeded nor reset.
+        Payment.objects.filter(order__in=orders).delete()
+        Invoice.objects.filter(order__in=orders).delete()
+        OrderEvent.objects.filter(order__in=orders).delete()
+        OrderItem.objects.filter(order__in=orders).delete()
+        PlaySession.objects.filter(organization=org).delete()
+        StockMovement.objects.filter(branch_id__in=branches).delete()
+        removed = orders.count()
+        orders.delete()
+
+        TableSession.objects.filter(table__area__branch_id__in=branches).delete()
+        CashMovement.objects.filter(shift__branch_id__in=branches).delete()
+        Shift.objects.filter(organization=org).delete()
+        for rollup in (SalesDaily, ProductDaily, HourlyDaily):
+            rollup.objects.filter(branch_id__in=branches).delete()
+        ChangeLog.objects.filter(branch_id__in=branches).delete()
+
+        # The audit trail is NOT touched. `AuditLog.delete()` raises on purpose,
+        # and a reset command that reached around that would be the first crack
+        # in the one record whose whole value is that nothing can edit it — a
+        # demo convenience is nowhere near a good enough reason. The leftover
+        # rows name orders that no longer exist, which is untidy and harmless:
+        # each row carries its own `object_label`, so it still reads correctly.
+        kept = AuditLog.objects.filter(branch_id__in=branches).count()
+
+        self.stdout.write(
+            f"Reset: removed {removed} demo orders and their trading. "
+            f"Kept {kept} audit rows — that log is append-only."
+        )
 
     def _organization(self) -> tuple[Organization, Branch]:
         org, _ = Organization.objects.get_or_create(

@@ -104,12 +104,7 @@ class TestEveryCatalogCodeIsActuallyEnforced:
 
     #: code -> why nothing enforces it yet. Every entry is a feature the product
     #: does not have, NOT an unguarded one. Delete the entry when it is built.
-    NOT_YET_BUILT = {
-        "branch.manage_printers": "Printer configuration is per-device on the Desktop; "
-        "there is no server-side printer registry yet.",
-        "orders.change_price": "A per-line price override is not implemented. Discounts "
-        "cover the cases we have; an arbitrary price would need its own audit shape.",
-    }
+    NOT_YET_BUILT: dict[str, str] = {}
 
     def _declared_on_routes(self) -> set[str]:
         codes: set[str] = set()

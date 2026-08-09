@@ -40,6 +40,12 @@ FAILED = "FAILED"
 #: retrying every two seconds for an hour only fills the log.
 MAX_ATTEMPTS = 6
 
+#: "This branch has printers, and none of them is right for this job." Distinct
+#: from `""`, which means "nobody has configured printers, use the local
+#: default." Sending a kitchen ticket to the receipt roll is worse than waiting,
+#: so this one holds the job in the queue where a human can see it.
+UNROUTED = "\x00unrouted"
+
 
 @dataclass(frozen=True)
 class Job:
@@ -54,8 +60,16 @@ class Job:
         return self.payload.get("lines", [])
 
 
-def enqueue(db: Database, document: Receipt, *, printer: str = "") -> str:
-    """Queue a document. Never raises for a printer problem — that comes later."""
+def enqueue(
+    db: Database, document: Receipt, *, printer: str = "", station_id: str | None = None
+) -> str:
+    """
+    Queue a document. Never raises for a printer problem — that comes later.
+
+    `printer` may be given explicitly; otherwise the branch registry decides at
+    DRAIN time rather than here. Resolving now would freeze a job onto a printer
+    that might be swapped before it prints, and the queue outlives the decision.
+    """
     job_id = str(uuid.uuid4())
 
     with transaction(db.connection):
@@ -68,6 +82,7 @@ def enqueue(db: Database, document: Receipt, *, printer: str = "") -> str:
                     "lines": document.lines,
                     "serial": document.serial,
                     "order_id": document.order_id,
+                    "station_id": station_id,
                     "meta": document.meta,
                 },
                 "printer": printer,
@@ -120,19 +135,33 @@ def mark_failed(db: Database, job_id: str, error: str) -> None:
         )
 
 
-def drain(db: Database, printer) -> dict:
+def drain(db: Database, printer, *, route: bool = True) -> dict:
     """
     Try every pending job once.
 
     `printer` is anything with `.print_document(lines, printer_name)`. Injected
     rather than imported so the queue is testable without hardware, and so a
     branch with a different printer library changes one object.
+
+    The TARGET is resolved here rather than at enqueue time: the queue outlives
+    the decision, and a job frozen onto a printer that was swapped this morning
+    would go to a machine nobody has plugged in.
     """
-    printed = failed = 0
+    printed = failed = unrouted = 0
 
     for job in pending(db):
+        target = job.printer
+        if route and not target:
+            target = _route(db, job)
+            if target is UNROUTED:
+                # Left queued deliberately. Sending a kitchen ticket to the
+                # receipt roll puts an order slip in a customer's hand and
+                # leaves the kitchen waiting; a visible unrouted job is better.
+                unrouted += 1
+                continue
+
         try:
-            printer.print_document(job.lines, job.printer)
+            printer.print_document(job.lines, target)
         except Exception as exc:
             mark_failed(db, job.id, str(exc))
             failed += 1
@@ -141,7 +170,29 @@ def drain(db: Database, printer) -> dict:
             mark_printed(db, job.id)
             printed += 1
 
-    return {"printed": printed, "failed": failed}
+    return {"printed": printed, "failed": failed, "unrouted": unrouted}
+
+
+def _route(db: Database, job: Job) -> str:
+    """
+    Ask the branch registry where this job belongs.
+
+    Returns a device target, `""` for "use the terminal's own default", or
+    `UNROUTED` to leave the job queued. The middle case is the upgrade path: a
+    branch that has not configured printers yet must keep printing exactly as it
+    did before this feature existed.
+    """
+    from . import registry
+
+    resolved = registry.resolve(
+        db,
+        kind=registry.KITCHEN if job.kind == "KITCHEN" else registry.RECEIPT,
+        station_id=job.payload.get("station_id"),
+    )
+    if resolved:
+        return resolved.target
+
+    return UNROUTED if registry.is_configured(db) else ""
 
 
 def counts(db: Database) -> dict[str, int]:

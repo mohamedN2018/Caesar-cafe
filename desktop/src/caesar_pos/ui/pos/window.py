@@ -117,6 +117,7 @@ class PosWindow(QWidget):
 
         self.panel = OrderPanel()
         self.panel.void_requested.connect(self._void_line)
+        self.panel.price_requested.connect(self._override_price)
         self.panel.discount_requested.connect(self._discount)
         self.panel.fire_requested.connect(self._fire)
         self.panel.pay_requested.connect(self._pay)
@@ -269,6 +270,76 @@ class PosWindow(QWidget):
                 return
 
         self._perform(lambda: service.void_item(self.db, self.order_id, line_id, reason=reason))
+
+    def _override_price(self, line_id: str) -> None:
+        """
+        A manual unit price on one line.
+
+        Kept apart from the discount button on purpose. A discount is a
+        percentage off a known price and reports as one; this is a different
+        price entirely — the damaged cake, the staff meal, the drink remade
+        after a complaint. Pushing those through the discount field made the
+        discount rate meaningless, and the discount rate is what an owner
+        watches for loss.
+
+        The reason is REQUIRED. An override with no reason is the one an auditor
+        cannot distinguish from theft, and asking at the moment somebody decides
+        costs a sentence; reconstructing it a month later costs an afternoon and
+        usually fails.
+
+        The server enforces `orders.change_price` regardless of what this
+        terminal believes — the check here only saves a cashier from typing a
+        price that is going to be refused (§62: never trust desktop permissions).
+        """
+        order = service.load(self.db, self.order_id)
+        item = order.item(line_id)
+        if item is None:
+            return
+
+        if not self.session.can("orders.change_price"):
+            self._refuse("لا تملك صلاحية تعديل السعر — اطلب موافقة مشرف.")
+            return
+
+        if item.price_was_overridden:
+            # Undoing must not require voiding the line: on an order already
+            # fired, voiding and re-ringing has the kitchen make it twice.
+            keep = QMessageBox.question(
+                self,
+                "سعر يدوي",
+                f"الصنف بسعر يدوي {item.price_override}. تريد إرجاعه لسعر المنيو؟",
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            )
+            if keep == QMessageBox.StandardButton.Yes:
+                self._perform(
+                    lambda: service.override_price(self.db, self.order_id, line_id, price=None)
+                )
+                return
+
+        price, ok = QInputDialog.getDouble(
+            self,
+            "سعر يدوي",
+            f"سعر المنيو {item.unit_price_snapshot} — السعر الجديد:",
+            float(item.effective_unit_price),
+            0.0,  # zero is allowed: a comped item is a real thing
+            999_999.0,
+            2,
+        )
+        if not ok:
+            return
+
+        reason, ok = QInputDialog.getText(self, "سعر يدوي", "السبب (مطلوب):")
+        if not ok or not reason.strip():
+            return
+
+        self._perform(
+            lambda: service.override_price(
+                self.db,
+                self.order_id,
+                line_id,
+                price=Decimal(str(price)),
+                reason=reason.strip(),
+            )
+        )
 
     def _discount(self) -> None:
         if not self.session.can("orders.discount"):

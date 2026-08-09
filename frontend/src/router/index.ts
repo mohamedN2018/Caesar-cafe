@@ -197,6 +197,12 @@ const router = createRouter({
           component: () => import('@/views/settings/SettingsView.vue'),
           meta: { permission: 'branch.view' },
         },
+        {
+          path: 'printers',
+          name: 'printers',
+          component: () => import('@/views/settings/PrinterListView.vue'),
+          meta: { permission: 'branch.manage_printers' },
+        },
       ],
     },
     {

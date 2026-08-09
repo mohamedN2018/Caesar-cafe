@@ -307,6 +307,63 @@ def _note_set(order: Order, payload: dict, *, actor=None) -> None:
     item.save(update_fields=["note", "updated_at"])
 
 
+@handles(EventType.ITEM_PRICE_OVERRIDDEN)
+def _price_overridden(order: Order, payload: dict, *, actor=None) -> None:
+    """
+    A manual unit price on one line.
+
+    Distinct from a discount, and the distinction is the reason this exists.
+    A discount is a percentage off a known price and reports as a discount; an
+    override is a different price entirely — the damaged cake sold at half, the
+    staff meal, the drink remade after a complaint. Forcing those through the
+    discount field made the discount rate meaningless as a loss signal, which is
+    the one thing it is watched for.
+
+    The catalogue price is kept beside the override rather than replaced, so the
+    audit row and the reports can both say what it was supposed to be.
+
+    Sending `price` as null CLEARS the override and the line returns to the
+    catalogue price — a mistyped override must be undoable without voiding the
+    line and re-ringing it, which on a fired order means the kitchen makes it
+    twice.
+    """
+    from apps.audit import services as audit
+
+    item = _get_line(order, payload["line_id"])
+    raw = payload.get("price")
+
+    if raw is None:
+        was, item.price_override, item.price_override_reason = item.price_override, None, ""
+    else:
+        price = Decimal(str(raw))
+        if price < 0:
+            # A negative price is not a giveaway, it is money out of the drawer
+            # with no refund record. Zero is allowed; below zero is not.
+            raise EventRejected("السعر لا يمكن أن يكون سالباً", code="INVALID_PRICE")
+        was = item.price_override
+        item.price_override = price
+        item.price_override_reason = payload.get("reason", "")[:200]
+
+    item.save(update_fields=["price_override", "price_override_reason", "updated_at"])
+
+    audit.record(
+        "order.price_overridden",
+        branch=order.branch,
+        actor=actor,
+        obj=order,
+        object_label=order.local_number,
+        detail={
+            "item": item.name_snapshot,
+            "catalog_price": item.unit_price_snapshot,
+            "previous_override": was,
+            "new_price": item.price_override,
+            "quantity": item.quantity,
+            "reason": item.price_override_reason,
+            "after_fire": item.fired_at is not None,
+        },
+    )
+
+
 @handles(EventType.DISCOUNT_APPLIED)
 def _discount_applied(order: Order, payload: dict, *, actor=None) -> None:
     percent = Decimal(str(payload.get("percent", 0)))
@@ -465,7 +522,8 @@ def recalculate(order: Order) -> Order:
 
     lines = [
         OrderLine(
-            unit_price=item.unit_price_snapshot,
+            # The override when there is one — see `OrderItem.effective_unit_price`.
+            unit_price=item.effective_unit_price,
             quantity=item.quantity,
             discount_percent=item.discount_percent,
             modifier_deltas=tuple(m.price_delta_snapshot for m in item.modifiers.all()),

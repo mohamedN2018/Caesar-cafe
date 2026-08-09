@@ -118,6 +118,33 @@ def table(obj) -> dict[str, Any]:
     }
 
 
+def printer(obj) -> dict[str, Any]:
+    """
+    Everything a terminal needs to send a job, except where the cable is.
+
+    `device_path` travels because a branch often standardises on one, but a
+    terminal that has its own binding overrides it locally — a serial port is a
+    property of a machine, not of a cafe.
+    """
+    return {
+        "id": str(obj.id),
+        "name_ar": obj.name_ar,
+        "code": obj.code,
+        "kind": obj.kind,
+        "connection": obj.connection,
+        "host": obj.host,
+        "port": obj.port,
+        "device_path": obj.device_path,
+        "paper_width_mm": obj.paper_width_mm,
+        "dots": obj.dots,
+        "copies": obj.copies,
+        "cut_after": obj.cut_after,
+        "is_default": obj.is_default,
+        "station_ids": [str(pk) for pk in obj.stations.values_list("id", flat=True)],
+        "is_active": obj.is_active,
+    }
+
+
 def station(obj) -> dict[str, Any]:
     return {
         "id": str(obj.id),
