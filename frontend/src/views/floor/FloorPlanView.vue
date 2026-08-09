@@ -1,32 +1,34 @@
 <script setup lang="ts">
 /**
- * The floor: the live room, and the editor for it.
+ * The tables, and whether anybody is on them.
  *
- * One screen with two modes rather than two screens, because they answer the
- * same question from opposite ends — "where should I seat these six people"
- * and "where should this table be so that question is easy". Splitting them
- * meant every layout change had to be checked by navigating somewhere else.
+ * This replaced a drawn room — a tilted 3D floor with chairs, shadows and
+ * figures on the seats. It looked impressive and answered the wrong question.
+ * The thing a manager glances at this screen for is "which tables are free and
+ * which have been sitting a long time", and a picture of the room made that
+ * *harder*: the tables were the size the layout dictated rather than the size
+ * their information needed, half of them were behind a wall at the far edge,
+ * and it never fitted a screen it had not been drawn for.
  *
- * The live mode is the source of `pos_x`/`pos_y` too: the Desktop's floor map
- * lays tables out on those coordinates, so what is arranged here is what a
- * waiter sees on the terminal.
+ * So: a card per table, sorted by how much attention it wants. The board is
+ * skimmed for colour and read for the two numbers that matter — how long they
+ * have been sitting, and what is on the bill.
  *
- * **Nothing saves while you drag.** A PATCH per mousemove would be hundreds of
- * writes and a change log the Desktop then has to pull. Positions are collected
- * and sent in one explicit save, and the button says how many are unsaved so
- * leaving the page cannot silently lose the layout.
+ * The drag-to-position editor went with it. Coordinates only ever existed to
+ * feed the picture; a table's number, seats and area are what the rest of the
+ * system actually uses, and those are still editable here.
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { ApiError, api } from '@/api/client'
 import UiAlert from '@/components/ui/UiAlert.vue'
+import UiBadge from '@/components/ui/UiBadge.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiCard from '@/components/ui/UiCard.vue'
 import UiEmpty from '@/components/ui/UiEmpty.vue'
 import UiInput from '@/components/ui/UiInput.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import { money } from '@/lib/format'
-import RoomView, { type RoomStation, type RoomTable } from '@/modules/floor/RoomView.vue'
 import { useAuthStore } from '@/stores/auth'
 
 interface Area {
@@ -36,10 +38,12 @@ interface Area {
   is_active: boolean
 }
 
-interface Table extends RoomTable {
+interface Table {
   id: string
   area: string
   area_name: string
+  number: string
+  seats: number
   is_active: boolean
 }
 
@@ -54,523 +58,338 @@ interface LiveTable {
   seated_minutes: number | null
 }
 
-interface Station {
-  id: string
-  name_ar: string
-  is_active: boolean
-}
+type Draft = { id?: string; area: string; number: string; seats: number }
 
-interface Ticket {
-  station_id: string
-  status: string
-  is_late: boolean
-}
-
-const SHAPES = [
-  { key: 'ROUND', label: 'دائرية' },
-  { key: 'SQUARE', label: 'مربعة' },
-  { key: 'RECT', label: 'مستطيلة' },
-  { key: 'BOOTH', label: 'كنبة' },
-  { key: 'BAR', label: 'بار' },
-] as const
-
-const REFRESH_MS = 15_000
+/** How long a party may sit before the card starts asking to be looked at. */
+const LINGERING_MINUTES = 90
 
 const auth = useAuthStore()
-const mayEdit = computed(() => auth.can('branch.manage_tables'))
-const mayMerge = computed(() => auth.can('floor.merge'))
+const mayEdit = computed(() => auth.can('floor.manage_tables'))
 
 const areas = ref<Area[]>([])
 const tables = ref<Table[]>([])
 const live = ref<Record<string, LiveTable>>({})
-const stations = ref<RoomStation[]>([])
-const selectedArea = ref('')
-const selectedId = ref<string | null>(null)
-const editing = ref(false)
 const loading = ref(true)
 const error = ref('')
 const saving = ref(false)
-let timer: number | undefined
+const activeArea = ref<string | null>(null)
+const draft = ref<Draft | null>(null)
 
-/** Table id → the geometry it had when loaded. Anything different is unsaved. */
-const original = ref<Record<string, { x: number; y: number; shape: string; seats: number }>>({})
+let polling: number | undefined
 
-const newTable = ref({ number: '', seats: 4, shape: 'SQUARE' })
-const creating = ref(false)
+const shown = computed(() => {
+  const inArea = activeArea.value
+    ? tables.value.filter((t) => t.area === activeArea.value)
+    : tables.value
 
-const visible = computed(() =>
-  tables.value
-    .filter((t) => t.is_active && (!selectedArea.value || t.area === selectedArea.value))
-    .map((t) => ({
-      ...t,
-      ...(live.value[t.id] ?? {}),
-      table_id: t.id,
-      session_id: live.value[t.id]?.session_id ?? null,
-    })),
-)
-
-/**
- * Whether this area is outside, decided from its name.
- *
- * A guess, and a cheap one — but the alternative is a database column somebody
- * has to remember to set, and getting it wrong costs a decking texture rather
- * than anything that matters.
- */
-const OUTDOOR_WORDS = ['تراس', 'خارج', 'حديق', 'جاردن', 'terrace', 'garden', 'outdoor']
-const isOutdoor = computed(() => {
-  const name = areas.value.find((a) => a.id === selectedArea.value)?.name_ar?.toLowerCase() ?? ''
-  return OUTDOOR_WORDS.some((word) => name.includes(word))
+  return [...inArea]
+    .filter((t) => t.is_active)
+    .sort((a, b) => {
+      // Occupied first, longest-seated at the top. A free table needs no
+      // attention, and the party that has been there two hours is the one
+      // somebody should walk over to.
+      const left = live.value[a.id]
+      const right = live.value[b.id]
+      const leftMinutes = left?.seated_minutes ?? -1
+      const rightMinutes = right?.seated_minutes ?? -1
+      if (leftMinutes !== rightMinutes) return rightMinutes - leftMinutes
+      return a.number.localeCompare(b.number, 'ar', { numeric: true })
+    })
 })
 
-const selected = computed(() => tables.value.find((t) => t.id === selectedId.value) ?? null)
-const selectedLive = computed(() =>
-  selectedId.value ? (live.value[selectedId.value] ?? null) : null,
-)
+const busyCount = computed(() => shown.value.filter((t) => stateOf(t) !== 'free').length)
 
-const changed = computed(() =>
-  tables.value.filter((t) => {
-    const was = original.value[t.id]
-    return (
-      was &&
-      (was.x !== t.pos_x || was.y !== t.pos_y || was.shape !== t.shape || was.seats !== t.seats)
-    )
-  }),
-)
+function stateOf(table: Table): 'free' | 'busy' | 'lingering' {
+  const row = live.value[table.id]
+  if (!row || row.session_id === null) return 'free'
+  return (row.seated_minutes ?? 0) >= LINGERING_MINUTES ? 'lingering' : 'busy'
+}
 
-/** Two tables in one cell reads wrong on the Desktop, which renders a grid. */
-const collisions = computed(() => {
-  const seen = new Map<string, number>()
-  for (const table of visible.value) {
-    const key = `${table.pos_x},${table.pos_y}`
-    seen.set(key, (seen.get(key) ?? 0) + 1)
-  }
-  return [...seen.values()].filter((n) => n > 1).length
-})
+function seated(table: Table): LiveTable | undefined {
+  return live.value[table.id]
+}
 
-// ── loading ─────────────────────────────────────────────────────────────────
-
-function snapshot() {
-  original.value = Object.fromEntries(
-    tables.value.map((t) => [t.id, { x: t.pos_x, y: t.pos_y, shape: t.shape, seats: t.seats }]),
-  )
+function duration(minutes: number | null | undefined): string {
+  if (minutes === null || minutes === undefined) return ''
+  if (minutes < 60) return `${minutes} د`
+  const hours = Math.floor(minutes / 60)
+  const rest = minutes % 60
+  return rest ? `${hours} س ${rest} د` : `${hours} س`
 }
 
 async function load() {
+  loading.value = true
   try {
-    const [areaRows, tableRows] = await Promise.all([
+    const [a, t] = await Promise.all([
       api.get<Area[]>('/floor/areas/'),
       api.get<Table[]>('/floor/tables/'),
     ])
-    areas.value = areaRows.filter((a) => a.is_active).sort((a, b) => a.sort_order - b.sort_order)
-    tables.value = tableRows
-    if (!selectedArea.value && areas.value.length) selectedArea.value = areas.value[0].id
-    snapshot()
+    areas.value = a.filter((x) => x.is_active).sort((x, y) => x.sort_order - y.sort_order)
+    tables.value = t
     error.value = ''
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'تعذّر تحميل المخطط.'
+    error.value = e instanceof ApiError ? e.message : 'تعذّر تحميل الطاولات.'
   } finally {
     loading.value = false
   }
   await refreshLive()
 }
 
-/**
- * Live state is a separate, non-fatal call. The editor still works when the
- * status endpoint is down; the room just shows no occupancy rather than
- * refusing to draw.
- */
 async function refreshLive() {
-  try {
-    const rows = await api.get<LiveTable[]>('/floor/status/')
-    live.value = Object.fromEntries(rows.map((r) => [r.table_id, r]))
-  } catch {
-    live.value = {}
-  }
-
-  // Stations only matter to somebody who can see the kitchen. Asking anyway
-  // would earn a 403 for a decoration.
-  if (!auth.can('kitchen.view')) return
-  try {
-    const [stationRows, tickets] = await Promise.all([
-      api.get<Station[]>('/kitchen/stations/'),
-      api.get<Ticket[]>('/kitchen/tickets/'),
-    ])
-    stations.value = stationRows
-      .filter((s) => s.is_active)
-      .map((s) => ({
-        id: s.id,
-        name_ar: s.name_ar,
-        open_tickets: tickets.filter((t) => t.station_id === s.id).length,
-        late_tickets: tickets.filter((t) => t.station_id === s.id && t.is_late).length,
-      }))
-  } catch {
-    stations.value = []
-  }
+  // Optional: somebody who may see the layout but not the live board gets the
+  // tables without occupancy rather than an error about a thing they did not
+  // ask for.
+  const rows = await api.optional<LiveTable[]>('/floor/status/')
+  if (!rows) return
+  live.value = Object.fromEntries(rows.map((r) => [r.table_id, r]))
 }
 
-// ── editing ─────────────────────────────────────────────────────────────────
-
-function move({ id, x, y }: { id: string; x: number; y: number }) {
-  const table = tables.value.find((t) => t.id === id)
-  if (!table) return
-
-  // Swap rather than stack: dropping onto an occupied cell is almost always
-  // "these two should trade places", and overlapping them produces a layout
-  // that looks fine here and wrong on the Desktop.
-  const other = visible.value.find((t) => t.pos_x === x && t.pos_y === y && t.id !== id)
-  if (other) {
-    const target = tables.value.find((t) => t.id === other.id)
-    if (target) {
-      target.pos_x = table.pos_x
-      target.pos_y = table.pos_y
-    }
-  }
-
-  table.pos_x = x
-  table.pos_y = y
+function edit(table: Table) {
+  draft.value = { id: table.id, area: table.area, number: table.number, seats: table.seats }
 }
 
-function setShape(shape: string) {
-  if (!selected.value) return
-  selected.value.shape = shape as Table['shape']
-  // A bar is a counter and a booth is against a wall; both are wider than deep,
-  // and leaving them 1×1 draws chairs where nobody sits.
-  selected.value.span_x = shape === 'BAR' ? 3 : shape === 'RECT' ? 2 : 1
-  selected.value.span_y = 1
+function add() {
+  draft.value = { area: activeArea.value ?? areas.value[0]?.id ?? '', number: '', seats: 4 }
 }
 
 async function save() {
-  if (!changed.value.length) return
+  const current = draft.value
+  if (!current?.number.trim() || !current.area) return
+
   saving.value = true
   try {
-    await Promise.all(
-      changed.value.map((t) =>
-        api.patch(`/floor/tables/${t.id}/`, {
-          pos_x: t.pos_x,
-          pos_y: t.pos_y,
-          shape: t.shape,
-          span_x: t.span_x,
-          span_y: t.span_y,
-          seats: t.seats,
-          rotation: t.rotation,
-        }),
-      ),
-    )
-    snapshot()
-    error.value = ''
+    const body = { area: current.area, number: current.number.trim(), seats: current.seats }
+    if (current.id) {
+      await api.patch(`/floor/tables/${current.id}/`, body)
+    } else {
+      await api.post('/floor/tables/', body)
+    }
+    draft.value = null
+    await load()
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'تعذّر حفظ المخطط.'
+    error.value = e instanceof ApiError ? e.message : 'تعذّر حفظ الطاولة.'
   } finally {
     saving.value = false
   }
 }
 
-function revert() {
-  for (const table of tables.value) {
-    const was = original.value[table.id]
-    if (!was) continue
-    table.pos_x = was.x
-    table.pos_y = was.y
-    table.shape = was.shape as Table['shape']
-    table.seats = was.seats
+async function deactivate(table: Table) {
+  if (stateOf(table) !== 'free') {
+    error.value = 'الطاولة مشغولة — لا يمكن إيقافها وعليها جلسة مفتوحة.'
+    return
   }
-}
-
-function firstFreeCell(): { x: number; y: number } {
-  for (let y = 0; y < 8; y += 1) {
-    for (let x = 0; x < 10; x += 1) {
-      if (!visible.value.some((t) => t.pos_x === x && t.pos_y === y)) return { x, y }
-    }
-  }
-  return { x: 0, y: 0 }
-}
-
-// ── merging ─────────────────────────────────────────────────────────────────
-
-/**
- * The party of eight who pushed two four-tops together and want one bill.
- *
- * Two taps rather than a dialog: pick the table to fold away, then the one that
- * keeps the bill. The prompt states which is which, because getting them the
- * wrong way round frees the wrong table — recoverable, but confusing at the
- * moment somebody is trying to take payment.
- */
-const mergingFrom = ref<string | null>(null)
-
-const mergeCandidates = computed(() =>
-  mergingFrom.value
-    ? visible.value.filter((t) => t.session_id && t.id !== mergingFrom.value)
-    : [],
-)
-
-function startMerge() {
-  mergingFrom.value = selectedId.value
-}
-
-async function mergeInto(targetTableId: string) {
-  const sourceSession = live.value[mergingFrom.value ?? '']?.session_id
-  const targetSession = live.value[targetTableId]?.session_id
-  if (!sourceSession || !targetSession) return
-
   try {
-    await api.post(`/floor/sessions/${sourceSession}/merge/`, { into: targetSession })
-    mergingFrom.value = null
-    selectedId.value = targetTableId
-    error.value = ''
-    await refreshLive()
-  } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'تعذّر دمج الطاولتين.'
-  }
-}
-
-async function addTable() {
-  if (!newTable.value.number.trim() || !selectedArea.value) return
-  creating.value = true
-  try {
-    // Dropped into the first free cell rather than 0,0 — a new table landing
-    // under an existing one looks like it failed to appear.
-    const free = firstFreeCell()
-    await api.post('/floor/tables/', {
-      area: selectedArea.value,
-      number: newTable.value.number.trim(),
-      seats: newTable.value.seats,
-      shape: newTable.value.shape,
-      span_x: newTable.value.shape === 'BAR' ? 3 : newTable.value.shape === 'RECT' ? 2 : 1,
-      pos_x: free.x,
-      pos_y: free.y,
-    })
-    newTable.value = { number: '', seats: 4, shape: 'SQUARE' }
+    await api.delete(`/floor/tables/${table.id}/`)
     await load()
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'تعذّر إضافة الطاولة.'
-  } finally {
-    creating.value = false
+    error.value = e instanceof ApiError ? e.message : 'تعذّر إيقاف الطاولة.'
   }
 }
 
 onMounted(async () => {
   await load()
-  timer = window.setInterval(refreshLive, REFRESH_MS)
+  // Ten seconds: long enough not to hammer the API, short enough that a table
+  // that just cleared does not stay red while somebody is standing at it.
+  polling = window.setInterval(refreshLive, 10_000)
 })
-
-onUnmounted(() => {
-  if (timer) window.clearInterval(timer)
-})
+onUnmounted(() => window.clearInterval(polling))
 </script>
 
 <template>
   <div class="space-y-5">
-    <div class="flex flex-wrap items-end justify-between gap-4">
+    <div class="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <h1 class="text-2xl font-bold text-ink">🪑 الصالة</h1>
+        <h1 class="text-2xl font-bold text-ink">🪑 الطاولات</h1>
         <p class="mt-1 text-sm text-ink-muted">
-          الشكل الحقيقي للغرفة — الكراسي المرسومة هي الكراسي الموجودة، والملوّنة عليها ناس دلوقتي.
+          {{ busyCount }} مشغولة من {{ shown.length }}
         </p>
       </div>
-
-      <div v-if="mayEdit" class="flex items-center gap-2">
-        <UiButton :variant="editing ? 'primary' : 'secondary'" @click="editing = !editing">
-          {{ editing ? 'إنهاء التعديل' : 'تعديل المخطط' }}
-        </UiButton>
-        <template v-if="editing">
-          <UiButton v-if="changed.length" variant="ghost" @click="revert">تراجع</UiButton>
-          <UiButton :disabled="!changed.length || saving" :loading="saving" @click="save">
-            {{ changed.length ? `حفظ ${changed.length} تغيير` : 'لا توجد تغييرات' }}
-          </UiButton>
-        </template>
-      </div>
+      <UiButton v-if="mayEdit" @click="add">إضافة طاولة</UiButton>
     </div>
 
     <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
-    <UiAlert v-else-if="editing && changed.length" tone="warning">
-      {{ changed.length }} طاولة غير محفوظة — لن تصل إلى الأجهزة قبل الحفظ.
-    </UiAlert>
-    <UiAlert v-if="editing && collisions" tone="warning">
-      {{ collisions }} خانة بها أكثر من طاولة — ستظهر متداخلة على الكاشير.
-    </UiAlert>
 
-    <UiSkeleton v-if="loading" :rows="8" />
+    <div v-if="areas.length > 1" class="flex flex-wrap gap-2">
+      <button
+        type="button"
+        class="area"
+        :class="{ 'is-on': activeArea === null }"
+        @click="activeArea = null"
+      >
+        الكل
+      </button>
+      <button
+        v-for="area in areas"
+        :key="area.id"
+        type="button"
+        class="area"
+        :class="{ 'is-on': activeArea === area.id }"
+        @click="activeArea = area.id"
+      >
+        {{ area.name_ar }}
+      </button>
+    </div>
 
-    <UiEmpty
-      v-else-if="!areas.length"
-      icon="🪑"
-      title="لا توجد مناطق"
-      description="أضف منطقة (صالة، تراس) من الإعدادات ثم عُد لرسم المخطط."
-    />
+    <UiSkeleton v-if="loading" :rows="5" />
 
     <template v-else>
-      <div v-if="areas.length > 1" class="flex flex-wrap gap-2">
-        <button
-          v-for="area in areas"
-          :key="area.id"
-          class="rounded-lg px-3 py-2 text-sm font-medium ring-1 ring-inset transition"
-          :class="
-            selectedArea === area.id
-              ? 'bg-brand-50 text-brand-800 ring-brand-200'
-              : 'bg-surface text-ink ring-[var(--border)] hover:bg-surface-muted'
-          "
-          @click="selectedArea = area.id"
+      <UiEmpty
+        v-if="!shown.length"
+        icon="🪑"
+        title="لا توجد طاولات"
+        description="أضف طاولة لتظهر هنا وعلى شاشة الكاشير."
+      />
+
+      <div v-else class="tables">
+        <article
+          v-for="table in shown"
+          :key="table.id"
+          class="table-card"
+          :class="`is-${stateOf(table)}`"
         >
-          {{ area.name_ar }}
-        </button>
-      </div>
+          <header class="card-head">
+            <span class="number">{{ table.number }}</span>
+            <span class="seats">{{ table.seats }} كرسي</span>
+          </header>
 
-      <div class="grid gap-4 xl:grid-cols-[1fr_20rem]">
-        <RoomView
-          :tables="visible"
-          :stations="editing ? [] : stations"
-          :editable="editing && mayEdit"
-          :outdoor="isOutdoor"
-          :selected-id="selectedId"
-          @select="selectedId = $event.table_id"
-          @move="move"
-        />
-
-        <div class="space-y-4">
-          <UiCard v-if="selected">
-            <div class="flex items-start justify-between gap-2">
-              <h2 class="text-lg font-bold text-ink">طاولة {{ selected.number }}</h2>
-              <span class="text-sm text-ink-muted">{{ selected.area_name }}</span>
-            </div>
-
-            <dl class="mt-3 space-y-1.5 text-sm">
-              <div class="flex justify-between">
-                <dt class="text-ink-muted">الكراسي</dt>
-                <dd class="font-semibold tabular-nums">
-                  {{ selectedLive?.seated_count ?? 0 }} / {{ selected.seats }}
-                </dd>
-              </div>
-              <div v-if="selectedLive?.waiter" class="flex justify-between">
-                <dt class="text-ink-muted">الويتر</dt>
-                <dd>{{ selectedLive.waiter }}</dd>
-              </div>
-              <div v-if="selectedLive?.seated_minutes" class="flex justify-between">
-                <dt class="text-ink-muted">جالسين من</dt>
-                <dd class="tabular-nums">{{ selectedLive.seated_minutes }} دقيقة</dd>
-              </div>
-              <div v-if="selectedLive?.order_count" class="flex justify-between">
-                <dt class="text-ink-muted">المستحق</dt>
-                <dd class="font-semibold">{{ money(selectedLive.total_due) }}</dd>
-              </div>
-            </dl>
-
-            <!-- Merging: only offered on a table that actually has a party,
-                 because there is nothing to combine otherwise. -->
-            <template v-if="!editing && mayMerge && selectedLive?.session_id">
-              <div class="mt-4 border-t border-[var(--border)] pt-3">
-                <UiButton
-                  v-if="mergingFrom !== selected.id"
-                  size="sm"
-                  variant="secondary"
-                  @click="startMerge"
-                >
-                  دمج مع طاولة تانية
-                </UiButton>
-
-                <template v-else>
-                  <p class="text-sm font-medium text-ink">
-                    طاولة {{ selected.number }} هتتقفل، والحساب هيروح على:
-                  </p>
-                  <div class="mt-2 flex flex-wrap gap-1.5">
-                    <button
-                      v-for="candidate in mergeCandidates"
-                      :key="candidate.id"
-                      class="rounded-lg bg-brand-700 px-3 py-1.5 text-xs font-medium text-white"
-                      @click="mergeInto(candidate.id)"
-                    >
-                      طاولة {{ candidate.number }}
-                    </button>
-                  </div>
-                  <p v-if="!mergeCandidates.length" class="mt-2 text-xs text-ink-muted">
-                    مفيش طاولة تانية عليها زباين في نفس المنطقة.
-                  </p>
-                  <UiButton size="sm" variant="ghost" class="mt-2" @click="mergingFrom = null">
-                    إلغاء
-                  </UiButton>
-                </template>
-              </div>
+          <p class="state">
+            <template v-if="stateOf(table) === 'free'">فاضية</template>
+            <template v-else>
+              {{ seated(table)?.seated_count || '؟' }} أشخاص
+              <span v-if="seated(table)?.seated_minutes !== null">
+                · {{ duration(seated(table)?.seated_minutes) }}
+              </span>
             </template>
+          </p>
 
-            <template v-if="editing && mayEdit">
-              <div class="mt-4 border-t border-[var(--border)] pt-3">
-                <span class="mb-1.5 block text-sm font-medium text-ink">الشكل</span>
-                <div class="flex flex-wrap gap-1.5">
-                  <button
-                    v-for="option in SHAPES"
-                    :key="option.key"
-                    class="rounded-lg px-2.5 py-1.5 text-xs font-medium ring-1 ring-inset transition"
-                    :class="
-                      selected.shape === option.key
-                        ? 'bg-brand-700 text-white ring-brand-700'
-                        : 'bg-surface text-ink ring-[var(--border)] hover:bg-surface-muted'
-                    "
-                    @click="setShape(option.key)"
-                  >
-                    {{ option.label }}
-                  </button>
-                </div>
+          <p v-if="seated(table)?.waiter" class="who">{{ seated(table)?.waiter }}</p>
 
-                <label class="mt-3 block">
-                  <span class="mb-1.5 block text-sm font-medium text-ink">
-                    عدد الكراسي: {{ selected.seats }}
-                  </span>
-                  <input
-                    v-model.number="selected.seats"
-                    type="range"
-                    min="1"
-                    max="12"
-                    class="w-full"
-                  />
-                </label>
+          <p v-if="Number(seated(table)?.total_due)" class="due tabular-nums">
+            {{ money(seated(table)?.total_due ?? '0') }}
+          </p>
 
-                <label class="mt-2 block">
-                  <span class="mb-1.5 block text-sm font-medium text-ink">
-                    الدوران: {{ selected.rotation }}°
-                  </span>
-                  <input
-                    v-model.number="selected.rotation"
-                    type="range"
-                    min="0"
-                    max="345"
-                    step="15"
-                    class="w-full"
-                  />
-                </label>
+          <UiBadge v-if="stateOf(table) === 'lingering'" tone="warning">
+            قاعدين من زمان
+          </UiBadge>
 
-                <p class="mt-2 text-xs text-ink-faint">
-                  الكراسي بتترتب لوحدها حسب الشكل — ستة حوالين مستطيل يبقوا ٣ و٣، مش ٢ على كل ضلع.
-                </p>
-              </div>
-            </template>
-          </UiCard>
-
-          <UiCard v-else>
-            <p class="text-sm text-ink-muted">اضغط على طاولة لعرض تفاصيلها.</p>
-          </UiCard>
-
-          <UiCard v-if="editing && mayEdit">
-            <h2 class="text-sm font-semibold text-ink">إضافة طاولة</h2>
-            <form class="mt-3 space-y-3" @submit.prevent="addTable">
-              <UiInput v-model="newTable.number" label="رقم الطاولة" required />
-              <UiInput v-model.number="newTable.seats" label="عدد الكراسي" type="number" />
-              <label class="block">
-                <span class="mb-1.5 block text-sm font-medium text-ink">الشكل</span>
-                <select
-                  v-model="newTable.shape"
-                  class="min-h-[44px] w-full rounded-lg border border-strong bg-surface px-3"
-                >
-                  <option v-for="option in SHAPES" :key="option.key" :value="option.key">
-                    {{ option.label }}
-                  </option>
-                </select>
-              </label>
-              <UiButton type="submit" :loading="creating" :disabled="!newTable.number.trim()">
-                إضافة
-              </UiButton>
-            </form>
-          </UiCard>
-        </div>
+          <footer v-if="mayEdit" class="card-foot">
+            <button type="button" @click="edit(table)">تعديل</button>
+            <button type="button" @click="deactivate(table)">إيقاف</button>
+          </footer>
+        </article>
       </div>
     </template>
+
+    <UiCard v-if="draft" :title="draft.id ? 'تعديل طاولة' : 'إضافة طاولة'">
+      <form class="grid gap-3 sm:grid-cols-3" @submit.prevent="save">
+        <UiInput v-model="draft.number" label="الرقم" required />
+        <UiInput v-model.number="draft.seats" label="عدد الكراسي" type="number" />
+        <label class="text-sm">
+          <span class="mb-1.5 block font-medium text-ink">المنطقة</span>
+          <select v-model="draft.area" class="w-full rounded-lg border border-border-strong px-3 py-2">
+            <option v-for="area in areas" :key="area.id" :value="area.id">
+              {{ area.name_ar }}
+            </option>
+          </select>
+        </label>
+        <div class="flex gap-2 sm:col-span-3">
+          <UiButton type="submit" :loading="saving">حفظ</UiButton>
+          <UiButton variant="ghost" @click="draft = null">إلغاء</UiButton>
+        </div>
+      </form>
+    </UiCard>
   </div>
 </template>
+
+<style scoped>
+.area {
+  padding: 0.5rem 1.1rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+.area.is-on {
+  background: var(--brand-700);
+  border-color: var(--brand-700);
+  color: var(--fg-on-brand);
+}
+
+.tables {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(10rem, 1fr));
+  gap: 0.75rem;
+}
+
+.table-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.9rem;
+  border-radius: 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  /* The state is carried by a thick inline edge rather than a full colour
+     wash: a wall of saturated cards is unreadable, and the edge survives being
+     skimmed from across a room. */
+  border-inline-start: 5px solid var(--table-free);
+}
+.table-card.is-free {
+  border-inline-start-color: var(--border-strong);
+  opacity: 0.75;
+}
+.table-card.is-busy {
+  border-inline-start-color: var(--brand-700);
+}
+.table-card.is-lingering {
+  border-inline-start-color: var(--warning);
+  background: var(--warning-bg);
+}
+
+.card-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+.number {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+.seats {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+
+.state {
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+.who {
+  font-size: 0.78rem;
+  color: var(--ink-faint);
+}
+.due {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.card-foot {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+.card-foot button {
+  flex: 1 1 auto;
+  padding: 0.4rem;
+  border-radius: 0.45rem;
+  background: var(--surface-sunken);
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+</style>

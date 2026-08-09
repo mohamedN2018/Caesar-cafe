@@ -1,34 +1,27 @@
 """
-Where the chairs go, and the fact that both halves put them in the same place.
+Where the chairs go on the Desktop floor map.
 
-The Web draws the floor with CSS and this draws it with QPainter, so the seat
-arithmetic exists twice — TypeScript in a browser, Python here. There is no
-artefact to vendor, so the guarantee is behavioural: the case tables below are
-also the case tables in `frontend/src/modules/floor/geometry.test.ts`, and the
-last test in this file reads that file to prove they still describe the same
-layouts.
+**This used to be half of a cross-language parity guard**, and the other half is
+gone. The Web drew the same room in CSS from `frontend/src/modules/floor/
+geometry.ts`, and the last class in this file read that file to prove a six-top
+was 3+3 on both screens rather than 3+3 on one and 2+2+1+1 on the other.
 
-Why it matters that they agree: the owner arranges the room on the Web, and the
-waiter reads it on the terminal. If a six-top is 3+3 on one screen and 2+2+1+1
-on the other, the map stops being a map of anything.
+The Web no longer draws a room. It shows a card per table and whether anybody is
+on it, which is the question that screen was actually opened to answer, so the
+TypeScript half was deleted rather than kept alive to satisfy a test — a guard
+whose only remaining purpose is to keep dead code from being deleted has
+inverted into the thing it was written to prevent.
+
+What is left is the Desktop's own arithmetic, which `ui/floor/room.py` still
+draws from. If a browser ever draws the room again, the parity class comes back
+with it; it is in the history at the commit that removed the Web floor plan.
 """
 
 from __future__ import annotations
 
-import re
-from pathlib import Path
-
 import pytest
 
 from caesar_pos.ui.floor import geometry as g
-
-WEB_GEOMETRY = (
-    Path(__file__).resolve().parents[2] / "frontend" / "src" / "modules" / "floor" / "geometry.ts"
-)
-
-
-def _web() -> str:
-    return WEB_GEOMETRY.read_text(encoding="utf-8")
 
 
 class TestRoundTables:
@@ -136,43 +129,3 @@ class TestFullness:
         """Colour never carries the meaning alone."""
         for state in (g.FREE, g.LIGHT, g.BUSY, g.FULL):
             assert g.STATE_LABELS[state]
-
-
-class TestTheTwoHalvesAgree:
-    """
-    The Web and the Desktop draw the same room.
-
-    Read across the monorepo rather than trusted: the owner arranges the floor
-    in a browser and the waiter reads it on a terminal, and a six-top that is
-    3+3 on one and 2+2+1+1 on the other makes the map a map of nothing.
-    """
-
-    def test_the_web_geometry_is_where_we_think(self) -> None:
-        """Guard the guard: a moved file would make everything below vacuous."""
-        assert WEB_GEOMETRY.exists(), f"the Web geometry has moved: {WEB_GEOMETRY}"
-        assert "seatsFor" in _web()
-
-    def test_the_gap_matches(self) -> None:
-        match = re.search(r"const GAP = ([0-9.]+)", _web())
-        assert match, "GAP is no longer declared the same way on the Web"
-        assert float(match.group(1)) == g.GAP
-
-    def test_the_edge_capacity_rule_matches(self) -> None:
-        """
-        A one-cell edge takes two; each extra cell adds one. Written out in both
-        places, so this checks the Web's formula is still the same expression
-        rather than only that some function exists.
-        """
-        assert "Math.max(2, span + 1)" in _web()
-        assert g.edge_capacity(1) == 2
-        assert g.edge_capacity(2) == 3
-        assert g.edge_capacity(4) == 5
-
-    def test_the_same_shapes_are_supported(self) -> None:
-        web_shapes = set(re.findall(r"'(ROUND|SQUARE|RECT|BOOTH|BAR)'", _web()))
-        assert web_shapes == {g.ROUND, g.SQUARE, g.RECT, g.BOOTH, g.BAR}
-
-    def test_the_fullness_thresholds_match(self) -> None:
-        assert "seated / seats >= 0.6" in _web()
-        assert g.fullness(10, 6) == g.BUSY
-        assert g.fullness(10, 5) == g.LIGHT
