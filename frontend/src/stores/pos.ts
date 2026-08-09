@@ -160,18 +160,25 @@ export const usePosStore = defineStore('pos', () => {
   async function loadCatalog(): Promise<void> {
     catalogLoading.value = true
     try {
+      // `optional` on the two that a role may legitimately lack. A till whose
+      // operator cannot read modifier groups still sells, it just cannot offer
+      // extras; one who cannot read payment methods can ring an order for a
+      // waiter to settle. Neither is worth a red banner, and the product's rule
+      // is that a user is never shown a refusal for something they were never
+      // offered — the pay button simply is not there.
+      //
+      // The catalogue is NOT optional: a till with no menu is not a till, and
+      // failing loudly there is the honest answer.
       const [cats, prods, groups, pay] = await Promise.all([
         api.get<Category[]>('/catalog/categories/'),
         api.get<Product[]>('/catalog/products/'),
-        // Optional: a till whose operator cannot read modifier groups still
-        // sells; it just cannot offer extras. Better than a blank screen.
         api.optional<ModifierGroup[]>('/catalog/modifier-groups/'),
-        api.get<PaymentMethod[]>('/payments/methods/'),
+        api.optional<PaymentMethod[]>('/payments/methods/'),
       ])
       categories.value = cats.filter((c) => c.is_active)
       products.value = prods
       modifierGroups.value = groups ?? []
-      methods.value = pay.filter((m) => m.is_active)
+      methods.value = (pay ?? []).filter((m) => m.is_active)
       error.value = ''
     } catch (e) {
       error.value = e instanceof ApiError ? e.message : 'تعذّر تحميل المنيو.'

@@ -34,6 +34,16 @@ const canFire = computed(() => pos.unfired.length > 0)
 const mayOverride = computed(() => auth.can('orders.change_price'))
 const mayDiscount = computed(() => auth.can('orders.discount'))
 
+/**
+ * Hidden, not disabled, and not merely permission-checked.
+ *
+ * `payments.take` is the permission, but the methods list can also be empty
+ * because nobody has configured a tender yet — and a pay button that opens a
+ * sheet with no buttons in it is the same dead end by a different route. Both
+ * cases mean the same thing to the cashier: settling is not available here.
+ */
+const mayPay = computed(() => auth.can('payments.take') && pos.methods.length > 0)
+
 function trim(quantity: string): string {
   return String(Number(quantity))
 }
@@ -176,10 +186,19 @@ async function discount() {
     </footer>
 
     <div class="actions">
+      <!--
+        `v-if` on the permission, `:disabled` on the state. The distinction is
+        the product's rule: a control you may never use is not drawn at all,
+        because a greyed button you can never ungrey is a promise the app has no
+        intention of keeping. A control you may use but not YET — nothing on the
+        bill, nothing new to fire — is drawn and disabled, because that one
+        turns on by itself in a moment.
+      -->
       <button
+        v-if="mayDiscount"
         type="button"
         class="secondary"
-        :disabled="!pos.hasItems || !mayDiscount || pos.busy"
+        :disabled="!pos.hasItems || pos.busy"
         @click="discount"
       >
         خصم
@@ -188,6 +207,7 @@ async function discount() {
         للمطبخ
       </button>
       <button
+        v-if="mayPay"
         type="button"
         class="pay"
         :disabled="!pos.hasItems || pos.isSettled || pos.busy"

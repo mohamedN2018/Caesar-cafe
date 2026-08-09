@@ -45,6 +45,30 @@ def _api_routes():
         yield path, name, view_class
 
 
+def _declared_codes(view_class) -> list[str]:
+    """
+    Every permission code a view declares, flattened.
+
+    A declaration may be a tuple meaning "any of these" (see
+    `HasPermission`), and both passes below need the individual codes: one to
+    check they exist in the catalogue, the other to count them as enforced.
+    Treating a tuple as one opaque value would fail the first test with a
+    confusing message and — worse — silently stop the second from counting the
+    codes inside it, which is exactly the quiet gap that pass exists to find.
+    """
+    codes: list[str] = []
+    if single := getattr(view_class, "required_permission", None):
+        codes.append(single)
+
+    per_method = getattr(view_class, "required_permissions", None)
+    if isinstance(per_method, dict):
+        for value in per_method.values():
+            if not value:
+                continue
+            codes.extend([value] if isinstance(value, str) else list(value))
+    return codes
+
+
 class TestEveryRouteDeclaresAPermission:
     def test_routes_were_discovered(self) -> None:
         """Guard the guard: an empty route list would make this vacuously pass."""
@@ -68,14 +92,11 @@ class TestEveryRouteDeclaresAPermission:
     def test_declared_codes_exist_in_the_catalog(self) -> None:
         unknown = []
         for path, _name, view_class in _api_routes():
-            codes = []
-            if single := getattr(view_class, "required_permission", None):
-                codes.append(single)
-            per_method = getattr(view_class, "required_permissions", None)
-            if isinstance(per_method, dict):
-                codes.extend(v for v in per_method.values() if v)
-
-            unknown.extend(f"{path}: {code}" for code in codes if not catalog.is_valid(code))
+            unknown.extend(
+                f"{path}: {code}"
+                for code in _declared_codes(view_class)
+                if not catalog.is_valid(code)
+            )
 
         assert not unknown, "Undefined permission codes:\n  " + "\n  ".join(unknown)
 
@@ -109,11 +130,7 @@ class TestEveryCatalogCodeIsActuallyEnforced:
     def _declared_on_routes(self) -> set[str]:
         codes: set[str] = set()
         for _path, _name, view_class in _api_routes():
-            if single := getattr(view_class, "required_permission", None):
-                codes.add(single)
-            per_method = getattr(view_class, "required_permissions", None)
-            if isinstance(per_method, dict):
-                codes.update(v for v in per_method.values() if v)
+            codes.update(_declared_codes(view_class))
         return codes
 
     def _checked_inline(self) -> set[str]:

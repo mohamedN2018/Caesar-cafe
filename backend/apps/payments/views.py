@@ -76,7 +76,20 @@ class PaymentMethodViewSet(BranchScopedViewSet):
 
     queryset = PaymentMethod.all_objects.all()
     serializer_class = PaymentMethodSerializer
-    required_permissions = {"GET": "payments.view_all", "default": "branch.edit_settings"}
+    # Reading this list was `payments.view_all`, which was simply the wrong
+    # permission. `view_all` means "see every payment in the branch, including
+    # other people's" — a reporting capability. This endpoint returns
+    # CONFIGURATION: which tenders the branch accepts. A cashier who may take a
+    # payment must be able to see the buttons, or the till cannot settle a bill
+    # at all; that was the bug.
+    #
+    # Two capabilities reach it for unrelated reasons — the cashier to sell, the
+    # accountant to read a report — and neither is the other's permission, so
+    # the declaration says both rather than picking one and locking a role out.
+    required_permissions = {
+        "GET": ("payments.take", "payments.view_all"),
+        "default": "branch.edit_settings",
+    }
     pagination_class = None
 
     def get_queryset(self):

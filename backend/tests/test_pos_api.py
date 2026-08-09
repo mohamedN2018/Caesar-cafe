@@ -257,6 +257,53 @@ class TestOrderEndpoints:
         assert client.get("/api/v1/orders/").json()["data"] == []
 
 
+class TestPaymentMethodsAreReadableByWhoeverSells:
+    """
+    Reading this list was gated on `payments.view_all`, and that was simply the
+    wrong permission. `view_all` means "see every payment in the branch,
+    including other people's" — a reporting capability a cashier does not have
+    and should not. But the endpoint returns CONFIGURATION: which tenders the
+    branch accepts, i.e. the buttons on the payment screen.
+
+    So the till could not settle a bill. It failed with the very message this
+    product promises never to show — "ليس لديك صلاحية" for something the user
+    was offered — and the fix is the permission, not a wider role.
+    """
+
+    def test_a_cashier_can_read_the_payment_methods(self, pos, cash) -> None:
+        response = pos.get("/api/v1/payments/methods/")
+
+        assert response.status_code == 200
+        assert [m["code"] for m in response.json()["data"]] == ["CASH"]
+
+    def test_an_accountant_can_too(self, authed, make_user, branch, cash) -> None:
+        """
+        The other half of the "any of these" declaration. An accountant has
+        `payments.view_all` and not `payments.take`, so picking either code
+        alone would have locked one of the two roles out of a list they both
+        legitimately need.
+        """
+        client = authed(make_user(email="acc@caesar.test", role="ACCOUNTANT"), branch=branch)
+
+        assert client.get("/api/v1/payments/methods/").status_code == 200
+
+    def test_a_cook_cannot(self, authed, make_user, branch, cash) -> None:
+        """ "Any of these" must still be a closed list, not an open door."""
+        client = authed(make_user(email="cook@caesar.test", role="KITCHEN"), branch=branch)
+
+        assert client.get("/api/v1/payments/methods/").status_code == 403
+
+    def test_a_cashier_still_cannot_change_them(self, pos) -> None:
+        """Reading the tenders is not licence to invent one."""
+        response = pos.post(
+            "/api/v1/payments/methods/",
+            {"code": "CRYPTO", "name_ar": "عملة رقمية"},
+            format="json",
+        )
+
+        assert response.status_code == 403
+
+
 class TestPaymentEndpoints:
     def test_payment_requires_an_idempotency_key(self, pos, variant, cash) -> None:
         """§51 — the retry semantics of every client depend on this."""

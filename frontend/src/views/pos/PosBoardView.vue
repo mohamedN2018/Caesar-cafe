@@ -29,10 +29,43 @@ import { type Product, usePosStore } from '@/stores/pos'
 
 const pos = usePosStore()
 
+/**
+ * The order type is a HEADER control, not a dialog on every sale.
+ *
+ * It changes a few times an hour — when the phone rings — and asking on every
+ * order taxes the ninety percent that are dine-in. It is also chosen BEFORE the
+ * order opens, because the server fixes it at open time: the type decides which
+ * price a line is rung at, and a bill that changed channel halfway would have
+ * two prices for the same water.
+ */
+const ORDER_TYPES = [
+  { value: 'DINE_IN', label: 'صالة' },
+  { value: 'TAKE_AWAY', label: 'تيك أواي' },
+  { value: 'DELIVERY', label: 'توصيل' },
+] as const
+
 const activeCategory = ref<string | null>(null)
 const search = ref('')
 const sheetProduct = ref<Product | null>(null)
 const paying = ref(false)
+const orderType = ref<string>('DINE_IN')
+
+/** Locked once the bill has a line on it — see the note on ORDER_TYPES. */
+const typeLocked = computed(() => pos.order !== null && pos.order.items.length > 0)
+
+async function startNew() {
+  pos.clear()
+  await pos.openOrder({ order_type: orderType.value })
+}
+
+function chooseType(value: string) {
+  if (typeLocked.value) return
+  orderType.value = value
+  // No order open yet: the choice simply waits for the first tap. One that is
+  // open but empty is re-opened, because changing the type of an empty order is
+  // free and refusing would be pedantry the cashier has to work around.
+  if (pos.order) startNew()
+}
 
 const shown = computed(() => {
   const term = search.value.trim()
@@ -55,7 +88,7 @@ function priceOf(product: Product): string {
 }
 
 async function tap(product: Product) {
-  if (!pos.order) await pos.openOrder()
+  if (!pos.order) await pos.openOrder({ order_type: orderType.value })
   if (!pos.order) return
 
   if (needsChoice(product)) {
@@ -76,14 +109,33 @@ onMounted(async () => {
     <!-- Menu -->
     <section class="menu">
       <div class="menu-top">
-        <input
-          v-model="search"
-          type="search"
-          class="search"
-          placeholder="ابحث عن صنف…"
-          autocomplete="off"
-        />
+        <div class="types">
+          <button
+            v-for="option in ORDER_TYPES"
+            :key="option.value"
+            type="button"
+            class="type"
+            :class="{ 'is-on': orderType === option.value }"
+            :disabled="typeLocked"
+            @click="chooseType(option.value)"
+          >
+            {{ option.label }}
+          </button>
+          <span v-if="typeLocked" class="locked">النوع يتحدد قبل أول صنف</span>
+        </div>
+
+        <button type="button" class="fresh" :disabled="pos.busy" @click="startNew">
+          طلب جديد
+        </button>
       </div>
+
+      <input
+        v-model="search"
+        type="search"
+        class="search"
+        placeholder="ابحث عن صنف…"
+        autocomplete="off"
+      />
 
       <div class="tabs">
         <button
@@ -176,6 +228,49 @@ onMounted(async () => {
 
 .menu-top {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.types {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.type {
+  min-height: 2.75rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 0.7rem;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--ink-muted);
+  font-weight: 700;
+}
+.type.is-on {
+  background: var(--gold-500);
+  border-color: var(--gold-500);
+  color: var(--fg-on-gold);
+}
+.type:disabled {
+  opacity: 0.5;
+}
+
+.locked {
+  font-size: 0.72rem;
+  color: var(--ink-faint);
+}
+
+.fresh {
+  min-height: 2.75rem;
+  padding: 0.5rem 1.2rem;
+  border-radius: 0.7rem;
+  background: var(--brand-700);
+  color: var(--fg-on-brand);
+  font-weight: 700;
 }
 
 .search {
