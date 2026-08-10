@@ -2,7 +2,14 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
-from .models import Category, Modifier, ModifierGroup, Product, ProductVariant
+from .models import (
+    Category,
+    Modifier,
+    ModifierGroup,
+    Product,
+    ProductVariant,
+    VariantChannelPrice,
+)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -23,9 +30,20 @@ class CategorySerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "product_count"]
 
 
+class VariantChannelPriceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VariantChannelPrice
+        fields = ["id", "order_type", "price"]
+
+
 class ProductVariantSerializer(serializers.ModelSerializer):
     margin = serializers.DecimalField(max_digits=12, decimal_places=2, read_only=True)
     margin_percent = serializers.DecimalField(max_digits=6, decimal_places=2, read_only=True)
+
+    #: Only the channels that differ. The till falls back to `price`, so sending
+    #: three near-identical rows per variant would be payload for nothing — and
+    #: on a 43-product menu that is a few hundred rows a cashier never reads.
+    channel_prices = VariantChannelPriceSerializer(many=True, read_only=True)
 
     class Meta:
         model = ProductVariant
@@ -34,6 +52,7 @@ class ProductVariantSerializer(serializers.ModelSerializer):
             "name_ar",
             "sku",
             "price",
+            "channel_prices",
             "cost",
             "margin",
             "margin_percent",

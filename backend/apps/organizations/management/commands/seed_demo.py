@@ -34,7 +34,14 @@ from django.utils import timezone
 from apps.accounts.models import User
 from apps.authz.models import RoleAssignment
 from apps.authz.services import ensure_system_roles
-from apps.catalog.models import Category, Modifier, ModifierGroup, Product, ProductVariant
+from apps.catalog.models import (
+    Category,
+    Modifier,
+    ModifierGroup,
+    Product,
+    ProductVariant,
+    VariantChannelPrice,
+)
 from apps.floor.models import Area, Table, TableSession, TableShape, TableStatus
 from apps.inventory.models import InventoryItem, ItemType, Unit, UnitConversion
 from apps.kids.models import PlayArea, PlayTariff, TariffMode
@@ -189,19 +196,79 @@ PRINTERS = [
     ("SWEETS", "طابعة الحلويات", "KITCHEN", ["DESSERT"], False),
 ]
 
-#: (code, name, base unit, purchase unit, cost per purchase unit)
+#: sku → {order type: price}. Only where the channel genuinely differs.
+#:
+#: "المياه جوه الصالة بـ15، ولما تطلع توصيل بتتحسب بـ20."
+#:
+#: Absolute prices, not a markup, because that is what they are: a delivery
+#: price covers a driver and a takeaway cup costs more than a glass that gets
+#: washed. Neither is a percentage of the room price, and a cafe that raises
+#: dine-in by five pounds does not thereby want delivery to move.
+#:
+#: Most of the menu is deliberately absent — it costs the same everywhere, and
+#: three rows per variant would be three places to forget to update.
+CHANNEL_PRICES = {
+    "WATER": {"TAKE_AWAY": "20.00", "DELIVERY": "20.00"},
+    "SOFT": {"TAKE_AWAY": "35.00", "DELIVERY": "40.00"},
+    # A hot drink to go needs a lidded cup, and it does not come back.
+    "CAPP": {"TAKE_AWAY": "70.00", "DELIVERY": "80.00"},
+    "LATTE": {"TAKE_AWAY": "75.00", "DELIVERY": "85.00"},
+    "TURK": {"TAKE_AWAY": "45.00", "DELIVERY": "55.00"},
+    "TEA": {"TAKE_AWAY": "30.00", "DELIVERY": "40.00"},
+    # Food travels worst and is packed heaviest.
+    "CLUB": {"DELIVERY": "170.00"},
+    "BURGER": {"DELIVERY": "185.00"},
+    "PASTA": {"DELIVERY": "200.00"},
+    "FRIES": {"DELIVERY": "75.00"},
+}
+
+#: (code, name, base unit, purchase unit, cost per purchase unit, supplier code)
+#:
+#: The supplier on each line is what makes the purchasing screen mean something:
+#: a reorder is placed with the person who sells that thing, and an inventory
+#: list where every item comes from one company is a list nobody has to think
+#: about — which is a demo that teaches the wrong lesson.
 STOCK = [
-    ("BEANS", "بن محوج", "G", "KG", "420.00"),
-    ("MILK", "لبن", "ML", "L", "38.00"),
-    ("SUGAR", "سكر", "G", "KG", "32.00"),
-    ("CHOC", "شوكولاتة", "G", "KG", "260.00"),
-    ("MANGO", "مانجو مجمدة", "G", "KG", "95.00"),
-    ("LEMON", "ليمون", "G", "KG", "40.00"),
-    ("BREAD", "خبز توست", "PC", "PC", "4.00"),
-    ("CHICKEN", "صدور فراخ", "G", "KG", "180.00"),
-    ("BEEF", "لحم مفروم", "G", "KG", "340.00"),
-    ("POTATO", "بطاطس", "G", "KG", "22.00"),
-    ("CUP12", "كوب ١٢ أونصة", "PC", "PC", "1.80"),
+    ("BEANS", "بن محوج", "G", "KG", "420.00", "ROASTER"),
+    ("MILK", "لبن", "ML", "L", "38.00", "DAIRY"),
+    ("CREAM", "كريمة خفق", "ML", "L", "95.00", "DAIRY"),
+    ("CHEESE", "جبنة شيدر", "G", "KG", "210.00", "DAIRY"),
+    ("SUGAR", "سكر", "G", "KG", "32.00", "GROCER"),
+    ("CHOC", "شوكولاتة", "G", "KG", "260.00", "GROCER"),
+    ("FLOUR", "دقيق", "G", "KG", "26.00", "GROCER"),
+    ("TEA", "شاي", "G", "KG", "180.00", "GROCER"),
+    ("MANGO", "مانجو مجمدة", "G", "KG", "95.00", "PRODUCE"),
+    ("STRAW", "فراولة مجمدة", "G", "KG", "88.00", "PRODUCE"),
+    ("ORANGE", "برتقال", "G", "KG", "28.00", "PRODUCE"),
+    ("LEMON", "ليمون", "G", "KG", "40.00", "PRODUCE"),
+    ("MINT", "نعناع", "G", "KG", "60.00", "PRODUCE"),
+    ("POTATO", "بطاطس", "G", "KG", "22.00", "PRODUCE"),
+    ("LETTUCE", "خس", "G", "KG", "25.00", "PRODUCE"),
+    ("BREAD", "خبز توست", "PC", "PC", "4.00", "BAKERY"),
+    ("BUN", "خبز برجر", "PC", "PC", "6.00", "BAKERY"),
+    ("CHICKEN", "صدور فراخ", "G", "KG", "180.00", "BUTCHER"),
+    ("BEEF", "لحم مفروم", "G", "KG", "340.00", "BUTCHER"),
+    ("TUNA", "تونة", "G", "KG", "240.00", "GROCER"),
+    ("CUP12", "كوب ١٢ أونصة", "PC", "PC", "1.80", "PACKAGING"),
+    ("CUP16", "كوب ١٦ أونصة", "PC", "PC", "2.30", "PACKAGING"),
+    ("LID", "غطاء كوب", "PC", "PC", "0.90", "PACKAGING"),
+    ("BOX", "علبة تيك أواي", "PC", "PC", "3.50", "PACKAGING"),
+    ("NAPKIN", "مناديل", "PC", "PC", "0.15", "PACKAGING"),
+]
+
+#: (code, name, phone, payment terms in days, what they sell)
+#:
+#: Terms differ on purpose and they are the number the purchasing screen exists
+#: to surface. A dairy delivering daily is paid on the spot; a roaster invoicing
+#: monthly is a real payable that an owner needs to see coming.
+SUPPLIERS = [
+    ("ROASTER", "محمصة القاهرة للبن", "01004455667", 30),
+    ("DAIRY", "ألبان الدلتا", "01112233445", 0),
+    ("PRODUCE", "سوق الخضار — أبو أحمد", "01223344556", 0),
+    ("BUTCHER", "جزارة الأمانة", "01098877665", 7),
+    ("BAKERY", "مخبز الحرمين", "01556677889", 7),
+    ("GROCER", "شركة النيل للتوريدات", "01005566778", 14),
+    ("PACKAGING", "التعبئة الحديثة", "01277889900", 21),
 ]
 
 #: variant sku → [(item code, quantity, unit, waste %)]
@@ -291,14 +358,17 @@ class Command(BaseCommand):
             stations = self._stations(org, branch)
             self._printers(org, branch, stations)
             units = self._units(org)
-            items = self._stock(org, branch, units)
+            suppliers = self._suppliers(org, branch)
+            items = self._stock(org, branch, units, suppliers)
             menu = self._menu(org, branch, stations)
+            self._channel_prices(org, branch)
             self._modifiers(org, branch, items)
             self._recipes(menu, items, units)
             methods = self._payment_methods(org, branch)
             self._floor(org, branch)
-            supplier = self._supplier(org, branch)
-            self._receive_stock(org, branch, supplier, items, units, staff["store@caesar.test"])
+            self._receive_stock(
+                org, branch, suppliers["GROCER"], items, units, staff["store@caesar.test"]
+            )
             self._kids(org, branch, menu)
 
         # Trading runs outside the setup transaction: a fortnight is thousands
@@ -391,6 +461,7 @@ class Command(BaseCommand):
         )
         Recipe.objects.filter(variant__product__branch_id__in=branches).delete()
         Printer.all_objects.filter(branch_id__in=branches).delete()
+        VariantChannelPrice.objects.filter(variant__product__branch_id__in=branches).delete()
         ProductVariant.objects.filter(product__branch_id__in=branches).delete()
         Product.all_objects.filter(branch_id__in=branches).delete()
         Category.all_objects.filter(branch_id__in=branches).delete()
@@ -551,23 +622,82 @@ class Command(BaseCommand):
             )
         return units
 
-    def _stock(self, org, branch, units) -> dict[str, InventoryItem]:
+    def _stock(self, org, branch, units, suppliers) -> dict[str, InventoryItem]:
         items = {}
-        for code, name, base, _purchase, _cost in STOCK:
-            items[code], _ = InventoryItem.objects.get_or_create(
+        for code, name, base, _purchase, _cost, supplier_code in STOCK:
+            bulk = base in ("G", "ML")
+            items[code], _ = InventoryItem.objects.update_or_create(
                 organization=org,
                 branch=branch,
                 code=code,
                 defaults={
                     "name_ar": name,
                     "base_unit": units[base],
-                    "item_type": ItemType.RAW,
-                    # Set so the reorder screen has something real on it.
-                    "reorder_level": Decimal("2000") if base in ("G", "ML") else Decimal("40"),
-                    "reorder_quantity": Decimal("10000") if base in ("G", "ML") else Decimal("200"),
+                    # Packaging is not an ingredient. Filed correctly so a COGS
+                    # report can separate what went into the cup from the cup.
+                    "item_type": ItemType.PACKAGING
+                    if supplier_code == "PACKAGING"
+                    else ItemType.RAW,
+                    "default_supplier": suppliers[supplier_code],
+                    # `minimum_stock` is what the low-stock warning fires on, and
+                    # it sits BELOW the reorder level on purpose: reorder is
+                    # "time to buy", minimum is "you are about to run out". One
+                    # number doing both jobs means either constant noise or a
+                    # warning that arrives after the coffee has run out.
+                    "minimum_stock": Decimal("1000") if bulk else Decimal("20"),
+                    "reorder_level": Decimal("2000") if bulk else Decimal("40"),
+                    "reorder_quantity": Decimal("10000") if bulk else Decimal("200"),
                 },
             )
         return items
+
+    def _suppliers(self, org, branch) -> dict[str, Supplier]:
+        return {
+            code: Supplier.objects.update_or_create(
+                organization=org,
+                branch=branch,
+                name=name,
+                defaults={"phone": phone, "payment_terms_days": terms},
+            )[0]
+            for code, name, phone, terms in SUPPLIERS
+        }
+
+    def _channel_prices(self, org, branch) -> None:
+        """
+        The prices that differ when an order leaves the room.
+
+        Written against the DEFAULT variant of each product, because that is the
+        one a tap rings and the one the tile shows. A cafe that wants the large
+        size priced separately per channel can add it in the Web Admin; seeding
+        every size on every channel would be a wall of rows that teaches nothing.
+
+        **Resolved from the PRODUCT's sku, not the variants dict.** That dict is
+        keyed `WATER-صغير` for anything with sizes, so looking `WATER` up in it
+        found nothing — and the first version of this skipped the miss quietly
+        and seeded six of the ten channel prices. A silent `continue` over a
+        table somebody hand-wrote is how a demo ends up not demonstrating the
+        feature it was extended for, so an unknown sku is now an error.
+        """
+        for sku, by_channel in CHANNEL_PRICES.items():
+            variant = (
+                ProductVariant.objects.filter(
+                    product__branch=branch, product__sku=sku, is_default=True
+                )
+                .order_by("sort_order")
+                .first()
+            )
+            if variant is None:
+                raise CommandError(
+                    f"CHANNEL_PRICES names '{sku}', which is not a product in MENU. "
+                    "Fix the table rather than letting the price quietly not exist."
+                )
+
+            for order_type, price in by_channel.items():
+                VariantChannelPrice.objects.update_or_create(
+                    variant=variant,
+                    order_type=order_type,
+                    defaults={"price": Decimal(price)},
+                )
 
     def _menu(self, org, branch, stations) -> dict[str, ProductVariant]:
         variants: dict[str, ProductVariant] = {}
@@ -684,15 +814,6 @@ class Command(BaseCommand):
                     },
                 )
 
-    def _supplier(self, org, branch) -> Supplier:
-        supplier, _ = Supplier.objects.get_or_create(
-            organization=org,
-            branch=branch,
-            name="شركة النيل للتوريدات",
-            defaults={"phone": "01004455667", "payment_terms_days": 14},
-        )
-        return supplier
-
     def _receive_stock(self, org, branch, supplier, items, units, user) -> None:
         """
         Through `post_receipt`, so stock levels, weighted-average costs, the
@@ -712,7 +833,7 @@ class Command(BaseCommand):
             supplier_invoice_no="INV-2026-118",
             received_date=timezone.localdate() - timedelta(days=15),
         )
-        for code, _name, _base, purchase_unit, cost in STOCK:
+        for code, _name, _base, purchase_unit, cost, _supplier in STOCK:
             GRLine.objects.create(
                 receipt=receipt,
                 item=items[code],

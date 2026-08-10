@@ -25,7 +25,7 @@ import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import ItemSheet from '@/modules/pos/ItemSheet.vue'
 import OrderPanel from '@/modules/pos/OrderPanel.vue'
 import PaymentSheet from '@/modules/pos/PaymentSheet.vue'
-import { type Product, usePosStore } from '@/stores/pos'
+import { type Product, priceFor, usePosStore } from '@/stores/pos'
 
 const pos = usePosStore()
 
@@ -84,7 +84,13 @@ function needsChoice(product: Product): boolean {
 
 function priceOf(product: Product): string {
   const chosen = product.variants.find((v) => v.is_default) ?? product.variants[0]
-  return chosen?.price ?? '0.00'
+  return chosen ? priceFor(chosen, orderType.value) : '0.00'
+}
+
+/** True when this item is priced differently on the channel now selected. */
+function isChannelPriced(product: Product): boolean {
+  const chosen = product.variants.find((v) => v.is_default) ?? product.variants[0]
+  return chosen ? priceFor(chosen, orderType.value) !== chosen.price : false
 }
 
 async function tap(product: Product) {
@@ -177,7 +183,18 @@ onMounted(async () => {
           >
             <span class="tile-name">{{ product.name_ar }}</span>
             <span class="tile-foot">
-              <span class="tile-price tabular-nums">{{ priceOf(product) }}</span>
+              <!--
+                The price on the CHANNEL now selected, marked when it differs
+                from the room price. A cashier taking a delivery order needs to
+                read 20 off the tile, not 15 and then a surprise on the bill —
+                that gap is an argument on the phone.
+              -->
+              <span
+                class="tile-price tabular-nums"
+                :class="{ 'is-channel': isChannelPriced(product) }"
+              >
+                {{ priceOf(product) }}
+              </span>
               <!--
                 Where it gets MADE, not which tab it sits under. The two are
                 different axes on purpose — a caesar salad is filed under food
@@ -203,6 +220,7 @@ onMounted(async () => {
     <ItemSheet
       v-if="sheetProduct"
       :product="sheetProduct"
+      :order-type="orderType"
       @close="sheetProduct = null"
     />
     <PaymentSheet v-if="paying" @close="paying = false" />
@@ -370,6 +388,13 @@ onMounted(async () => {
   font-size: 1.05rem;
   font-weight: 700;
   color: var(--brand-700);
+}
+.tile-price.is-channel {
+  /* Gold, plus a dotted underline. The colour alone would be a rule somebody
+     has to learn; the underline says "this number has a reason" to a cashier
+     who has never been told what gold means. */
+  color: var(--gold-600);
+  border-bottom: 1px dotted currentColor;
 }
 
 .tile-station {

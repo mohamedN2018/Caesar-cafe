@@ -113,6 +113,23 @@ class ProductVariant(BaseModel, SoftDeletableModel):
     def __str__(self) -> str:
         return f"{self.product.name_ar} {self.name_ar}".strip()
 
+    def price_for(self, order_type: str) -> Decimal:
+        """
+        What this costs on that channel.
+
+        A bottle of water is 15 in the room and 20 on a delivery, and the second
+        number is not a percentage of the first — it covers a driver. So a
+        channel price is stored as its own figure rather than derived, and a
+        channel with no row of its own simply charges `price`.
+
+        Read through the prefetched rows rather than with a query, because this
+        runs once per line while an order is being folded.
+        """
+        for row in self.channel_prices.all():
+            if row.order_type == order_type:
+                return row.price
+        return self.price
+
     @property
     def margin(self) -> Decimal:
         return self.price - self.cost
@@ -122,6 +139,46 @@ class ProductVariant(BaseModel, SoftDeletableModel):
         if self.price == 0:
             return Decimal("0")
         return ((self.price - self.cost) / self.price * 100).quantize(Decimal("0.01"))
+
+
+class VariantChannelPrice(BaseModel):
+    """
+    What one variant costs on one channel.
+
+    "المياه جوه الصالة بـ15، ولما تطلع توصيل بتتحسب بـ20."
+
+    Modelled as a price and not a markup because that is what it is. A delivery
+    price covers a driver, a takeaway cup costs more than a glass that gets
+    washed — neither is a percentage of the room price, and a cafe that raises
+    dine-in by five pounds does not thereby want delivery to move.
+
+    **A channel with no row here charges the base price.** Most of the menu is
+    the same everywhere and forcing three rows per variant would be three places
+    to forget to update.
+
+    `order_type` is a plain CharField rather than a foreign key into
+    `orders.OrderType`: the channels are a closed set fixed in code (docs/02),
+    and pointing the catalogue at the orders app to read a constant would couple
+    two domains for no gain.
+    """
+
+    variant = models.ForeignKey(
+        ProductVariant, on_delete=models.CASCADE, related_name="channel_prices"
+    )
+    order_type = models.CharField(max_length=16)
+    price = models.DecimalField(**MONEY, validators=[MinValueValidator(Decimal("0"))])
+
+    class Meta:
+        db_table = "variant_channel_prices"
+        ordering = ["order_type"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["variant", "order_type"], name="uniq_channel_price_per_variant"
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.variant} @ {self.order_type} = {self.price}"
 
 
 class ModifierGroup(TenantScopedModel):

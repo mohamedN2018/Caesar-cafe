@@ -15574,6 +15574,11 @@ components:
           type: string
           format: decimal
           pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        channel_prices:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantChannelPrice'
+          readOnly: true
         cost:
           type: string
           format: decimal
@@ -15599,6 +15604,7 @@ components:
         is_active:
           type: boolean
       required:
+      - channel_prices
       - cost
       - id
       - margin
@@ -17947,6 +17953,38 @@ components:
       required:
       - configured
       - public_key
+    VariantChannelPrice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        order_type:
+          type: string
+          maxLength: 16
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - id
+      - order_type
+      - price
+    VariantChannelPriceRequest:
+      type: object
+      properties:
+        order_type:
+          type: string
+          minLength: 1
+          maxLength: 16
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+      required:
+      - order_type
+      - price
     VerifyPinRequestRequest:
       type: object
       description: 'Step-up approval: a manager authorizes one action for one target.'

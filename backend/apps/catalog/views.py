@@ -41,8 +41,11 @@ class CategoryViewSet(BranchScopedViewSet):
 
 
 class ProductViewSet(BranchScopedViewSet):
+    # `variants__channel_prices` and not just `variants`: the till reads a
+    # channel price per variant, and without this a 43-product menu is a query
+    # per variant on the one request a cashier waits for at open.
     queryset = Product.all_objects.select_related("category", "station").prefetch_related(
-        "variants"
+        "variants__channel_prices"
     )
     serializer_class = ProductSerializer
     required_permissions = {

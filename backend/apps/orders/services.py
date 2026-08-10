@@ -220,6 +220,7 @@ def apply_events(
 def _item_added(order: Order, payload: dict, *, actor=None) -> None:
     variant = (
         ProductVariant.objects.select_related("product", "product__station")
+        .prefetch_related("channel_prices")
         .filter(id=payload["variant_id"], product__branch_id=order.branch_id)
         .first()
     )
@@ -237,7 +238,11 @@ def _item_added(order: Order, payload: dict, *, actor=None) -> None:
         station=variant.product.station,
         # Snapshots: the receipt must survive a later price change.
         name_snapshot=str(variant),
-        unit_price_snapshot=variant.price,
+        # The CHANNEL price, resolved once and frozen onto the line. The order's
+        # type is fixed at open time, so every line on one bill is rung on the
+        # same channel — a bill that changed channel halfway would have two
+        # prices for the same bottle of water.
+        unit_price_snapshot=variant.price_for(order.order_type),
         cost_snapshot=variant.cost,
         tax_exempt_snapshot=variant.product.is_tax_exempt,
         quantity=quantity,

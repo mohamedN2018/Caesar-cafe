@@ -14,9 +14,9 @@
  */
 import { computed, ref } from 'vue'
 
-import { type Product, usePosStore } from '@/stores/pos'
+import { type Product, priceFor, usePosStore } from '@/stores/pos'
 
-const props = defineProps<{ product: Product }>()
+const props = defineProps<{ product: Product; orderType: string }>()
 const emit = defineEmits<{ close: [] }>()
 
 const pos = usePosStore()
@@ -32,7 +32,8 @@ const extras = computed(() => pos.modifierGroups.flatMap((g) => g.modifiers))
 
 const estimate = computed(() => {
   const variant = live.value.find((v) => v.id === chosen.value)
-  const base = Number(variant?.price ?? 0)
+  // Same rule as the tile: what it costs on the channel this order is on.
+  const base = variant ? Number(priceFor(variant, props.orderType)) : 0
   const add = picked.value.reduce((sum, id) => {
     const modifier = extras.value.find((m) => m.id === id)
     return sum + Number(modifier?.price_delta ?? 0)
@@ -70,7 +71,7 @@ async function confirm() {
             @click="chosen = variant.id"
           >
             {{ variant.name_ar || 'عادي' }}
-            <small class="tabular-nums">{{ variant.price }}</small>
+            <small class="tabular-nums">{{ priceFor(variant, orderType) }}</small>
           </button>
         </div>
       </section>

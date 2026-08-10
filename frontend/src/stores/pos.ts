@@ -22,12 +22,33 @@ import { computed, ref } from 'vue'
 
 import { ApiError, api } from '@/api/client'
 
+export interface ChannelPrice {
+  id: string
+  order_type: string
+  price: string
+}
+
 export interface Variant {
   id: string
   name_ar: string
   price: string
+  /** Only the channels that DIFFER from `price`. Absent means "same". */
+  channel_prices: ChannelPrice[]
   is_default: boolean
   is_active: boolean
+}
+
+/**
+ * What a variant costs on a channel.
+ *
+ * Mirrors `ProductVariant.price_for` on the server, and this is the one place
+ * the web is allowed to compute a price — for DISPLAY, so a tile can show 20
+ * before a delivery order is rung rather than 15 and a surprise on the bill.
+ * The figure that is actually charged is still the server's: `ITEM_ADDED`
+ * carries only the variant id, and the fold resolves the channel again.
+ */
+export function priceFor(variant: Variant, orderType: string): string {
+  return variant.channel_prices.find((c) => c.order_type === orderType)?.price ?? variant.price
 }
 
 export interface Product {
