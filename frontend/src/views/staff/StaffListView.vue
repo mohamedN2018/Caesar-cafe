@@ -33,6 +33,8 @@ import UiEmpty from '@/components/ui/UiEmpty.vue'
 import UiInput from '@/components/ui/UiInput.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import { dateTime } from '@/lib/format'
+import ActivityPanel from '@/modules/staff/ActivityPanel.vue'
+import BadgeCard from '@/modules/staff/BadgeCard.vue'
 import { useAuthStore } from '@/stores/auth'
 
 interface Assignment {
@@ -90,10 +92,19 @@ const error = ref('')
 const notice = ref('')
 const busy = ref('')
 
+/** Readable exactly once, in the response that minted them. */
+interface Credentials {
+  name: string
+  pin: string
+  badge: string
+}
+
 const draft = ref({ email: '', full_name_ar: '', phone: '', password: '', role: 'CASHIER' })
 const pinFor = ref<Staff | null>(null)
 const newPin = ref('')
 const editingRole = ref<Role | null>(null)
+const card = ref<Credentials | null>(null)
+const activityFor = ref<Staff | null>(null)
 
 const active = computed(() => staff.value.filter((s) => s.is_active))
 /** Cashiers who cannot log in at the terminal during an outage. */
@@ -136,16 +147,49 @@ function fail(e: unknown, fallback: string) {
 }
 
 async function addStaff() {
-  if (!draft.value.email || !draft.value.full_name_ar.trim() || !draft.value.password) return
+  if (!draft.value.email || !draft.value.full_name_ar.trim()) return
   busy.value = 'create'
   try {
-    await api.post('/staff/', { ...draft.value, full_name_ar: draft.value.full_name_ar.trim() })
+    // The password is OPTIONAL and left blank is the normal case: a cashier has
+    // no account to log into, only a PIN and a badge. An empty string would be
+    // a password of length zero rather than none, so it is dropped entirely.
+    const body: Record<string, unknown> = {
+      email: draft.value.email,
+      full_name_ar: draft.value.full_name_ar.trim(),
+      phone: draft.value.phone,
+      role: draft.value.role,
+    }
+    if (draft.value.password) body.password = draft.value.password
+
+    const created = await api.post<{ credentials: Credentials }>('/staff/', body)
+
+    // Straight into the card. This response is the only moment the PIN and the
+    // badge exist in readable form, so anything that could interrupt between
+    // here and showing them loses a credential that cannot be recovered — only
+    // reissued.
+    card.value = created.credentials
+
     draft.value = { email: '', full_name_ar: '', phone: '', password: '', role: 'CASHIER' }
-    notice.value = 'تم إنشاء الحساب. عيّن رمز دخول ليتمكن من العمل على الكاشير.'
     error.value = ''
     await load()
   } catch (e) {
     fail(e, 'تعذّر إنشاء الحساب.')
+  } finally {
+    busy.value = ''
+  }
+}
+
+async function reissueBadge(person: Staff) {
+  if (!window.confirm(`إصدار بطاقة جديدة لـ${person.full_name_ar}؟ البطاقة القديمة ستتوقف فوراً.`))
+    return
+
+  busy.value = `badge:${person.id}`
+  try {
+    const issued = await api.post<{ badge: string; name: string }>(`/staff/${person.id}/badge/`)
+    card.value = { badge: issued.badge, name: issued.name, pin: '' }
+    error.value = ''
+  } catch (e) {
+    fail(e, 'تعذّر إصدار البطاقة.')
   } finally {
     busy.value = ''
   }
@@ -325,6 +369,22 @@ onMounted(load)
                 {{ person.has_pin ? 'تغيير رمز الدخول' : 'تعيين رمز دخول' }}
               </UiButton>
               <UiButton
+                v-if="mayResetPin"
+                size="sm"
+                variant="secondary"
+                :loading="busy === `badge:${person.id}`"
+                @click="reissueBadge(person)"
+              >
+                بطاقة جديدة
+              </UiButton>
+              <UiButton
+                size="sm"
+                variant="ghost"
+                @click="activityFor = activityFor?.id === person.id ? null : person"
+              >
+                {{ activityFor?.id === person.id ? 'إخفاء النشاط' : 'النشاط' }}
+              </UiButton>
+              <UiButton
                 v-if="mayManage"
                 size="sm"
                 variant="ghost"
@@ -334,6 +394,15 @@ onMounted(load)
                 {{ person.is_active ? 'إيقاف' : 'تفعيل' }}
               </UiButton>
             </div>
+          </div>
+
+          <!--
+            Inline rather than on its own page: "how many voids has this person
+            had" is a question asked WHILE looking at the staff list, and a
+            navigation away and back loses the row you were comparing against.
+          -->
+          <div v-if="activityFor?.id === person.id" class="mt-4 border-t border-line pt-4">
+            <ActivityPanel :user-id="person.id" />
           </div>
 
           <form
@@ -365,12 +434,17 @@ onMounted(load)
           <UiInput v-model="draft.full_name_ar" label="الاسم" required />
           <UiInput v-model="draft.email" label="البريد الإلكتروني" type="email" ltr required />
           <UiInput v-model="draft.phone" label="الهاتف" ltr />
+          <!--
+            Optional, and blank is the normal case. A cashier has no account:
+            they get a PIN and a badge and sign in at an enrolled terminal. A
+            password is only for somebody who needs the admin screens in a
+            browser — a manager, an accountant, the owner.
+          -->
           <UiInput
             v-model="draft.password"
-            label="كلمة المرور"
+            label="كلمة مرور (اختياري)"
             type="password"
-            hint="١٢ حرفاً على الأقل. للدخول من المتصفح، لا من الكاشير."
-            required
+            hint="للأدمن فقط، للدخول من المتصفح. اتركها فارغة للكاشير — يدخل برمزه أو ببطاقته."
           />
           <label class="block">
             <span class="mb-1.5 block text-sm font-medium text-ink">الدور</span>
@@ -469,5 +543,13 @@ onMounted(load)
         </p>
       </UiCard>
     </template>
+
+    <BadgeCard
+      v-if="card"
+      :name="card.name"
+      :badge="card.badge"
+      :pin="card.pin || undefined"
+      @close="card = null"
+    />
   </div>
 </template>

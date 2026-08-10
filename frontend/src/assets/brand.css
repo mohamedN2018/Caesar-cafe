@@ -83,3 +83,33 @@
   --table-late: #f7d4d1;
   --shadow-room: rgba(42, 26, 22, 0.28);
 }
+
+/* ── printing ────────────────────────────────────────────────────────────── */
+/*
+   One thing on a page at a time.
+
+   The only things this product prints are a staff badge and, in a browser
+   without a thermal printer, a receipt. Both are small cards inside a full
+   admin layout, so an unguarded `window.print()` produces a sheet of paper with
+   a sidebar down one side and the card somewhere in the middle.
+
+   `.print-only-target` marks the element that IS the printout; everything else
+   in the body is hidden and the target is lifted to the top of the page. Scoped
+   component styles cannot do this — the sidebar lives outside the component
+   that knows it is being printed.
+*/
+@media print {
+  body:has(.print-only-target) > *:not(:has(.print-only-target)) {
+    display: none !important;
+  }
+
+  .print-only-target {
+    position: absolute !important;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
