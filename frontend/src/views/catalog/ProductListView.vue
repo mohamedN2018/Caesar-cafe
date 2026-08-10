@@ -73,8 +73,8 @@ function displayVariants(product: Product): Variant[] {
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">المنتجات</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">المنتجات</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           التكلفة والهامش محسوبان من الوصفة — لا يُدخلان يدوياً.
         </p>
       </div>
@@ -82,7 +82,7 @@ function displayVariants(product: Product): Variant[] {
         v-model="search"
         type="search"
         placeholder="بحث بالاسم أو الكود…"
-        class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm sm:w-64
+        class="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm sm:w-64
                focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
       />
     </div>
@@ -101,25 +101,25 @@ function displayVariants(product: Product): Variant[] {
           <tr
             v-for="variant in displayVariants(product)"
             :key="variant.id"
-            class="hover:bg-slate-50"
+            class="hover:bg-surface-muted"
           >
             <td class="px-4 py-3">
-              <p class="font-medium text-slate-900">
+              <p class="font-medium text-ink">
                 {{ product.name_ar }}
-                <span v-if="variant.name_ar" class="text-slate-500">— {{ variant.name_ar }}</span>
+                <span v-if="variant.name_ar" class="text-ink-muted">— {{ variant.name_ar }}</span>
               </p>
-              <p class="font-mono text-xs text-slate-400" dir="ltr">{{ variant.sku }}</p>
+              <p class="font-mono text-xs text-ink-faint" dir="ltr">{{ variant.sku }}</p>
             </td>
-            <td class="px-4 py-3 text-slate-600">{{ product.category_name }}</td>
+            <td class="px-4 py-3 text-ink-muted">{{ product.category_name }}</td>
             <td class="px-4 py-3 text-end tabular-nums">{{ money(variant.price) }}</td>
-            <td class="px-4 py-3 text-end tabular-nums text-slate-600">
+            <td class="px-4 py-3 text-end tabular-nums text-ink-muted">
               {{ Number(variant.cost) ? money(variant.cost) : '—' }}
             </td>
             <td class="px-4 py-3 text-end tabular-nums">
               <span v-if="Number(variant.cost)" class="font-medium">
                 {{ percent(variant.margin_percent) }}
               </span>
-              <span v-else class="text-slate-400" title="لا توجد وصفة أو تكلفة مسجلة">—</span>
+              <span v-else class="text-ink-faint" title="لا توجد وصفة أو تكلفة مسجلة">—</span>
             </td>
             <td class="px-4 py-3">
               <UiBadge :tone="product.is_active ? 'success' : 'neutral'">

@@ -133,8 +133,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">سجل الوقائع</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">سجل الوقائع</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         القيد لا يُعدَّل ولا يُحذَف. سجل يمكن ترتيبه لاحقاً هو سجل لا يُعتمد عليه.
       </p>
     </div>
@@ -149,19 +149,19 @@ onMounted(load)
     <template v-else>
       <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
         <UiCard v-for="(meta, key) in TYPES" :key="key">
-          <p class="text-sm text-slate-500">{{ meta.label }}</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ counts[key] ?? 0 }}</p>
+          <p class="text-sm text-ink-muted">{{ meta.label }}</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ counts[key] ?? 0 }}</p>
         </UiCard>
       </div>
 
       <UiCard v-if="mayLog">
-        <h2 class="text-sm font-semibold text-slate-900">تسجيل واقعة</h2>
+        <h2 class="text-sm font-semibold text-ink">تسجيل واقعة</h2>
         <form class="mt-3 grid gap-3 sm:grid-cols-3" @submit.prevent="log">
           <label class="block">
-            <span class="mb-1.5 block text-sm font-medium text-slate-700">الصالة</span>
+            <span class="mb-1.5 block text-sm font-medium text-ink">الصالة</span>
             <select
               v-model="draft.area"
-              class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-[15px]
+              class="w-full min-h-[44px] rounded-lg border border-line-strong bg-surface px-3 text-[15px]
                      focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
             >
               <option v-for="area in areas" :key="area.id" :value="area.id">
@@ -171,10 +171,10 @@ onMounted(load)
           </label>
 
           <label class="block">
-            <span class="mb-1.5 block text-sm font-medium text-slate-700">النوع</span>
+            <span class="mb-1.5 block text-sm font-medium text-ink">النوع</span>
             <select
               v-model="draft.incident_type"
-              class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-[15px]
+              class="w-full min-h-[44px] rounded-lg border border-line-strong bg-surface px-3 text-[15px]
                      focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
             >
               <option v-for="(meta, key) in TYPES" :key="key" :value="key">{{ meta.label }}</option>
@@ -197,7 +197,7 @@ onMounted(load)
           :class="
             typeFilter === ''
               ? 'bg-brand-50 text-brand-800 ring-brand-200'
-              : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+              : 'bg-surface text-ink ring hover:bg-surface-muted'
           "
           @click="typeFilter = ''"
         >
@@ -210,7 +210,7 @@ onMounted(load)
           :class="
             typeFilter === key
               ? 'bg-brand-50 text-brand-800 ring-brand-200'
-              : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+              : 'bg-surface text-ink ring hover:bg-surface-muted'
           "
           @click="typeFilter = String(key)"
         >
@@ -233,9 +233,9 @@ onMounted(load)
                 <UiBadge :tone="TYPES[incident.incident_type]?.tone ?? 'neutral'">
                   {{ TYPES[incident.incident_type]?.label ?? incident.incident_type }}
                 </UiBadge>
-                <span class="text-sm text-slate-500">{{ dateTime(incident.occurred_at) }}</span>
+                <span class="text-sm text-ink-muted">{{ dateTime(incident.occurred_at) }}</span>
               </div>
-              <p class="mt-2 text-sm text-slate-800">{{ incident.description }}</p>
+              <p class="mt-2 text-sm text-ink">{{ incident.description }}</p>
             </div>
           </div>
         </UiCard>

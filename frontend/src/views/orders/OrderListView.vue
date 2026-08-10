@@ -81,16 +81,16 @@ onMounted(load)
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">الطلبات</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">الطلبات</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           كل طلب له سلسلة أحداث كاملة تشرح كيف وصل إجماليه لهذا الرقم.
         </p>
       </div>
-      <label class="flex items-center gap-2 text-sm text-slate-700">
+      <label class="flex items-center gap-2 text-sm text-ink">
         <input
           v-model="openOnly"
           type="checkbox"
-          class="h-5 w-5 rounded border-slate-300"
+          class="h-5 w-5 rounded border-line-strong"
           @change="load"
         />
         المفتوحة فقط
@@ -107,7 +107,7 @@ onMounted(load)
         description="ستظهر هنا الطلبات فور إنشائها من نقطة البيع."
       />
       <UiTable v-else :columns="columns">
-        <tr v-for="order in orders" :key="order.id" class="hover:bg-slate-50">
+        <tr v-for="order in orders" :key="order.id" class="hover:bg-surface-muted">
           <td class="px-4 py-3">
             <RouterLink
               :to="`/orders/${order.id}`"
@@ -115,17 +115,17 @@ onMounted(load)
             >
               {{ order.local_number }}
             </RouterLink>
-            <p v-if="order.table_number" class="text-xs text-slate-500">
+            <p v-if="order.table_number" class="text-xs text-ink-muted">
               طاولة {{ order.table_number }}
             </p>
           </td>
-          <td class="px-4 py-3 text-slate-600">{{ TYPES[order.order_type] ?? order.order_type }}</td>
-          <td class="px-4 py-3 text-end tabular-nums text-slate-600">{{ order.item_count }}</td>
+          <td class="px-4 py-3 text-ink-muted">{{ TYPES[order.order_type] ?? order.order_type }}</td>
+          <td class="px-4 py-3 text-end tabular-nums text-ink-muted">{{ order.item_count }}</td>
           <td class="px-4 py-3 text-end font-medium tabular-nums">{{ money(order.grand_total) }}</td>
           <td class="px-4 py-3">
             <UiBadge :tone="toneFor(order.status)">{{ labelFor(order.status) }}</UiBadge>
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500">
+          <td class="whitespace-nowrap px-4 py-3 text-sm text-ink-muted">
             {{ dateTime(order.opened_at) }}
           </td>
         </tr>

@@ -150,8 +150,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">الموردون</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">الموردون</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         الرصيد محسوب من كشف الحساب ولا يُكتب يدوياً — تماماً كأرصدة المخزون.
       </p>
     </div>
@@ -163,12 +163,12 @@ onMounted(load)
     <template v-else>
       <div class="grid gap-3 sm:grid-cols-2">
         <UiCard>
-          <p class="text-sm text-slate-500">إجمالي المستحق للموردين</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(owed) }}</p>
+          <p class="text-sm text-ink-muted">إجمالي المستحق للموردين</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ money(owed) }}</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">موردون لهم رصيد</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ inDebt.length }}</p>
+          <p class="text-sm text-ink-muted">موردون لهم رصيد</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ inDebt.length }}</p>
         </UiCard>
       </div>
 
@@ -188,21 +188,21 @@ onMounted(load)
             :class="
               statement?.supplier_id === supplier.id
                 ? 'border-brand-300 bg-brand-50'
-                : 'border-slate-200 bg-white hover:bg-slate-50'
+                : 'border-line bg-surface hover:bg-surface-muted'
             "
             @click="openStatement(supplier)"
           >
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="font-semibold text-slate-900">{{ supplier.name }}</span>
+              <span class="font-semibold text-ink">{{ supplier.name }}</span>
               <span
                 class="font-mono text-sm font-semibold tabular-nums"
-                :class="Number(supplier.current_balance) > 0 ? 'text-red-700' : 'text-slate-500'"
+                :class="Number(supplier.current_balance) > 0 ? 'text-danger' : 'text-ink-muted'"
                 dir="ltr"
               >
                 {{ money(supplier.current_balance) }}
               </span>
             </div>
-            <p class="mt-0.5 text-sm text-slate-500">
+            <p class="mt-0.5 text-sm text-ink-muted">
               <span v-if="supplier.phone" class="font-mono" dir="ltr">{{ supplier.phone }}</span>
               <span v-if="supplier.payment_terms_days">
                 · سداد خلال {{ supplier.payment_terms_days }} يوم
@@ -214,10 +214,10 @@ onMounted(load)
         <UiCard v-if="statement">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h2 class="text-lg font-bold text-slate-900">{{ statement.supplier_name }}</h2>
-              <p class="mt-0.5 text-sm text-slate-500">كشف حساب</p>
+              <h2 class="text-lg font-bold text-ink">{{ statement.supplier_name }}</h2>
+              <p class="mt-0.5 text-sm text-ink-muted">كشف حساب</p>
             </div>
-            <p class="font-mono text-xl font-bold tabular-nums text-slate-900" dir="ltr">
+            <p class="font-mono text-xl font-bold tabular-nums text-ink" dir="ltr">
               {{ money(statement.current_balance) }}
             </p>
           </div>
@@ -229,7 +229,7 @@ onMounted(load)
 
           <form
             v-if="mayPay"
-            class="mt-4 flex flex-wrap items-end gap-3 rounded-lg bg-slate-50 px-4 py-3"
+            class="mt-4 flex flex-wrap items-end gap-3 rounded-lg bg-surface-muted px-4 py-3"
             @submit.prevent="pay"
           >
             <UiInput
@@ -255,7 +255,7 @@ onMounted(load)
 
           <div v-else class="mt-4 overflow-x-auto">
             <table class="w-full text-sm">
-              <thead class="text-xs text-slate-500">
+              <thead class="text-xs text-ink-muted">
                 <tr>
                   <th class="px-2 py-2 text-start">التاريخ</th>
                   <th class="px-2 py-2 text-start">النوع</th>
@@ -263,25 +263,25 @@ onMounted(load)
                   <th class="px-2 py-2 text-end">الرصيد</th>
                 </tr>
               </thead>
-              <tbody class="divide-y divide-slate-100">
+              <tbody class="divide-y divide-line">
                 <tr v-for="entry in statement.entries" :key="entry.id">
-                  <td class="px-2 py-2 text-slate-500">{{ dateTime(entry.occurred_at) }}</td>
+                  <td class="px-2 py-2 text-ink-muted">{{ dateTime(entry.occurred_at) }}</td>
                   <td class="px-2 py-2">
                     <UiBadge :tone="ENTRY_LABELS[entry.entry_type]?.tone ?? 'neutral'">
                       {{ ENTRY_LABELS[entry.entry_type]?.label ?? entry.entry_type }}
                     </UiBadge>
-                    <span v-if="entry.reference" class="ms-1 text-xs text-slate-400" dir="ltr">
+                    <span v-if="entry.reference" class="ms-1 text-xs text-ink-faint" dir="ltr">
                       {{ entry.reference }}
                     </span>
                   </td>
                   <td
                     class="px-2 py-2 text-end font-mono tabular-nums"
-                    :class="Number(entry.amount) > 0 ? 'text-red-700' : 'text-emerald-700'"
+                    :class="Number(entry.amount) > 0 ? 'text-danger' : 'text-success'"
                     dir="ltr"
                   >
                     {{ money(entry.amount) }}
                   </td>
-                  <td class="px-2 py-2 text-end font-mono tabular-nums text-slate-700" dir="ltr">
+                  <td class="px-2 py-2 text-end font-mono tabular-nums text-ink" dir="ltr">
                     {{ money(entry.balance_after) }}
                   </td>
                 </tr>
@@ -291,12 +291,12 @@ onMounted(load)
         </UiCard>
 
         <UiCard v-else>
-          <p class="text-sm text-slate-500">اختر مورداً لعرض كشف حسابه.</p>
+          <p class="text-sm text-ink-muted">اختر مورداً لعرض كشف حسابه.</p>
         </UiCard>
       </div>
 
       <UiCard v-if="mayEdit">
-        <h2 class="text-sm font-semibold text-slate-900">إضافة مورد</h2>
+        <h2 class="text-sm font-semibold text-ink">إضافة مورد</h2>
         <form class="mt-3 grid gap-3 sm:grid-cols-4" @submit.prevent="addSupplier">
           <UiInput v-model="draft.name" label="الاسم" required />
           <UiInput v-model="draft.phone" label="الهاتف" ltr />

@@ -130,8 +130,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">محطات المطبخ</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">محطات المطبخ</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         المحطة تحدّد أين يُحضَّر الصنف وأين تُطبع تذكرته. الوقت المستهدف هو أساس حساب التأخير.
       </p>
     </div>
@@ -157,14 +157,14 @@ onMounted(load)
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="text-lg font-bold text-slate-900">{{ station.name_ar }}</span>
+                <span class="text-lg font-bold text-ink">{{ station.name_ar }}</span>
                 <UiBadge tone="neutral">
                   <span dir="ltr">{{ station.code }}</span>
                 </UiBadge>
                 <UiBadge v-if="!station.is_active" tone="warning">موقوفة</UiBadge>
                 <UiBadge v-if="station.auto_accept" tone="info">قبول تلقائي</UiBadge>
               </div>
-              <p class="mt-1 text-sm text-slate-500">
+              <p class="mt-1 text-sm text-ink-muted">
                 الوقت المستهدف {{ station.target_prep_minutes }} دقيقة
                 <span v-if="station.printer_name">
                   · الطابعة <span dir="ltr">{{ station.printer_name }}</span>
@@ -183,7 +183,7 @@ onMounted(load)
       </div>
 
       <UiCard v-if="mayEdit">
-        <h2 class="text-sm font-semibold text-slate-900">
+        <h2 class="text-sm font-semibold text-ink">
           {{ editing ? 'تعديل محطة' : 'إضافة محطة' }}
         </h2>
 
@@ -210,7 +210,7 @@ onMounted(load)
           />
           <UiInput v-model.number="draft.sort_order" label="الترتيب" type="number" />
 
-          <label class="flex items-center gap-2 self-end pb-2 text-sm text-slate-700">
+          <label class="flex items-center gap-2 self-end pb-2 text-sm text-ink">
             <input v-model="draft.auto_accept" type="checkbox" class="h-4 w-4 rounded" />
             قبول التذاكر تلقائياً
           </label>
@@ -223,7 +223,7 @@ onMounted(load)
           </div>
         </form>
 
-        <p class="mt-3 text-xs text-slate-400">
+        <p class="mt-3 text-xs text-ink-faint">
           المحطة تُوقَف ولا تُحذَف — تذاكرها تاريخ، والتاريخ بمرجع محذوف تقرير لا يعرف أين حُضِّر
           الطعام.
         </p>

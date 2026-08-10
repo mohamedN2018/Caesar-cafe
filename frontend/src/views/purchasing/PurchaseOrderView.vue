@@ -269,8 +269,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">الشراء والاستلام</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">الشراء والاستلام</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         أمر الشراء نيّة ولا يحرّك المخزون. سند الاستلام واقعة، وهو وحده ما يحرّكه.
       </p>
     </div>
@@ -292,7 +292,7 @@ onMounted(load)
         :class="
           tab === option.key
             ? 'bg-brand-50 text-brand-800 ring-brand-200'
-            : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+            : 'bg-surface text-ink ring hover:bg-surface-muted'
         "
         @click="tab = option.key as typeof tab"
       >
@@ -317,25 +317,25 @@ onMounted(load)
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-mono font-bold text-slate-900" dir="ltr">
+                <span class="font-mono font-bold text-ink" dir="ltr">
                   {{ order.po_number }}
                 </span>
                 <UiBadge :tone="STATUS[order.status]?.tone ?? 'neutral'">
                   {{ STATUS[order.status]?.label ?? order.status }}
                 </UiBadge>
-                <span class="text-sm text-slate-600">{{ order.supplier_name }}</span>
+                <span class="text-sm text-ink-muted">{{ order.supplier_name }}</span>
               </div>
-              <p class="mt-1 text-sm text-slate-500">
+              <p class="mt-1 text-sm text-ink-muted">
                 {{ dateTime(order.created_at) }}
                 <span v-if="order.expected_date">· متوقع {{ order.expected_date }}</span>
               </p>
-              <ul class="mt-2 space-y-0.5 text-sm text-slate-700">
+              <ul class="mt-2 space-y-0.5 text-sm text-ink">
                 <li v-for="line in order.lines" :key="line.id">
                   {{ line.item_name }} —
                   <span class="font-mono tabular-nums" dir="ltr">
                     {{ fmtQuantity(line.quantity_ordered, line.unit_code) }}
                   </span>
-                  <span v-if="Number(line.quantity_received) > 0" class="text-emerald-700">
+                  <span v-if="Number(line.quantity_received) > 0" class="text-success">
                     · وصل {{ fmtQuantity(line.quantity_received, line.unit_code) }}
                   </span>
                 </li>
@@ -343,7 +343,7 @@ onMounted(load)
             </div>
 
             <div class="flex flex-col items-end gap-2">
-              <p class="font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr">
+              <p class="font-mono text-lg font-bold tabular-nums text-ink" dir="ltr">
                 {{ money(order.subtotal) }}
               </p>
               <div class="flex flex-wrap gap-2">
@@ -378,10 +378,10 @@ onMounted(load)
       </div>
 
       <UiCard v-if="receiving">
-        <h2 class="text-sm font-semibold text-slate-900">
+        <h2 class="text-sm font-semibold text-ink">
           استلام على أمر {{ receiving.po_number }}
         </h2>
-        <p class="mt-1 text-xs text-slate-500">
+        <p class="mt-1 text-xs text-ink-muted">
           السعر مأخوذ من الأمر وقابل للتعديل — يُسجَّل بسعر الفاتورة الفعلي، لا بسعر الطلب.
         </p>
 
@@ -398,9 +398,9 @@ onMounted(load)
           <div
             v-for="(line, index) in receiptDraft.lines"
             :key="index"
-            class="grid gap-3 rounded-lg bg-slate-50 px-3 py-2 sm:grid-cols-3"
+            class="grid gap-3 rounded-lg bg-surface-muted px-3 py-2 sm:grid-cols-3"
           >
-            <p class="self-center text-sm font-medium text-slate-800">
+            <p class="self-center text-sm font-medium text-ink">
               {{ itemById(line.item)?.name_ar }}
             </p>
             <UiInput
@@ -421,15 +421,15 @@ onMounted(load)
       </UiCard>
 
       <UiCard v-if="mayOrder && !receiving">
-        <h2 class="text-sm font-semibold text-slate-900">أمر شراء جديد</h2>
+        <h2 class="text-sm font-semibold text-ink">أمر شراء جديد</h2>
 
         <form class="mt-3 space-y-3" @submit.prevent="createOrder">
           <div class="grid gap-3 sm:grid-cols-3">
             <label class="block">
-              <span class="mb-1.5 block text-sm font-medium text-slate-700">المورد</span>
+              <span class="mb-1.5 block text-sm font-medium text-ink">المورد</span>
               <select
                 v-model="draft.supplier"
-                class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-[15px]
+                class="w-full min-h-[44px] rounded-lg border border-line-strong bg-surface px-3 text-[15px]
                        focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
               >
                 <option v-for="supplier in suppliers" :key="supplier.id" :value="supplier.id">
@@ -444,13 +444,13 @@ onMounted(load)
           <div
             v-for="(line, index) in draft.lines"
             :key="index"
-            class="grid gap-3 rounded-lg bg-slate-50 px-3 py-2 sm:grid-cols-4"
+            class="grid gap-3 rounded-lg bg-surface-muted px-3 py-2 sm:grid-cols-4"
           >
             <label class="block sm:col-span-2">
-              <span class="mb-1.5 block text-sm font-medium text-slate-700">الصنف</span>
+              <span class="mb-1.5 block text-sm font-medium text-ink">الصنف</span>
               <select
                 v-model="line.item"
-                class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-[15px]"
+                class="w-full min-h-[44px] rounded-lg border border-line-strong bg-surface px-3 text-[15px]"
               >
                 <option v-for="item in items" :key="item.id" :value="item.id">
                   {{ item.name_ar }} ({{ item.code }})
@@ -471,7 +471,7 @@ onMounted(load)
               حفظ كمسوّدة
             </UiButton>
           </div>
-          <p class="text-xs text-slate-400">
+          <p class="text-xs text-ink-faint">
             الحفظ لا يحرّك المخزون ولا يبلّغ المورد — الإرسال خطوة منفصلة.
           </p>
         </form>
@@ -493,21 +493,21 @@ onMounted(load)
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-mono font-bold text-slate-900" dir="ltr">
+                <span class="font-mono font-bold text-ink" dir="ltr">
                   {{ receipt.grn_number }}
                 </span>
                 <UiBadge :tone="receipt.is_posted ? 'success' : 'warning'">
                   {{ receipt.is_posted ? 'مُرحَّل' : 'غير مُرحَّل' }}
                 </UiBadge>
-                <span class="text-sm text-slate-600">{{ receipt.supplier_name }}</span>
+                <span class="text-sm text-ink-muted">{{ receipt.supplier_name }}</span>
               </div>
-              <p class="mt-1 text-sm text-slate-500">
+              <p class="mt-1 text-sm text-ink-muted">
                 {{ receipt.received_date }}
                 <span v-if="receipt.supplier_invoice_no" dir="ltr">
                   · فاتورة {{ receipt.supplier_invoice_no }}
                 </span>
               </p>
-              <ul class="mt-2 space-y-0.5 text-sm text-slate-700">
+              <ul class="mt-2 space-y-0.5 text-sm text-ink">
                 <li v-for="line in receipt.lines" :key="line.id">
                   {{ line.item_name }} —
                   <span class="font-mono tabular-nums" dir="ltr">
@@ -519,7 +519,7 @@ onMounted(load)
             </div>
 
             <div class="flex flex-col items-end gap-2">
-              <p class="font-mono text-lg font-bold tabular-nums text-slate-900" dir="ltr">
+              <p class="font-mono text-lg font-bold tabular-nums text-ink" dir="ltr">
                 {{ money(receipt.grand_total) }}
               </p>
               <UiButton
@@ -547,13 +547,13 @@ onMounted(load)
       />
 
       <UiCard v-else>
-        <p class="text-sm text-slate-500">
+        <p class="text-sm text-ink-muted">
           اقتراح، وليس أمر شراء. تحويله إلى طلب تلقائي معناه أن يصرف النظام مالاً بناءً على رقم
           كُتب مرة واحدة.
         </p>
         <div class="mt-3 overflow-x-auto">
           <table class="w-full text-sm">
-            <thead class="text-xs text-slate-500">
+            <thead class="text-xs text-ink-muted">
               <tr>
                 <th class="px-2 py-2 text-start">الصنف</th>
                 <th class="px-2 py-2 text-end">المتاح</th>
@@ -563,19 +563,19 @@ onMounted(load)
                 <th />
               </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y divide-line">
               <tr v-for="row in suggestions" :key="row.item_id">
-                <td class="px-2 py-2 text-slate-800">{{ row.item_name }}</td>
-                <td class="px-2 py-2 text-end font-mono tabular-nums text-red-700" dir="ltr">
+                <td class="px-2 py-2 text-ink">{{ row.item_name }}</td>
+                <td class="px-2 py-2 text-end font-mono tabular-nums text-danger" dir="ltr">
                   {{ fmtQuantity(row.available) }}
                 </td>
-                <td class="px-2 py-2 text-end font-mono tabular-nums text-slate-500" dir="ltr">
+                <td class="px-2 py-2 text-end font-mono tabular-nums text-ink-muted" dir="ltr">
                   {{ fmtQuantity(row.reorder_level) }}
                 </td>
-                <td class="px-2 py-2 text-end font-mono tabular-nums text-slate-900" dir="ltr">
+                <td class="px-2 py-2 text-end font-mono tabular-nums text-ink" dir="ltr">
                   {{ fmtQuantity(row.suggested_quantity) }}
                 </td>
-                <td class="px-2 py-2 text-slate-600">{{ row.supplier ?? '—' }}</td>
+                <td class="px-2 py-2 text-ink-muted">{{ row.supplier ?? '—' }}</td>
                 <td class="px-2 py-2 text-end">
                   <UiButton v-if="mayOrder" size="sm" variant="secondary" @click="orderFromSuggestion(row)">
                     أضف لأمر شراء

@@ -158,9 +158,20 @@ onMounted(async () => {
           type="button"
           class="tab"
           :class="{ 'is-active': activeCategory === category.id }"
-          :style="category.color ? { '--tab-accent': category.color } : undefined"
           @click="activeCategory = category.id"
         >
+          <!--
+            The category's own colour as a dot, not as the tab's background.
+            These hexes are entered by a manager, so letting one paint a whole
+            control means the contrast of the label depends on a colour nobody
+            checked. A dot carries the identity and the label stays readable.
+          -->
+          <span
+            v-if="category.color"
+            class="tab-dot"
+            :style="{ background: category.color }"
+            aria-hidden="true"
+          />
           {{ category.name_ar }}
         </button>
       </div>
@@ -312,6 +323,9 @@ onMounted(async () => {
 
 .tab {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   padding: 0.6rem 1.1rem;
   border-radius: 999px;
   font-size: 0.95rem;
@@ -320,6 +334,15 @@ onMounted(async () => {
   color: var(--ink-muted);
   border: 1px solid var(--border);
   white-space: nowrap;
+}
+
+.tab-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 999px;
+  /* A ring in the tab's own background, so the dot stays distinct on the active
+     tab where the surface behind it goes dark. */
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 0.35);
 }
 .tab.is-active {
   background: var(--brand-700);

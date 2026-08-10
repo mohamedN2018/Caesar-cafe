@@ -241,8 +241,8 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">التقارير</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">التقارير</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         التواريخ أيام عمل — تبدأ من ساعة بداية اليوم المضبوطة في الإعدادات، لا من منتصف الليل.
       </p>
     </div>
@@ -257,20 +257,20 @@ onMounted(async () => {
     <template v-else>
       <UiCard>
         <div class="flex flex-wrap items-end gap-3">
-          <label class="text-sm text-slate-700">
+          <label class="text-sm text-ink">
             من
             <input
               v-model="dateFrom"
               type="date"
-              class="mt-1 block rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              class="mt-1 block rounded-lg border border-line-strong px-3 py-2 text-sm"
             />
           </label>
-          <label class="text-sm text-slate-700">
+          <label class="text-sm text-ink">
             إلى
             <input
               v-model="dateTo"
               type="date"
-              class="mt-1 block rounded-lg border border-slate-300 px-3 py-2 text-sm"
+              class="mt-1 block rounded-lg border border-line-strong px-3 py-2 text-sm"
             />
           </label>
           <UiButton @click="load">تحديث</UiButton>
@@ -286,7 +286,7 @@ onMounted(async () => {
           :class="
             active?.key === tab.key
               ? 'bg-brand-50 text-brand-800 ring-brand-200'
-              : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+              : 'bg-surface text-ink ring hover:bg-surface-muted'
           "
           @click="active = tab"
         >
@@ -297,7 +297,7 @@ onMounted(async () => {
       <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
 
       <UiCard v-if="active">
-        <p v-if="active.note" class="mb-3 text-sm text-slate-500">ⓘ {{ active.note }}</p>
+        <p v-if="active.note" class="mb-3 text-sm text-ink-muted">ⓘ {{ active.note }}</p>
 
         <UiSkeleton v-if="loading" :rows="6" />
         <UiEmpty
@@ -307,14 +307,14 @@ onMounted(async () => {
           description="لا توجد حركة في هذه الفترة."
         />
         <UiTable v-else :columns="active.columns">
-          <tr v-for="(row, index) in rows" :key="index" class="hover:bg-slate-50">
+          <tr v-for="(row, index) in rows" :key="index" class="hover:bg-surface-muted">
             <td
               v-for="column in active.columns"
               :key="column.key"
               class="px-4 py-3"
               :class="[
                 column.align === 'end' ? 'text-end tabular-nums' : '',
-                isNegative(row, column) ? 'font-medium text-red-700' : '',
+                isNegative(row, column) ? 'font-medium text-danger' : '',
               ]"
             >
               {{ cell(row, column) }}

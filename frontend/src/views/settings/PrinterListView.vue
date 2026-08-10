@@ -219,8 +219,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">الطابعات</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">الطابعات</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         تُعرَّف الطابعة هنا مرة واحدة للفرع، وتصل إلى كل كاشير في المزامنة التالية — بدل كتابتها
         على كل جهاز على حدة.
       </p>
@@ -244,9 +244,9 @@ onMounted(load)
       />
 
       <div v-for="group in byKind" :key="group.value" class="space-y-2">
-        <h2 class="text-sm font-semibold text-slate-700">
+        <h2 class="text-sm font-semibold text-ink">
           {{ group.label }}
-          <span class="font-normal text-slate-400">— {{ group.hint }}</span>
+          <span class="font-normal text-ink-faint">— {{ group.hint }}</span>
         </h2>
 
         <UiCard
@@ -257,7 +257,7 @@ onMounted(load)
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="text-lg font-bold text-slate-900">{{ printer.name_ar }}</span>
+                <span class="text-lg font-bold text-ink">{{ printer.name_ar }}</span>
                 <UiBadge tone="neutral">
                   <span dir="ltr">{{ printer.code }}</span>
                 </UiBadge>
@@ -265,13 +265,13 @@ onMounted(load)
                 <UiBadge v-if="!printer.is_active" tone="warning">موقوفة</UiBadge>
               </div>
 
-              <p class="mt-1 text-sm text-slate-500">
+              <p class="mt-1 text-sm text-ink-muted">
                 <span dir="ltr">{{ reach(printer) }}</span>
                 · {{ printer.paper_width_mm }}مم ({{ printer.dots }} نقطة)
                 <span v-if="printer.copies > 1"> · {{ printer.copies }} نسخ</span>
               </p>
 
-              <p v-if="printer.station_names.length" class="mt-1 text-sm text-slate-500">
+              <p v-if="printer.station_names.length" class="mt-1 text-sm text-ink-muted">
                 المحطات: {{ printer.station_names.join('، ') }}
               </p>
             </div>
@@ -295,7 +295,7 @@ onMounted(load)
       </div>
 
       <UiCard v-if="mayEdit">
-        <h2 class="text-sm font-semibold text-slate-900">
+        <h2 class="text-sm font-semibold text-ink">
           {{ editing ? 'تعديل طابعة' : 'إضافة طابعة' }}
         </h2>
 
@@ -304,8 +304,8 @@ onMounted(load)
           <UiInput v-model="draft.code" label="الكود" hint="يظهر في السجلات." ltr required />
 
           <label class="text-sm">
-            <span class="mb-1 block font-medium text-slate-700">النوع</span>
-            <select v-model="draft.kind" class="w-full rounded-lg border border-slate-300 px-3 py-2">
+            <span class="mb-1 block font-medium text-ink">النوع</span>
+            <select v-model="draft.kind" class="w-full rounded-lg border border-line-strong px-3 py-2">
               <option v-for="kind in KINDS" :key="kind.value" :value="kind.value">
                 {{ kind.label }}
               </option>
@@ -313,10 +313,10 @@ onMounted(load)
           </label>
 
           <label class="text-sm">
-            <span class="mb-1 block font-medium text-slate-700">الاتصال</span>
+            <span class="mb-1 block font-medium text-ink">الاتصال</span>
             <select
               v-model="draft.connection"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2"
+              class="w-full rounded-lg border border-line-strong px-3 py-2"
             >
               <option v-for="option in CONNECTIONS" :key="option.value" :value="option.value">
                 {{ option.label }}
@@ -343,10 +343,10 @@ onMounted(load)
           />
 
           <label class="text-sm">
-            <span class="mb-1 block font-medium text-slate-700">عرض الورق</span>
+            <span class="mb-1 block font-medium text-ink">عرض الورق</span>
             <select
               v-model.number="draft.paper_width_mm"
-              class="w-full rounded-lg border border-slate-300 px-3 py-2"
+              class="w-full rounded-lg border border-line-strong px-3 py-2"
             >
               <option :value="80">80 مم</option>
               <option :value="58">58 مم</option>
@@ -356,8 +356,8 @@ onMounted(load)
           <UiInput v-model.number="draft.copies" label="عدد النسخ" type="number" />
 
           <div v-if="isKitchen" class="sm:col-span-2 lg:col-span-3">
-            <span class="mb-1 block text-sm font-medium text-slate-700">المحطات</span>
-            <p class="mb-2 text-xs text-slate-400">
+            <span class="mb-1 block text-sm font-medium text-ink">المحطات</span>
+            <p class="mb-2 text-xs text-ink-faint">
               التذكرة تذهب إلى طابعة محطتها أولاً. بلا محطة، تذهب إلى الافتراضية.
             </p>
             <div class="flex flex-wrap gap-2">
@@ -368,8 +368,8 @@ onMounted(load)
                 class="rounded-full border px-3 py-1 text-sm"
                 :class="
                   draft.stations.includes(station.id)
-                    ? 'border-transparent bg-slate-900 text-white'
-                    : 'border-slate-300 text-slate-700'
+                    ? 'border-transparent bg-brand-700 text-white'
+                    : 'border-line-strong text-ink'
                 "
                 @click="toggleStation(station.id)"
               >
@@ -378,12 +378,12 @@ onMounted(load)
             </div>
           </div>
 
-          <label class="flex items-center gap-2 self-end pb-2 text-sm text-slate-700">
+          <label class="flex items-center gap-2 self-end pb-2 text-sm text-ink">
             <input v-model="draft.cut_after" type="checkbox" class="h-4 w-4 rounded" />
             قصّ الورق بعد الطباعة
           </label>
 
-          <label class="flex items-center gap-2 self-end pb-2 text-sm text-slate-700">
+          <label class="flex items-center gap-2 self-end pb-2 text-sm text-ink">
             <input v-model="draft.is_default" type="checkbox" class="h-4 w-4 rounded" />
             الافتراضية لهذا النوع
           </label>
@@ -396,7 +396,7 @@ onMounted(load)
           </div>
         </form>
 
-        <p class="mt-3 text-xs text-slate-400">
+        <p class="mt-3 text-xs text-ink-faint">
           الطابعة تُوقَف ولا تُحذَف — قد تكون هناك مهمة في الطابور تحمل اسمها، ومهمة تشير إلى صف
           محذوف فاتورة تختفي دون سبب معلن.
         </p>

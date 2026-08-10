@@ -189,14 +189,14 @@ function setList(key: string, text: string) {
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">الإعدادات</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">الإعدادات</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           كل قيمة في النظام تتغيّر من هنا — بدون تحديث للبرنامج.
         </p>
       </div>
       <UiButton :disabled="!dirty.length" :loading="saving" @click="save">
         حفظ التغييرات
-        <span v-if="dirty.length" class="rounded-full bg-white/20 px-2 text-xs">
+        <span v-if="dirty.length" class="rounded-full bg-surface/20 px-2 text-xs">
           {{ dirty.length }}
         </span>
       </UiButton>
@@ -212,7 +212,7 @@ function setList(key: string, text: string) {
           v-model="search"
           type="search"
           placeholder="بحث في الإعدادات…"
-          class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm
+          class="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm
                  focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
         />
         <nav v-if="!search" class="space-y-1">
@@ -221,23 +221,23 @@ function setList(key: string, text: string) {
             :key="name"
             class="w-full rounded-lg px-3 py-2.5 text-start text-sm font-medium transition"
             :class="
-              activeGroup === name ? 'bg-brand-50 text-brand-800' : 'text-slate-700 hover:bg-slate-100'
+              activeGroup === name ? 'bg-brand-50 text-brand-800' : 'text-ink hover:bg-surface-sunken'
             "
             @click="activeGroup = name"
           >
             {{ GROUP_LABELS[name] ?? name }}
-            <span class="text-xs text-slate-400">({{ groups[name].length }})</span>
+            <span class="text-xs text-ink-faint">({{ groups[name].length }})</span>
           </button>
         </nav>
       </aside>
 
       <UiCard :title="search ? `نتائج البحث (${filtered.length})` : GROUP_LABELS[activeGroup] ?? activeGroup">
-        <div class="divide-y divide-slate-100">
+        <div class="divide-y divide-line">
           <div v-for="definition in filtered" :key="definition.key" class="py-5 first:pt-0">
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
-                  <label :for="definition.key" class="font-medium text-slate-900">
+                  <label :for="definition.key" class="font-medium text-ink">
                     {{ definition.label_ar }}
                   </label>
                   <!-- A dot marks anything changed from default: six months in,
@@ -252,13 +252,13 @@ function setList(key: string, text: string) {
                     يسري على الطلبات الجديدة
                   </UiBadge>
                 </div>
-                <p v-if="definition.help_ar" class="mt-1 text-sm text-slate-500">
+                <p v-if="definition.help_ar" class="mt-1 text-sm text-ink-muted">
                   {{ definition.help_ar }}
                 </p>
-                <p class="mt-1 font-mono text-xs text-slate-400" dir="ltr">
+                <p class="mt-1 font-mono text-xs text-ink-faint" dir="ltr">
                   {{ definition.key }} · {{ values[definition.key]?.origin }}
                 </p>
-                <p v-if="fieldErrors[definition.key]" class="mt-1 text-sm text-red-600">
+                <p v-if="fieldErrors[definition.key]" class="mt-1 text-sm text-danger">
                   {{ fieldErrors[definition.key].join('، ') }}
                 </p>
               </div>
@@ -269,14 +269,14 @@ function setList(key: string, text: string) {
                   :id="definition.key"
                   v-model="drafts[definition.key] as boolean"
                   type="checkbox"
-                  class="h-6 w-6 rounded border-slate-300 text-brand-700 focus:ring-brand-700"
+                  class="h-6 w-6 rounded border-line-strong text-brand-700 focus:ring-brand-700"
                   :disabled="!auth.can(definition.permission)"
                 />
                 <select
                   v-else-if="definition.type === 'enum'"
                   :id="definition.key"
                   v-model="drafts[definition.key] as string"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+                  class="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm min-h-[44px]"
                   :disabled="!auth.can(definition.permission)"
                 >
                   <option v-for="choice in definition.choices" :key="choice" :value="choice">
@@ -287,7 +287,7 @@ function setList(key: string, text: string) {
                   v-else-if="definition.type === 'list'"
                   :id="definition.key"
                   :value="listValue(definition.key)"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+                  class="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm min-h-[44px]"
                   :disabled="!auth.can(definition.permission)"
                   @input="setList(definition.key, ($event.target as HTMLInputElement).value)"
                 />
@@ -298,13 +298,13 @@ function setList(key: string, text: string) {
                   :type="definition.type === 'integer' || definition.type === 'decimal' ? 'number' : 'text'"
                   :step="definition.type === 'decimal' ? '0.01' : undefined"
                   :dir="definition.type === 'time' ? 'ltr' : undefined"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-sm min-h-[44px]"
+                  class="w-full rounded-lg border border-line-strong px-3 py-2.5 text-sm min-h-[44px]"
                   :disabled="!auth.can(definition.permission)"
                 />
 
                 <button
                   v-if="!values[definition.key]?.is_default && auth.can(definition.permission)"
-                  class="shrink-0 rounded-lg px-2 py-2 text-xs text-slate-500 hover:bg-slate-100"
+                  class="shrink-0 rounded-lg px-2 py-2 text-xs text-ink-muted hover:bg-surface-sunken"
                   title="استعادة الافتراضي"
                   @click="reset(definition)"
                 >

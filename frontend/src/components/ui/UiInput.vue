@@ -16,9 +16,9 @@ const model = defineModel<string | number | null>()
 
 <template>
   <label class="block">
-    <span v-if="label" class="mb-1.5 block text-sm font-medium text-slate-700">
+    <span v-if="label" class="mb-1.5 block text-sm font-medium text-ink">
       {{ label }}
-      <span v-if="required" class="text-red-600" aria-hidden="true">*</span>
+      <span v-if="required" class="text-danger" aria-hidden="true">*</span>
     </span>
     <input
       v-model="model"
@@ -27,12 +27,12 @@ const model = defineModel<string | number | null>()
       :required="required"
       :disabled="disabled"
       :dir="ltr ? 'ltr' : undefined"
-      class="w-full rounded-lg border bg-white px-3.5 py-2.5 text-[15px] min-h-[44px]
-             transition placeholder:text-slate-400 disabled:bg-slate-50
+      class="w-full rounded-lg border-line bg-surface px-3.5 py-2.5 text-[15px] min-h-[44px]
+             transition placeholder:text-ink-faint disabled:bg-surface-muted
              focus:outline-none focus:ring-2 focus:ring-brand-700/30"
-      :class="error ? 'border-red-400 focus:border-red-500' : 'border-slate-300 focus:border-brand-700'"
+      :class="error ? 'border-danger focus:border-danger' : 'border-line-strong focus:border-brand-700'"
     />
-    <p v-if="error" class="mt-1.5 text-sm text-red-600">{{ error }}</p>
-    <p v-else-if="hint" class="mt-1.5 text-sm text-slate-500">{{ hint }}</p>
+    <p v-if="error" class="mt-1.5 text-sm text-danger">{{ error }}</p>
+    <p v-else-if="hint" class="mt-1.5 text-sm text-ink-muted">{{ hint }}</p>
   </label>
 </template>

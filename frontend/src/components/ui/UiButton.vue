@@ -17,9 +17,9 @@ withDefaults(
 
 const variants = {
   primary: 'bg-brand-700 text-white hover:bg-brand-800 active:bg-brand-900',
-  secondary: 'bg-slate-100 text-slate-900 hover:bg-slate-200 border border-slate-300',
-  danger: 'bg-red-600 text-white hover:bg-red-700',
-  ghost: 'bg-transparent text-slate-700 hover:bg-slate-100',
+  secondary: 'bg-surface-sunken text-ink hover:bg-surface-sunken border border-line-strong',
+  danger: 'bg-danger text-white hover:bg-danger',
+  ghost: 'bg-transparent text-ink hover:bg-surface-sunken',
 }
 
 const sizes = {

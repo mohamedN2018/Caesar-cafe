@@ -83,14 +83,14 @@ onMounted(load)
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">حركة المخزون</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">حركة المخزون</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           الدفتر الكامل. كل تغيير في رصيد له سطر هنا يفسّره.
         </p>
       </div>
       <select
         v-model="typeFilter"
-        class="min-h-[44px] rounded-lg border border-slate-300 px-3 py-2.5 text-sm"
+        class="min-h-[44px] rounded-lg border border-line-strong px-3 py-2.5 text-sm"
         @change="load"
       >
         <option value="">كل الأنواع</option>
@@ -108,13 +108,13 @@ onMounted(load)
         description="ستظهر هنا كل عمليات الشراء والبيع والهالك والتسويات."
       />
       <UiTable v-else :columns="columns">
-        <tr v-for="movement in movements" :key="movement.id" class="hover:bg-slate-50">
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500">
+        <tr v-for="movement in movements" :key="movement.id" class="hover:bg-surface-muted">
+          <td class="whitespace-nowrap px-4 py-3 text-sm text-ink-muted">
             {{ dateTime(movement.occurred_at) }}
           </td>
           <td class="px-4 py-3">
-            <p class="font-medium text-slate-900">{{ movement.item_name }}</p>
-            <p v-if="movement.reason" class="text-xs text-slate-500">{{ movement.reason }}</p>
+            <p class="font-medium text-ink">{{ movement.item_name }}</p>
+            <p v-if="movement.reason" class="text-xs text-ink-muted">{{ movement.reason }}</p>
           </td>
           <td class="px-4 py-3">
             <UiBadge :tone="toneFor(movement.movement_type)">
@@ -123,18 +123,18 @@ onMounted(load)
           </td>
           <td
             class="px-4 py-3 text-end font-medium tabular-nums"
-            :class="Number(movement.quantity_delta) < 0 ? 'text-red-700' : 'text-emerald-700'"
+            :class="Number(movement.quantity_delta) < 0 ? 'text-danger' : 'text-success'"
           >
             <span v-if="Number(movement.quantity_delta) > 0">+</span
             >{{ quantity(movement.quantity_delta) }}
           </td>
-          <td class="px-4 py-3 text-end tabular-nums text-slate-600">
+          <td class="px-4 py-3 text-end tabular-nums text-ink-muted">
             {{ quantity(movement.balance_after) }}
           </td>
-          <td class="px-4 py-3 text-end tabular-nums text-slate-600">
+          <td class="px-4 py-3 text-end tabular-nums text-ink-muted">
             {{ money(movement.value_delta) }}
           </td>
-          <td class="px-4 py-3 text-sm text-slate-500">{{ movement.user_name ?? '—' }}</td>
+          <td class="px-4 py-3 text-sm text-ink-muted">{{ movement.user_name ?? '—' }}</td>
         </tr>
       </UiTable>
     </UiCard>

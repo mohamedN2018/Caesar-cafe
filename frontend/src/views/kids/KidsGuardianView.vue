@@ -138,8 +138,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">أولياء الأمور والأطفال</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">أولياء الأمور والأطفال</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         البحث بالهاتف — وهو ما لدى الموظف فعلاً؛ الاسم يُكتب بأكثر من صورة.
       </p>
     </div>
@@ -173,15 +173,15 @@ onMounted(load)
             :class="
               selected?.id === guardian.id
                 ? 'border-brand-300 bg-brand-50'
-                : 'border-slate-200 bg-white hover:bg-slate-50'
+                : 'border-line bg-surface hover:bg-surface-muted'
             "
             @click="pick(guardian)"
           >
             <div class="flex flex-wrap items-center justify-between gap-2">
-              <span class="font-semibold text-slate-900">{{ guardian.full_name }}</span>
+              <span class="font-semibold text-ink">{{ guardian.full_name }}</span>
               <UiBadge tone="neutral">{{ guardian.visit_count }} زيارة</UiBadge>
             </div>
-            <p class="mt-0.5 font-mono text-sm text-slate-500" dir="ltr">
+            <p class="mt-0.5 font-mono text-sm text-ink-muted" dir="ltr">
               {{ guardian.phone || '—' }}
             </p>
           </button>
@@ -190,8 +190,8 @@ onMounted(load)
         <UiCard v-if="selected">
           <div class="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <h2 class="text-lg font-bold text-slate-900">{{ selected.full_name }}</h2>
-              <p class="mt-0.5 font-mono text-sm text-slate-500" dir="ltr">
+              <h2 class="text-lg font-bold text-ink">{{ selected.full_name }}</h2>
+              <p class="mt-0.5 font-mono text-sm text-ink-muted" dir="ltr">
                 {{ selected.phone || '—' }}
               </p>
             </div>
@@ -200,7 +200,7 @@ onMounted(load)
             </UiBadge>
           </div>
 
-          <p v-if="selected.notes" class="mt-2 rounded-lg bg-slate-50 px-3 py-2 text-sm text-slate-700">
+          <p v-if="selected.notes" class="mt-2 rounded-lg bg-surface-muted px-3 py-2 text-sm text-ink">
             {{ selected.notes }}
           </p>
 
@@ -215,11 +215,11 @@ onMounted(load)
             <div
               v-for="child in children"
               :key="child.id"
-              class="rounded-lg border border-slate-200 px-4 py-3"
-              :class="child.medical_notes.trim() ? 'bg-amber-50/50' : ''"
+              class="rounded-lg border border px-4 py-3"
+              :class="child.medical_notes.trim() ? 'bg-warning-bg/50' : ''"
             >
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-semibold text-slate-900">{{ child.first_name }}</span>
+                <span class="font-semibold text-ink">{{ child.first_name }}</span>
                 <UiBadge v-if="child.age_months_snapshot" tone="neutral">
                   {{ Math.floor(child.age_months_snapshot / 12) }} سنة
                 </UiBadge>
@@ -227,14 +227,14 @@ onMounted(load)
               </div>
 
               <label class="mt-2 block">
-                <span class="mb-1 block text-xs font-medium text-slate-600">
+                <span class="mb-1 block text-xs font-medium text-ink-muted">
                   ملاحظات طبية — تظهر على شاشة الصالة دائماً
                 </span>
                 <textarea
                   v-model="child.medical_notes"
                   rows="2"
                   :disabled="!mayEdit"
-                  class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm
+                  class="w-full rounded-lg border border-line-strong px-3 py-2 text-sm
                          focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
                   placeholder="حساسية، دواء، حالة يجب أن يعرفها الموظف"
                   @blur="mayEdit && saveNotes(child)"
@@ -243,8 +243,8 @@ onMounted(load)
             </div>
           </div>
 
-          <form v-if="mayEdit" class="mt-4 space-y-3 border-t border-slate-200 pt-4" @submit.prevent="addChild">
-            <h3 class="text-sm font-semibold text-slate-900">إضافة طفل</h3>
+          <form v-if="mayEdit" class="mt-4 space-y-3 border-t border-line pt-4" @submit.prevent="addChild">
+            <h3 class="text-sm font-semibold text-ink">إضافة طفل</h3>
             <div class="grid gap-3 sm:grid-cols-2">
               <UiInput v-model="newChild.first_name" label="الاسم" required />
               <UiInput v-model="newChild.birth_date" label="تاريخ الميلاد" type="date" />
@@ -257,7 +257,7 @@ onMounted(load)
         </UiCard>
 
         <UiCard v-else>
-          <p class="text-sm text-slate-500">اختر ولي أمر لعرض الأطفال والملاحظات الطبية.</p>
+          <p class="text-sm text-ink-muted">اختر ولي أمر لعرض الأطفال والملاحظات الطبية.</p>
         </UiCard>
       </div>
     </template>

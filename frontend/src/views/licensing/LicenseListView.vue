@@ -106,8 +106,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">التراخيص</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">التراخيص</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         المفتاح يظهر مرة واحدة عند الإنشاء فقط — الخادم يحفظ بصمته لا نصّه.
       </p>
     </div>
@@ -130,19 +130,19 @@ onMounted(load)
         description="أنشئ ترخيصاً ثم استخدم مفتاحه لتفعيل أول جهاز."
       />
       <UiTable v-else :columns="columns">
-        <tr v-for="license in licenses" :key="license.id" class="hover:bg-slate-50">
+        <tr v-for="license in licenses" :key="license.id" class="hover:bg-surface-muted">
           <td class="px-4 py-3 font-mono text-sm" dir="ltr">{{ license.masked_key }}</td>
           <td class="px-4 py-3">
-            <p class="text-slate-900">{{ license.customer_name || '—' }}</p>
-            <p class="text-xs text-slate-500" dir="ltr">{{ license.customer_email }}</p>
+            <p class="text-ink">{{ license.customer_name || '—' }}</p>
+            <p class="text-xs text-ink-muted" dir="ltr">{{ license.customer_email }}</p>
           </td>
-          <td class="px-4 py-3 text-slate-600">{{ license.license_type }}</td>
+          <td class="px-4 py-3 text-ink-muted">{{ license.license_type }}</td>
           <td class="px-4 py-3 text-end tabular-nums">
-            <span :class="license.seats_available === 0 && 'font-semibold text-amber-700'">
+            <span :class="license.seats_available === 0 && 'font-semibold text-warning'">
               {{ seats(license) }}
             </span>
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500">
+          <td class="whitespace-nowrap px-4 py-3 text-sm text-ink-muted">
             {{ license.expires_at ? dateTime(license.expires_at) : 'مدى الحياة' }}
           </td>
           <td class="px-4 py-3">

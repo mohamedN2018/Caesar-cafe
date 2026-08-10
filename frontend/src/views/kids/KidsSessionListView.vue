@@ -103,14 +103,14 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">جلسات صالة الأطفال</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">جلسات صالة الأطفال</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           السجل الكامل — القيمة المحسوبة محفوظة دائماً بجوار أي تعديل يدوي.
         </p>
       </div>
       <select
         v-model="statusFilter"
-        class="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700"
+        class="rounded-lg border border-line-strong px-3 py-2 text-sm text-ink"
       >
         <option value="">كل الحالات</option>
         <option value="ACTIVE">بالداخل</option>
@@ -124,22 +124,22 @@ onMounted(async () => {
     <template v-else>
       <div v-if="report" class="grid gap-4 sm:grid-cols-4">
         <UiCard>
-          <p class="text-sm text-slate-500">جلسات ({{ report.days }} يوم)</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ report.sessions }}</p>
+          <p class="text-sm text-ink-muted">جلسات ({{ report.days }} يوم)</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ report.sessions }}</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">الإيراد</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(report.revenue) }}</p>
+          <p class="text-sm text-ink-muted">الإيراد</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ money(report.revenue) }}</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">متوسط المدة</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ report.average_minutes }} د</p>
+          <p class="text-sm text-ink-muted">متوسط المدة</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ report.average_minutes }} د</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">جلسات معدّلة يدوياً</p>
+          <p class="text-sm text-ink-muted">جلسات معدّلة يدوياً</p>
           <p
             class="mt-1 text-2xl font-bold"
-            :class="report.overridden ? 'text-amber-700' : 'text-slate-900'"
+            :class="report.overridden ? 'text-warning' : 'text-ink'"
           >
             {{ report.overridden }}
           </p>
@@ -147,19 +147,19 @@ onMounted(async () => {
       </div>
 
       <UiCard v-if="hourly.length">
-        <h2 class="text-sm font-semibold text-slate-700">الإشغال حسب الساعة</h2>
-        <p class="mt-1 text-xs text-slate-400">
+        <h2 class="text-sm font-semibold text-ink">الإشغال حسب الساعة</h2>
+        <p class="mt-1 text-xs text-ink-faint">
           متى تحتاج الصالة موظفاً إضافياً، وهل تسعير الذروة له ما يبرره.
         </p>
         <div class="mt-4 flex items-end gap-1 overflow-x-auto" dir="ltr">
           <div v-for="bucket in hourly" :key="bucket.hour" class="flex min-w-8 flex-1 flex-col items-center gap-1">
-            <span class="text-xs tabular-nums text-slate-500">{{ bucket.sessions }}</span>
+            <span class="text-xs tabular-nums text-ink-muted">{{ bucket.sessions }}</span>
             <div
               class="w-full rounded-t bg-brand-500"
               :style="{ height: `${Math.max(4, bucket.height)}px`, minHeight: '4px' }"
               :title="`${bucket.hour}:00 — ${bucket.sessions} جلسة`"
             />
-            <span class="text-xs tabular-nums text-slate-400">{{ bucket.hour }}</span>
+            <span class="text-xs tabular-nums text-ink-faint">{{ bucket.hour }}</span>
           </div>
         </div>
       </UiCard>
@@ -172,30 +172,30 @@ onMounted(async () => {
           description="ستظهر هنا فور تسجيل أول دخول."
         />
         <UiTable v-else :columns="columns">
-          <tr v-for="session in shown" :key="session.id" class="hover:bg-slate-50">
+          <tr v-for="session in shown" :key="session.id" class="hover:bg-surface-muted">
             <td class="px-4 py-3">
-              <span class="font-mono font-medium text-slate-900" dir="ltr">
+              <span class="font-mono font-medium text-ink" dir="ltr">
                 #{{ session.tag_number }}
               </span>
             </td>
             <td class="px-4 py-3">
               <div class="flex items-center gap-2">
-                <span class="font-medium text-slate-900">{{ session.child_name }}</span>
+                <span class="font-medium text-ink">{{ session.child_name }}</span>
                 <UiBadge :tone="statusTone[session.status] ?? 'neutral'">
                   {{ statusLabel[session.status] ?? session.status }}
                 </UiBadge>
               </div>
-              <p class="text-xs text-slate-400">{{ session.guardian_name }}</p>
+              <p class="text-xs text-ink-faint">{{ session.guardian_name }}</p>
             </td>
-            <td class="px-4 py-3 text-slate-600">{{ session.tariff_name }}</td>
-            <td class="px-4 py-3 text-sm text-slate-500">{{ dateTime(session.checked_in_at) }}</td>
-            <td class="px-4 py-3 text-sm text-slate-500">{{ dateTime(session.checked_out_at) }}</td>
-            <td class="px-4 py-3 text-end tabular-nums text-slate-600">
+            <td class="px-4 py-3 text-ink-muted">{{ session.tariff_name }}</td>
+            <td class="px-4 py-3 text-sm text-ink-muted">{{ dateTime(session.checked_in_at) }}</td>
+            <td class="px-4 py-3 text-sm text-ink-muted">{{ dateTime(session.checked_out_at) }}</td>
+            <td class="px-4 py-3 text-end tabular-nums text-ink-muted">
               {{ session.billable_minutes || '—' }}
             </td>
             <td class="px-4 py-3 text-end tabular-nums">
-              <span class="font-medium text-slate-900">{{ money(session.payable) }}</span>
-              <p v-if="session.override_charge" class="text-xs text-amber-700">
+              <span class="font-medium text-ink">{{ money(session.payable) }}</span>
+              <p v-if="session.override_charge" class="text-xs text-warning">
                 محسوبة {{ money(session.computed_charge) }}
               </p>
             </td>

@@ -119,20 +119,20 @@ async function signOut() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-50">
+  <div class="min-h-screen bg-surface-muted">
     <!-- Mobile scrim -->
     <div
       v-if="sidebarOpen"
-      class="fixed inset-0 z-20 bg-slate-900/40 lg:hidden"
+      class="fixed inset-0 z-20 bg-ink/40 lg:hidden"
       @click="sidebarOpen = false"
     />
 
     <aside
-      class="fixed inset-y-0 z-30 w-64 border-slate-200 bg-white transition-transform lg:translate-x-0
+      class="fixed inset-y-0 z-30 w-64 border-line bg-surface transition-transform lg:translate-x-0
              start-0 border-e"
       :class="sidebarOpen ? 'translate-x-0' : 'translate-x-full lg:translate-x-0'"
     >
-      <div class="flex h-16 items-center gap-3 border-b border-slate-100 px-5">
+      <div class="flex h-16 items-center gap-3 border-b border-line px-5">
         <!--
           A monogram, not a picture of a coffee cup. Every cafe system on earth
           uses the cup; the letter is the one mark that is actually this cafe's.
@@ -144,8 +144,8 @@ async function signOut() {
           ق
         </span>
         <div>
-          <p class="text-sm font-bold leading-tight text-slate-900">القيصر</p>
-          <p class="text-xs text-slate-500">نظام الإدارة</p>
+          <p class="text-sm font-bold leading-tight text-ink">القيصر</p>
+          <p class="text-xs text-ink-muted">نظام الإدارة</p>
         </div>
       </div>
 
@@ -153,7 +153,7 @@ async function signOut() {
         <div v-for="group in visibleGroups" :key="group.label">
           <p
             v-if="group.label"
-            class="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-slate-400"
+            class="mb-2 px-3 text-xs font-semibold uppercase tracking-wide text-ink-faint"
           >
             {{ group.label }}
           </p>
@@ -165,7 +165,7 @@ async function signOut() {
                 :class="
                   isActive(item.to)
                     ? 'bg-brand-50 text-brand-800'
-                    : 'text-slate-700 hover:bg-slate-100'
+                    : 'text-ink hover:bg-surface-sunken'
                 "
                 @click="sidebarOpen = false"
               >
@@ -181,10 +181,10 @@ async function signOut() {
     <div class="lg:ps-64">
       <header
         class="sticky top-0 z-10 flex h-16 items-center justify-between gap-4
-               border-b border-slate-200 bg-white/90 px-4 backdrop-blur sm:px-6"
+               border-b border-line bg-surface/90 px-4 backdrop-blur sm:px-6"
       >
         <button
-          class="rounded-lg p-2 text-slate-600 hover:bg-slate-100 lg:hidden"
+          class="rounded-lg p-2 text-ink-muted hover:bg-surface-sunken lg:hidden"
           aria-label="القائمة"
           @click="sidebarOpen = !sidebarOpen"
         >
@@ -206,10 +206,10 @@ async function signOut() {
 
         <div class="flex items-center gap-3">
           <div class="hidden text-end sm:block">
-            <p class="text-sm font-medium leading-tight text-slate-900">
+            <p class="text-sm font-medium leading-tight text-ink">
               {{ auth.me?.full_name_ar }}
             </p>
-            <p class="text-xs text-slate-500">{{ auth.me?.roles.join('، ') }}</p>
+            <p class="text-xs text-ink-muted">{{ auth.me?.roles.join('، ') }}</p>
           </div>
           <div
             class="flex h-9 w-9 items-center justify-center rounded-full bg-brand-700 text-sm font-bold text-white"
@@ -218,7 +218,7 @@ async function signOut() {
             {{ initials }}
           </div>
           <button
-            class="rounded-lg px-3 py-2 text-sm text-slate-600 hover:bg-slate-100"
+            class="rounded-lg px-3 py-2 text-sm text-ink-muted hover:bg-surface-sunken"
             @click="signOut"
           >
             خروج

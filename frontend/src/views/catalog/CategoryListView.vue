@@ -31,8 +31,8 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">الأقسام</h1>
-      <p class="mt-1 text-sm text-slate-500">ترتيب الأقسام هو ترتيب شبكة نقطة البيع.</p>
+      <h1 class="text-2xl font-bold text-ink">الأقسام</h1>
+      <p class="mt-1 text-sm text-ink-muted">ترتيب الأقسام هو ترتيب شبكة نقطة البيع.</p>
     </div>
 
     <UiSkeleton v-if="loading" :rows="5" />
@@ -48,7 +48,7 @@ onMounted(async () => {
         <li
           v-for="category in categories"
           :key="category.id"
-          class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-4 py-3"
+          class="flex items-center justify-between gap-3 rounded-lg border border px-4 py-3"
         >
           <div class="flex items-center gap-3">
             <span
@@ -57,8 +57,8 @@ onMounted(async () => {
               aria-hidden="true"
             />
             <div>
-              <p class="font-medium text-slate-900">{{ category.name_ar }}</p>
-              <p class="text-xs text-slate-500">{{ category.product_count }} منتج</p>
+              <p class="font-medium text-ink">{{ category.name_ar }}</p>
+              <p class="text-xs text-ink-muted">{{ category.product_count }} منتج</p>
             </div>
           </div>
           <UiBadge :tone="category.is_active ? 'success' : 'neutral'">

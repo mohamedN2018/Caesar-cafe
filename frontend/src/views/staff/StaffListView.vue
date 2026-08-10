@@ -232,8 +232,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">الموظفون والصلاحيات</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">الموظفون والصلاحيات</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         رمز الدخول لا يُعرض أبداً بعد تعيينه — يُخزَّن مُجزّأً، تماماً ككلمة المرور.
       </p>
     </div>
@@ -255,7 +255,7 @@ onMounted(load)
         :class="
           tab === option.key
             ? 'bg-brand-50 text-brand-800 ring-brand-200'
-            : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+            : 'bg-surface text-ink ring hover:bg-surface-muted'
         "
         @click="tab = option.key as typeof tab"
       >
@@ -280,7 +280,7 @@ onMounted(load)
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="text-lg font-bold text-slate-900">{{ person.full_name_ar }}</span>
+                <span class="text-lg font-bold text-ink">{{ person.full_name_ar }}</span>
                 <UiBadge v-if="!person.is_active" tone="warning">موقوف</UiBadge>
                 <UiBadge :tone="person.has_pin ? 'success' : 'danger'">
                   {{ person.has_pin ? 'له رمز دخول' : 'بلا رمز دخول' }}
@@ -288,8 +288,8 @@ onMounted(load)
                 <UiBadge v-if="person.mfa_enabled" tone="info">تحقق بخطوتين</UiBadge>
               </div>
 
-              <p class="mt-1 font-mono text-sm text-slate-500" dir="ltr">{{ person.email }}</p>
-              <p class="mt-0.5 text-sm text-slate-500">
+              <p class="mt-1 font-mono text-sm text-ink-muted" dir="ltr">{{ person.email }}</p>
+              <p class="mt-0.5 text-sm text-ink-muted">
                 آخر دخول {{ dateTime(person.last_login) }}
               </p>
 
@@ -297,15 +297,15 @@ onMounted(load)
                 <span
                   v-for="assignment in person.assignments"
                   :key="assignment.id"
-                  class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-700"
+                  class="inline-flex items-center gap-1 rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-medium text-ink"
                 >
                   {{ assignment.role_name }}
-                  <span class="text-slate-400">
+                  <span class="text-ink-faint">
                     {{ assignment.branch_name ?? 'كل الفروع' }}
                   </span>
                   <button
                     v-if="mayManageRoles && person.assignments.length > 1"
-                    class="text-slate-400 hover:text-red-600"
+                    class="text-ink-faint hover:text-danger"
                     :title="`إزالة ${assignment.role_name}`"
                     @click="revoke(person, assignment)"
                   >
@@ -338,7 +338,7 @@ onMounted(load)
 
           <form
             v-if="pinFor?.id === person.id"
-            class="mt-3 flex flex-wrap items-end gap-3 rounded-lg bg-slate-50 px-4 py-3"
+            class="mt-3 flex flex-wrap items-end gap-3 rounded-lg bg-surface-muted px-4 py-3"
             @submit.prevent="resetPin"
           >
             <UiInput
@@ -351,7 +351,7 @@ onMounted(load)
             />
             <UiButton type="submit" :loading="busy === 'pin'" :disabled="!newPin">حفظ</UiButton>
             <UiButton variant="ghost" @click="pinFor = null">إلغاء</UiButton>
-            <p class="w-full text-xs text-slate-500">
+            <p class="w-full text-xs text-ink-muted">
               أبلغه به شفهياً. لن يظهر مرة أخرى، ولا يُسجَّل في سجل التدقيق — المسجَّل هو أنه
               تغيّر ومن غيّره.
             </p>
@@ -360,7 +360,7 @@ onMounted(load)
       </div>
 
       <UiCard v-if="mayManage">
-        <h2 class="text-sm font-semibold text-slate-900">إضافة موظف</h2>
+        <h2 class="text-sm font-semibold text-ink">إضافة موظف</h2>
         <form class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" @submit.prevent="addStaff">
           <UiInput v-model="draft.full_name_ar" label="الاسم" required />
           <UiInput v-model="draft.email" label="البريد الإلكتروني" type="email" ltr required />
@@ -373,10 +373,10 @@ onMounted(load)
             required
           />
           <label class="block">
-            <span class="mb-1.5 block text-sm font-medium text-slate-700">الدور</span>
+            <span class="mb-1.5 block text-sm font-medium text-ink">الدور</span>
             <select
               v-model="draft.role"
-              class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-[15px]
+              class="w-full min-h-[44px] rounded-lg border border-line-strong bg-surface px-3 text-[15px]
                      focus:border-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-700/30"
             >
               <option v-for="role in roles" :key="role.id" :value="role.code">
@@ -388,7 +388,7 @@ onMounted(load)
             <UiButton type="submit" :loading="busy === 'create'">إضافة</UiButton>
           </div>
         </form>
-        <p class="mt-3 text-xs text-slate-400">
+        <p class="mt-3 text-xs text-ink-faint">
           الدور يُسنَد على هذا الفرع. رمز الدخول خطوة تالية منفصلة.
         </p>
       </UiCard>
@@ -402,11 +402,11 @@ onMounted(load)
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div>
               <div class="flex flex-wrap items-center gap-2">
-                <span class="text-lg font-bold text-slate-900">{{ role.name_ar }}</span>
+                <span class="text-lg font-bold text-ink">{{ role.name_ar }}</span>
                 <UiBadge tone="neutral"><span dir="ltr">{{ role.code }}</span></UiBadge>
                 <UiBadge v-if="role.is_system" tone="info">دور نظام</UiBadge>
               </div>
-              <p class="mt-1 text-sm text-slate-500">
+              <p class="mt-1 text-sm text-ink-muted">
                 {{ role.permissions.length }} صلاحية · {{ role.assignment_count }} موظف
               </p>
             </div>
@@ -420,10 +420,10 @@ onMounted(load)
       <UiCard v-if="editingRole">
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h2 class="text-lg font-bold text-slate-900">
+            <h2 class="text-lg font-bold text-ink">
               صلاحيات {{ editingRole.name_ar }}
             </h2>
-            <p class="mt-0.5 text-sm text-slate-500">
+            <p class="mt-0.5 text-sm text-ink-muted">
               {{ editingRole.permissions.length }} صلاحية مختارة — تسري فوراً على كل من يحمل الدور.
             </p>
           </div>
@@ -435,13 +435,13 @@ onMounted(load)
 
         <div class="mt-4 space-y-4">
           <div v-for="(defs, group) in grouped" :key="group">
-            <h3 class="text-sm font-semibold text-slate-700">{{ group }}</h3>
+            <h3 class="text-sm font-semibold text-ink">{{ group }}</h3>
             <div class="mt-2 grid gap-1.5 sm:grid-cols-2">
               <label
                 v-for="def in defs"
                 :key="def.code"
                 class="flex items-start gap-2 rounded-lg px-2 py-1.5 text-sm"
-                :class="def.sensitive ? 'bg-amber-50' : 'hover:bg-slate-50'"
+                :class="def.sensitive ? 'bg-warning-bg' : 'hover:bg-surface-muted'"
               >
                 <input
                   type="checkbox"
@@ -450,11 +450,11 @@ onMounted(load)
                   @change="toggle(def.code)"
                 />
                 <span>
-                  <span class="text-slate-800">{{ def.label_ar }}</span>
-                  <span v-if="def.sensitive" class="ms-1 text-xs font-medium text-amber-800">
+                  <span class="text-ink">{{ def.label_ar }}</span>
+                  <span v-if="def.sensitive" class="ms-1 text-xs font-medium text-warning">
                     حسّاسة
                   </span>
-                  <span class="block font-mono text-[11px] text-slate-400" dir="ltr">
+                  <span class="block font-mono text-[11px] text-ink-faint" dir="ltr">
                     {{ def.code }}
                   </span>
                 </span>
@@ -463,7 +463,7 @@ onMounted(load)
           </div>
         </div>
 
-        <p class="mt-4 text-xs text-slate-400">
+        <p class="mt-4 text-xs text-ink-faint">
           القائمة تأتي من الخادم لا من المتصفح — نسخة مكتوبة يدوياً هنا كانت ستتأخر عن أي صلاحية
           جديدة، والنتيجة صلاحية لا يستطيع أحد منحها.
         </p>

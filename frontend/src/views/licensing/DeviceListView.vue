@@ -82,8 +82,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">الأجهزة المفعّلة</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">الأجهزة المفعّلة</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         إلغاء التفعيل يوقف الجهاز فوراً. «تحرير المقعد» يحذفه ليُفعَّل جهاز آخر مكانه.
       </p>
     </div>
@@ -100,23 +100,23 @@ onMounted(load)
         description="ثبّت تطبيق الديسكتوب وفعّله بمفتاح الترخيص."
       />
       <UiTable v-else :columns="columns">
-        <tr v-for="device in devices" :key="device.id" class="hover:bg-slate-50">
+        <tr v-for="device in devices" :key="device.id" class="hover:bg-surface-muted">
           <td class="px-4 py-3">
-            <p class="font-medium text-slate-900">{{ device.device_name }}</p>
-            <p class="text-xs text-slate-500">{{ device.platform || '—' }}</p>
+            <p class="font-medium text-ink">{{ device.device_name }}</p>
+            <p class="text-xs text-ink-muted">{{ device.platform || '—' }}</p>
             <p
               v-if="device.fingerprint_changed_count > 0"
-              class="text-xs text-amber-700"
+              class="text-xs text-warning"
               title="بصمة الجهاز تغيّرت — قد تكون بيانات الاعتماد منسوخة"
             >
               ⚠ تغيّرت البصمة {{ device.fingerprint_changed_count }} مرة
             </p>
           </td>
-          <td class="px-4 py-3 text-slate-600">{{ device.mode }}</td>
-          <td class="px-4 py-3 font-mono text-sm text-slate-600" dir="ltr">
+          <td class="px-4 py-3 text-ink-muted">{{ device.mode }}</td>
+          <td class="px-4 py-3 font-mono text-sm text-ink-muted" dir="ltr">
             {{ device.app_version || '—' }}
           </td>
-          <td class="px-4 py-3 text-sm" :class="isStale(device) ? 'text-amber-700' : 'text-slate-500'">
+          <td class="px-4 py-3 text-sm" :class="isStale(device) ? 'text-warning' : 'text-ink-muted'">
             {{ relativeMinutes(device.last_seen_at) }}
           </td>
           <td class="px-4 py-3">

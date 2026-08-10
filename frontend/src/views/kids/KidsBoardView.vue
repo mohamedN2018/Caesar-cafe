@@ -134,8 +134,8 @@ onUnmounted(() => {
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">صالة الأطفال</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">صالة الأطفال</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           يتحدّث كل {{ REFRESH_MS / 1000 }} ثانية. القيمة المعروضة محسوبة على الخادم.
         </p>
       </div>
@@ -148,7 +148,7 @@ onUnmounted(() => {
           :class="
             selected === area.id
               ? 'bg-brand-50 text-brand-800 ring-brand-200'
-              : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+              : 'bg-surface text-ink ring hover:bg-surface-muted'
           "
           @click="pick(area.id)"
         >
@@ -171,31 +171,31 @@ onUnmounted(() => {
     <template v-else-if="board">
       <div class="grid gap-4 sm:grid-cols-3">
         <UiCard>
-          <p class="text-sm text-slate-500">الإشغال</p>
-          <p class="mt-1 text-2xl font-bold" :class="isFull ? 'text-red-700' : 'text-slate-900'">
+          <p class="text-sm text-ink-muted">الإشغال</p>
+          <p class="mt-1 text-2xl font-bold" :class="isFull ? 'text-danger' : 'text-ink'">
             {{ board.occupancy }} / {{ board.capacity }}
           </p>
-          <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div class="mt-3 h-2 overflow-hidden rounded-full bg-surface-sunken">
             <div
               class="h-full rounded-full transition-all"
-              :class="isFull ? 'bg-red-500' : 'bg-brand-600'"
+              :class="isFull ? 'bg-danger' : 'bg-brand-600'"
               :style="{ width: `${occupancyPercent}%` }"
             />
           </div>
-          <p v-if="isFull" class="mt-2 text-xs font-medium text-red-700">
+          <p v-if="isFull" class="mt-2 text-xs font-medium text-danger">
             ممتلئة — لا يمكن إدخال طفل آخر
           </p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">مستحق جارٍ</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(revenueRunning) }}</p>
-          <p class="mt-2 text-xs text-slate-400">يُحتسب عند الخروج، وليس قبله.</p>
+          <p class="text-sm text-ink-muted">مستحق جارٍ</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ money(revenueRunning) }}</p>
+          <p class="mt-2 text-xs text-ink-faint">يُحتسب عند الخروج، وليس قبله.</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">متجاوزون الوقت</p>
+          <p class="text-sm text-ink-muted">متجاوزون الوقت</p>
           <p
             class="mt-1 text-2xl font-bold"
-            :class="board.sessions.some((s) => s.is_overdue) ? 'text-amber-700' : 'text-slate-900'"
+            :class="board.sessions.some((s) => s.is_overdue) ? 'text-warning' : 'text-ink'"
           >
             {{ board.sessions.filter((s) => s.is_overdue).length }}
           </p>
@@ -223,21 +223,21 @@ onUnmounted(() => {
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-mono text-sm font-bold text-slate-500" dir="ltr">
+                <span class="font-mono text-sm font-bold text-ink-muted" dir="ltr">
                   #{{ session.tag_number }}
                 </span>
-                <span class="text-lg font-bold text-slate-900">{{ session.child_name }}</span>
+                <span class="text-lg font-bold text-ink">{{ session.child_name }}</span>
                 <UiBadge :tone="tone(session)">{{ stateLabel(session) }}</UiBadge>
                 <UiBadge v-if="session.capped" tone="info">وصل الحد الأقصى</UiBadge>
               </div>
 
-              <p class="mt-1 text-sm text-slate-600">
+              <p class="mt-1 text-sm text-ink-muted">
                 ولي الأمر: {{ session.guardian_name }}
-                <span v-if="session.guardian_phone" class="font-mono text-slate-400" dir="ltr">
+                <span v-if="session.guardian_phone" class="font-mono text-ink-faint" dir="ltr">
                   · {{ session.guardian_phone }}
                 </span>
               </p>
-              <p class="mt-0.5 text-sm text-slate-500">
+              <p class="mt-0.5 text-sm text-ink-muted">
                 {{ session.tariff_name }} · دخول {{ time(session.checked_in_at) }}
                 <span v-if="session.expected_end_at">
                   · تنتهي {{ time(session.expected_end_at) }}
@@ -245,17 +245,17 @@ onUnmounted(() => {
               </p>
               <p
                 v-if="session.medical_notes"
-                class="mt-2 rounded-lg bg-amber-50 px-3 py-1.5 text-sm text-amber-900"
+                class="mt-2 rounded-lg bg-warning-bg px-3 py-1.5 text-sm text-warning"
               >
                 ⚕️ {{ session.medical_notes }}
               </p>
             </div>
 
             <div class="text-end">
-              <p class="font-mono text-2xl font-bold tabular-nums text-slate-900" dir="ltr">
+              <p class="font-mono text-2xl font-bold tabular-nums text-ink" dir="ltr">
                 {{ elapsed(session.elapsed_minutes) }}
               </p>
-              <p class="mt-1 text-sm font-medium text-slate-700">
+              <p class="mt-1 text-sm font-medium text-ink">
                 {{ money(session.running_charge) }}
               </p>
             </div>

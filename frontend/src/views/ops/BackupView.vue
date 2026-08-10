@@ -117,8 +117,8 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">النسخ الاحتياطي</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">النسخ الاحتياطي</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           نسخة كاملة كل يوم الساعة ٣ فجراً — قبل بداية يوم العمل، فيوم الأمس مكتمل.
         </p>
       </div>
@@ -149,27 +149,27 @@ onMounted(async () => {
 
       <div class="grid gap-4 sm:grid-cols-3">
         <UiCard>
-          <p class="text-sm text-slate-500">آخر نسخة ناجحة</p>
+          <p class="text-sm text-ink-muted">آخر نسخة ناجحة</p>
           <p
             class="mt-1 text-2xl font-bold"
-            :class="isStale ? 'text-red-700' : 'text-slate-900'"
+            :class="isStale ? 'text-danger' : 'text-ink'"
           >
             {{ hours === null ? 'لا يوجد' : `منذ ${hours} ساعة` }}
           </p>
-          <p v-if="state.last_size_mb" class="mt-1 text-sm text-slate-500">
+          <p v-if="state.last_size_mb" class="mt-1 text-sm text-ink-muted">
             {{ state.last_size_mb }} ميجابايت
           </p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">إجمالي النسخ المحفوظة</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ state.total }}</p>
-          <p class="mt-1 text-xs text-slate-400">٣٠ يومية + أول نسخة من كل شهر (١٢ شهراً)</p>
+          <p class="text-sm text-ink-muted">إجمالي النسخ المحفوظة</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ state.total }}</p>
+          <p class="mt-1 text-xs text-ink-faint">٣٠ يومية + أول نسخة من كل شهر (١٢ شهراً)</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">محاولات فاشلة</p>
+          <p class="text-sm text-ink-muted">محاولات فاشلة</p>
           <p
             class="mt-1 text-2xl font-bold"
-            :class="state.failed ? 'text-red-700' : 'text-slate-900'"
+            :class="state.failed ? 'text-danger' : 'text-ink'"
           >
             {{ state.failed }}
           </p>
@@ -191,11 +191,11 @@ onMounted(async () => {
           description="ستظهر أول نسخة بعد تشغيل المهمة الليلية، أو اضغط «خُذ نسخة الآن»."
         />
         <UiTable v-else :columns="columns">
-          <tr v-for="backup in state.backups" :key="backup.id" class="hover:bg-slate-50">
-            <td class="px-4 py-3 text-sm text-slate-500">{{ dateTime(backup.started_at) }}</td>
+          <tr v-for="backup in state.backups" :key="backup.id" class="hover:bg-surface-muted">
+            <td class="px-4 py-3 text-sm text-ink-muted">{{ dateTime(backup.started_at) }}</td>
             <td class="px-4 py-3">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-mono text-xs text-slate-700" dir="ltr">
+                <span class="font-mono text-xs text-ink" dir="ltr">
                   {{ backup.filename }}
                 </span>
                 <UiBadge :tone="backup.status === 'COMPLETE' ? 'success' : 'danger'">
@@ -205,13 +205,13 @@ onMounted(async () => {
                   {{ backup.encrypted ? 'مشفّرة' : 'غير مشفّرة' }}
                 </UiBadge>
               </div>
-              <p v-if="backup.error" class="mt-1 text-xs text-red-700">{{ backup.error }}</p>
+              <p v-if="backup.error" class="mt-1 text-xs text-danger">{{ backup.error }}</p>
             </td>
             <td class="px-4 py-3 text-end tabular-nums">{{ backup.size_mb }}</td>
-            <td class="px-4 py-3 text-end tabular-nums text-slate-500">
+            <td class="px-4 py-3 text-end tabular-nums text-ink-muted">
               {{ backup.duration_seconds }}ث
             </td>
-            <td class="px-4 py-3 text-sm text-slate-500">
+            <td class="px-4 py-3 text-sm text-ink-muted">
               {{ backup.triggered_by_name ?? 'المهمة الليلية' }}
               <button
                 v-if="backup.status === 'COMPLETE'"

@@ -8,7 +8,7 @@ withDefaults(defineProps<{ rows?: number }>(), { rows: 5 })
     <div
       v-for="row in rows"
       :key="row"
-      class="h-11 animate-pulse rounded-lg bg-slate-100"
+      class="h-11 animate-pulse rounded-lg bg-surface-sunken"
       :style="{ animationDelay: `${row * 60}ms` }"
     />
   </div>

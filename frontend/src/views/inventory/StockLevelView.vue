@@ -57,13 +57,13 @@ onMounted(async () => {
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">أرصدة المخزون</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">أرصدة المخزون</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           الأرصدة مشتقة من دفتر الحركات — كل تغيير له حركة تفسّره.
         </p>
       </div>
-      <label class="flex items-center gap-2 text-sm text-slate-700">
-        <input v-model="lowOnly" type="checkbox" class="h-5 w-5 rounded border-slate-300" />
+      <label class="flex items-center gap-2 text-sm text-ink">
+        <input v-model="lowOnly" type="checkbox" class="h-5 w-5 rounded border-line-strong" />
         النواقص فقط
       </label>
     </div>
@@ -73,18 +73,18 @@ onMounted(async () => {
     <template v-else>
       <div class="grid gap-4 sm:grid-cols-3">
         <UiCard>
-          <p class="text-sm text-slate-500">إجمالي قيمة المخزون</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ money(totalValue) }}</p>
+          <p class="text-sm text-ink-muted">إجمالي قيمة المخزون</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ money(totalValue) }}</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">عدد الأصناف</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ levels.length }}</p>
+          <p class="text-sm text-ink-muted">عدد الأصناف</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ levels.length }}</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">أصناف تحت الحد الأدنى</p>
+          <p class="text-sm text-ink-muted">أصناف تحت الحد الأدنى</p>
           <p
             class="mt-1 text-2xl font-bold"
-            :class="lowCount ? 'text-amber-700' : 'text-slate-900'"
+            :class="lowCount ? 'text-warning' : 'text-ink'"
           >
             {{ lowCount }}
           </p>
@@ -103,25 +103,25 @@ onMounted(async () => {
           "
         />
         <UiTable v-else :columns="columns">
-          <tr v-for="level in shown" :key="level.item" class="hover:bg-slate-50">
+          <tr v-for="level in shown" :key="level.item" class="hover:bg-surface-muted">
             <td class="px-4 py-3">
               <div class="flex items-center gap-2">
-                <span class="font-medium text-slate-900">{{ level.item_name }}</span>
+                <span class="font-medium text-ink">{{ level.item_name }}</span>
                 <UiBadge v-if="level.is_low" tone="warning">تحت الحد</UiBadge>
               </div>
-              <p class="font-mono text-xs text-slate-400" dir="ltr">{{ level.item_code }}</p>
+              <p class="font-mono text-xs text-ink-faint" dir="ltr">{{ level.item_code }}</p>
             </td>
             <td class="px-4 py-3 text-end font-medium tabular-nums">
               {{ quantity(level.quantity_on_hand, level.unit_code) }}
             </td>
-            <td class="px-4 py-3 text-end tabular-nums text-slate-500">
+            <td class="px-4 py-3 text-end tabular-nums text-ink-muted">
               {{ Number(level.quantity_reserved) ? quantity(level.quantity_reserved) : '—' }}
             </td>
-            <td class="px-4 py-3 text-end tabular-nums text-slate-600">
+            <td class="px-4 py-3 text-end tabular-nums text-ink-muted">
               {{ Number(level.weighted_avg_cost) ? money(level.weighted_avg_cost) : '—' }}
             </td>
             <td class="px-4 py-3 text-end tabular-nums">{{ money(level.total_value) }}</td>
-            <td class="px-4 py-3 text-sm text-slate-500">{{ dateTime(level.last_movement_at) }}</td>
+            <td class="px-4 py-3 text-sm text-ink-muted">{{ dateTime(level.last_movement_at) }}</td>
           </tr>
         </UiTable>
       </UiCard>

@@ -186,8 +186,8 @@ onUnmounted(() => {
   <div class="space-y-6">
     <div class="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 class="text-2xl font-bold text-slate-900">المطبخ الآن</h1>
-        <p class="mt-1 text-sm text-slate-500">
+        <h1 class="text-2xl font-bold text-ink">المطبخ الآن</h1>
+        <p class="mt-1 text-sm text-ink-muted">
           يتحدّث كل {{ REFRESH_MS / 1000 }} ثانية. شاشة الطهاة على جهاز الكاشير — هذه للمتابعة.
         </p>
       </div>
@@ -198,7 +198,7 @@ onUnmounted(() => {
           :class="
             stationFilter === ''
               ? 'bg-brand-50 text-brand-800 ring-brand-200'
-              : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+              : 'bg-surface text-ink ring hover:bg-surface-muted'
           "
           @click="stationFilter = ''"
         >
@@ -211,7 +211,7 @@ onUnmounted(() => {
           :class="
             stationFilter === station.id
               ? 'bg-brand-50 text-brand-800 ring-brand-200'
-              : 'bg-white text-slate-700 ring-slate-200 hover:bg-slate-50'
+              : 'bg-surface text-ink ring hover:bg-surface-muted'
           "
           @click="stationFilter = station.id"
         >
@@ -227,27 +227,27 @@ onUnmounted(() => {
     <template v-else>
       <div class="grid gap-4 sm:grid-cols-3">
         <UiCard>
-          <p class="text-sm text-slate-500">تذاكر مفتوحة</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ visible.length }}</p>
+          <p class="text-sm text-ink-muted">تذاكر مفتوحة</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ visible.length }}</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">متأخرة</p>
+          <p class="text-sm text-ink-muted">متأخرة</p>
           <p
             class="mt-1 text-2xl font-bold"
-            :class="lateTickets.length ? 'text-red-700' : 'text-slate-900'"
+            :class="lateTickets.length ? 'text-danger' : 'text-ink'"
           >
             {{ lateTickets.length }}
           </p>
-          <p v-if="lateTickets.length" class="mt-2 text-xs font-medium text-red-700">
+          <p v-if="lateTickets.length" class="mt-2 text-xs font-medium text-danger">
             تجاوزت الوقت المستهدف للمحطة
           </p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">أطول انتظار</p>
-          <p class="mt-1 text-2xl font-bold tabular-nums text-slate-900" dir="ltr">
+          <p class="text-sm text-ink-muted">أطول انتظار</p>
+          <p class="mt-1 text-2xl font-bold tabular-nums text-ink" dir="ltr">
             {{ worstMinutes }} د
           </p>
-          <p class="mt-2 text-xs text-slate-400">المتوسط يخفي الطاولة الغاضبة.</p>
+          <p class="mt-2 text-xs text-ink-faint">المتوسط يخفي الطاولة الغاضبة.</p>
         </UiCard>
       </div>
 
@@ -273,7 +273,7 @@ onUnmounted(() => {
           <div class="flex flex-wrap items-start justify-between gap-4">
             <div class="min-w-0">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="font-mono text-lg font-bold text-slate-900" dir="ltr">
+                <span class="font-mono text-lg font-bold text-ink" dir="ltr">
                   #{{ ticket.ticket_number }}
                 </span>
                 <UiBadge :tone="tone(ticket)">{{ stateLabel(ticket) }}</UiBadge>
@@ -281,19 +281,19 @@ onUnmounted(() => {
                 <UiBadge v-if="ticket.table" tone="info">طاولة {{ ticket.table }}</UiBadge>
               </div>
 
-              <p class="mt-1 text-sm text-slate-500">
+              <p class="mt-1 text-sm text-ink-muted">
                 طلب {{ ticket.order_number }} · أُرسل {{ time(ticket.created_at) }} · المستهدف
                 {{ ticket.target_minutes }} د
               </p>
 
-              <ul class="mt-2 space-y-1 text-sm text-slate-700">
+              <ul class="mt-2 space-y-1 text-sm text-ink">
                 <li v-for="line in ticket.lines" :key="line.id">
                   <span class="font-semibold tabular-nums" dir="ltr">{{ line.quantity }}×</span>
                   {{ line.name }}
-                  <span v-if="line.modifiers.length" class="text-slate-500">
+                  <span v-if="line.modifiers.length" class="text-ink-muted">
                     · {{ line.modifiers.join('، ') }}
                   </span>
-                  <span v-if="line.note" class="font-medium text-amber-800">
+                  <span v-if="line.note" class="font-medium text-warning">
                     · {{ line.note }}
                   </span>
                   <UiBadge v-if="line.ready_at" tone="success">جاهز</UiBadge>
@@ -304,7 +304,7 @@ onUnmounted(() => {
             <div class="flex flex-col items-end gap-2">
               <p
                 class="font-mono text-2xl font-bold tabular-nums"
-                :class="ticket.is_late ? 'text-red-700' : 'text-slate-900'"
+                :class="ticket.is_late ? 'text-danger' : 'text-ink'"
                 dir="ltr"
               >
                 {{ minutes(ticket) }} د
@@ -324,23 +324,23 @@ onUnmounted(() => {
       </div>
 
       <UiCard v-if="Object.keys(performance).length">
-        <h2 class="text-sm font-semibold text-slate-900">متوسط زمن التحضير حسب المحطة</h2>
-        <p class="mt-1 text-xs text-slate-500">
+        <h2 class="text-sm font-semibold text-ink">متوسط زمن التحضير حسب المحطة</h2>
+        <p class="mt-1 text-xs text-ink-muted">
           قرار توظيف، وليس قرار اليوم — "بار القهوة بطيء بعد الثامنة" يُحل بشخص إضافي.
         </p>
         <div class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           <div
             v-for="(row, name) in performance"
             :key="name"
-            class="rounded-lg bg-slate-50 px-4 py-3"
+            class="rounded-lg bg-surface-muted px-4 py-3"
           >
-            <p class="text-sm font-medium text-slate-900">{{ name }}</p>
-            <p class="mt-1 font-mono text-xl font-bold tabular-nums text-slate-900" dir="ltr">
+            <p class="text-sm font-medium text-ink">{{ name }}</p>
+            <p class="mt-1 font-mono text-xl font-bold tabular-nums text-ink" dir="ltr">
               {{ Math.round(row.average_seconds / 60) }} د
             </p>
-            <p class="mt-1 text-xs text-slate-500">
+            <p class="mt-1 text-xs text-ink-muted">
               المستهدف {{ row.target_minutes }} د · {{ row.count }} تذكرة ·
-              <span :class="row.late_percent > 20 ? 'font-semibold text-red-700' : ''">
+              <span :class="row.late_percent > 20 ? 'font-semibold text-danger' : ''">
                 {{ row.late_percent }}% متأخرة
               </span>
             </p>

@@ -57,16 +57,16 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-slate-100 px-4">
+  <div class="flex min-h-screen items-center justify-center bg-surface-sunken px-4">
     <div class="w-full max-w-md">
       <div class="mb-8 text-center">
         <div class="text-5xl" aria-hidden="true">☕</div>
-        <h1 class="mt-3 text-2xl font-bold text-slate-900">القيصر</h1>
-        <p class="mt-1 text-sm text-slate-500">نظام الإدارة</p>
+        <h1 class="mt-3 text-2xl font-bold text-ink">القيصر</h1>
+        <p class="mt-1 text-sm text-ink-muted">نظام الإدارة</p>
       </div>
 
       <form
-        class="space-y-5 rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+        class="space-y-5 rounded-xl border border-line bg-surface p-6 shadow-sm"
         @submit.prevent="submit"
       >
         <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
@@ -92,7 +92,7 @@ async function submit() {
         </template>
 
         <template v-else>
-          <p class="text-sm text-slate-600">
+          <p class="text-sm text-ink-muted">
             أدخل الرمز المكوّن من ٦ أرقام من تطبيق المصادقة.
           </p>
           <UiInput
@@ -117,7 +117,7 @@ async function submit() {
         </UiButton>
       </form>
 
-      <p class="mt-6 text-center text-xs text-slate-400">
+      <p class="mt-6 text-center text-xs text-ink-faint">
         الاتصال مؤمَّن. لا تشارك بيانات الدخول مع أحد.
       </p>
     </div>

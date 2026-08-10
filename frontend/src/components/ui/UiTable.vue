@@ -9,20 +9,20 @@ defineProps<{ columns: { key: string; label: string; align?: 'start' | 'end' }[]
 <template>
   <div class="overflow-x-auto">
     <table class="w-full min-w-full text-sm">
-      <thead class="border-b border-slate-200 bg-slate-50/80">
+      <thead class="border-b border-line bg-surface-muted/80">
         <tr>
           <th
             v-for="column in columns"
             :key="column.key"
             scope="col"
-            class="whitespace-nowrap px-4 py-3 font-semibold text-slate-600"
+            class="whitespace-nowrap px-4 py-3 font-semibold text-ink-muted"
             :class="column.align === 'end' ? 'text-end' : 'text-start'"
           >
             {{ column.label }}
           </th>
         </tr>
       </thead>
-      <tbody class="divide-y divide-slate-100">
+      <tbody class="divide-y divide-line">
         <slot />
       </tbody>
     </table>

@@ -172,8 +172,8 @@ onMounted(load)
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">الوصفات والتكلفة</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">الوصفات والتكلفة</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         الوصفة هي ما يخصم من المخزون عند البيع، وهي مصدر التكلفة — التكلفة تُحسب ولا تُكتب.
       </p>
     </div>
@@ -202,23 +202,23 @@ onMounted(load)
             :class="
               selected?.id === recipe.id
                 ? 'border-brand-300 bg-brand-50'
-                : 'border-slate-200 bg-white hover:bg-slate-50'
+                : 'border-line bg-surface hover:bg-surface-muted'
             "
             @click="pick(recipe)"
           >
             <div class="flex flex-wrap items-center gap-2">
-              <span class="font-semibold text-slate-900">{{ recipe.variant_name }}</span>
+              <span class="font-semibold text-ink">{{ recipe.variant_name }}</span>
               <UiBadge v-if="!recipe.is_active" tone="warning">موقوفة</UiBadge>
               <UiBadge v-if="!recipe.lines.length" tone="danger">بلا مكوّنات</UiBadge>
             </div>
-            <p class="mt-0.5 text-sm text-slate-500">{{ recipe.lines.length }} مكوّن</p>
+            <p class="mt-0.5 text-sm text-ink-muted">{{ recipe.lines.length }} مكوّن</p>
           </button>
         </div>
 
         <div class="space-y-4 lg:col-span-2">
           <UiCard v-if="selected">
             <div class="flex flex-wrap items-start justify-between gap-3">
-              <h2 class="text-lg font-bold text-slate-900">{{ selected.variant_name }}</h2>
+              <h2 class="text-lg font-bold text-ink">{{ selected.variant_name }}</h2>
               <UiButton v-if="mayEdit" size="sm" :loading="saving" @click="save">حفظ</UiButton>
             </div>
 
@@ -239,14 +239,14 @@ onMounted(load)
               <div
                 v-for="(line, index) in selected.lines"
                 :key="index"
-                class="grid gap-3 rounded-lg bg-slate-50 px-3 py-2 sm:grid-cols-4"
+                class="grid gap-3 rounded-lg bg-surface-muted px-3 py-2 sm:grid-cols-4"
               >
                 <label class="block sm:col-span-2">
-                  <span class="mb-1.5 block text-xs font-medium text-slate-600">المكوّن</span>
+                  <span class="mb-1.5 block text-xs font-medium text-ink-muted">المكوّن</span>
                   <select
                     v-model="line.item"
                     :disabled="!mayEdit"
-                    class="w-full min-h-[44px] rounded-lg border border-slate-300 bg-white px-3 text-[15px]"
+                    class="w-full min-h-[44px] rounded-lg border border-line-strong bg-surface px-3 text-[15px]"
                   >
                     <option v-for="item in items" :key="item.id" :value="item.id">
                       {{ item.name_ar }} ({{ item.code }})
@@ -279,14 +279,14 @@ onMounted(load)
               </UiButton>
             </div>
 
-            <p class="mt-3 text-xs text-slate-400">
+            <p class="mt-3 text-xs text-ink-faint">
               الفاقد رقم حقيقي: بن يضيع في الطحن، لبن يبقى في الإبريق. تركه صفراً يجعل المخزون
               النظري يبتعد عن المعدود حتى يفقد الجميع الثقة في الاثنين.
             </p>
           </UiCard>
 
           <UiCard v-if="cost">
-            <h3 class="text-sm font-semibold text-slate-900">التكلفة اليوم</h3>
+            <h3 class="text-sm font-semibold text-ink">التكلفة اليوم</h3>
 
             <UiAlert v-if="cost.missing_costs.length" tone="warning" class="mt-2">
               أصناف بلا تكلفة مسجَّلة ({{ cost.missing_costs.join('، ') }}) — الرقم أدناه أقل من
@@ -294,28 +294,28 @@ onMounted(load)
             </UiAlert>
 
             <div class="mt-3 grid gap-3 sm:grid-cols-3">
-              <div class="rounded-lg bg-slate-50 px-4 py-3">
-                <p class="text-xs text-slate-500">التكلفة</p>
-                <p class="mt-1 font-mono text-xl font-bold tabular-nums text-slate-900" dir="ltr">
+              <div class="rounded-lg bg-surface-muted px-4 py-3">
+                <p class="text-xs text-ink-muted">التكلفة</p>
+                <p class="mt-1 font-mono text-xl font-bold tabular-nums text-ink" dir="ltr">
                   {{ money(cost.total) }}
                 </p>
               </div>
-              <div class="rounded-lg bg-slate-50 px-4 py-3">
-                <p class="text-xs text-slate-500">سعر البيع</p>
-                <p class="mt-1 font-mono text-xl font-bold tabular-nums text-slate-900" dir="ltr">
+              <div class="rounded-lg bg-surface-muted px-4 py-3">
+                <p class="text-xs text-ink-muted">سعر البيع</p>
+                <p class="mt-1 font-mono text-xl font-bold tabular-nums text-ink" dir="ltr">
                   {{ money(cost.price) }}
                 </p>
               </div>
-              <div class="rounded-lg bg-slate-50 px-4 py-3">
-                <p class="text-xs text-slate-500">هامش الربح</p>
+              <div class="rounded-lg bg-surface-muted px-4 py-3">
+                <p class="text-xs text-ink-muted">هامش الربح</p>
                 <p
                   class="mt-1 font-mono text-xl font-bold tabular-nums"
-                  :class="Number(cost.margin) > 0 ? 'text-emerald-700' : 'text-red-700'"
+                  :class="Number(cost.margin) > 0 ? 'text-success' : 'text-danger'"
                   dir="ltr"
                 >
                   {{ money(cost.margin) }}
                 </p>
-                <p v-if="cost.margin_percent" class="mt-0.5 text-xs text-slate-500">
+                <p v-if="cost.margin_percent" class="mt-0.5 text-xs text-ink-muted">
                   {{ percent(cost.margin_percent) }}
                 </p>
               </div>
@@ -323,7 +323,7 @@ onMounted(load)
 
             <div v-if="cost.lines.length" class="mt-4 overflow-x-auto">
               <table class="w-full text-sm">
-                <thead class="text-xs text-slate-500">
+                <thead class="text-xs text-ink-muted">
                   <tr>
                     <th class="px-2 py-2 text-start">المكوّن</th>
                     <th class="px-2 py-2 text-end">الكمية</th>
@@ -331,16 +331,16 @@ onMounted(load)
                     <th class="px-2 py-2 text-end">التكلفة</th>
                   </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100">
+                <tbody class="divide-y divide-line">
                   <tr v-for="line in cost.lines" :key="line.item_code">
-                    <td class="px-2 py-2 text-slate-800">{{ line.item_name }}</td>
-                    <td class="px-2 py-2 text-end font-mono tabular-nums text-slate-600" dir="ltr">
+                    <td class="px-2 py-2 text-ink">{{ line.item_name }}</td>
+                    <td class="px-2 py-2 text-end font-mono tabular-nums text-ink-muted" dir="ltr">
                       {{ fmtQuantity(line.quantity, line.unit_code) }}
                     </td>
-                    <td class="px-2 py-2 text-end font-mono tabular-nums text-slate-600" dir="ltr">
+                    <td class="px-2 py-2 text-end font-mono tabular-nums text-ink-muted" dir="ltr">
                       {{ line.unit_cost }}
                     </td>
-                    <td class="px-2 py-2 text-end font-mono tabular-nums text-slate-900" dir="ltr">
+                    <td class="px-2 py-2 text-end font-mono tabular-nums text-ink" dir="ltr">
                       {{ line.line_cost }}
                     </td>
                   </tr>
@@ -348,13 +348,13 @@ onMounted(load)
               </table>
             </div>
 
-            <p class="mt-3 text-xs text-slate-400">
+            <p class="mt-3 text-xs text-ink-faint">
               تُحدَّث تلقائياً مع كل سند استلام — سعر بن جديد يغيّر هامش كل مشروب يحتوي على بن.
             </p>
           </UiCard>
 
           <UiCard v-if="!selected">
-            <p class="text-sm text-slate-500">اختر وصفة لعرض مكوّناتها وتكلفتها.</p>
+            <p class="text-sm text-ink-muted">اختر وصفة لعرض مكوّناتها وتكلفتها.</p>
           </UiCard>
         </div>
       </div>

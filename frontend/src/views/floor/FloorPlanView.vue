@@ -286,7 +286,7 @@ onUnmounted(() => window.clearInterval(polling))
         <UiInput v-model.number="draft.seats" label="عدد الكراسي" type="number" />
         <label class="text-sm">
           <span class="mb-1.5 block font-medium text-ink">المنطقة</span>
-          <select v-model="draft.area" class="w-full rounded-lg border border-border-strong px-3 py-2">
+          <select v-model="draft.area" class="w-full rounded-lg border border-border-line-strong px-3 py-2">
             <option v-for="area in areas" :key="area.id" :value="area.id">
               {{ area.name_ar }}
             </option>

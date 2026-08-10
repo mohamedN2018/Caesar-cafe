@@ -117,8 +117,8 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">تعريفات صالة الأطفال</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">تعريفات صالة الأطفال</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         الأمثلة محسوبة على الخادم بنفس الكود الذي يحاسب به الكاشير.
       </p>
     </div>
@@ -137,13 +137,13 @@ onMounted(async () => {
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div class="min-w-0">
             <div class="flex flex-wrap items-center gap-2">
-              <span class="text-lg font-bold text-slate-900">{{ tariff.name_ar }}</span>
+              <span class="text-lg font-bold text-ink">{{ tariff.name_ar }}</span>
               <UiBadge tone="info">{{ MODE_LABELS[tariff.mode] }}</UiBadge>
               <UiBadge v-if="tariff.is_default" tone="success">افتراضية</UiBadge>
               <UiBadge v-if="!tariff.is_active" tone="neutral">موقوفة</UiBadge>
             </div>
-            <p class="mt-1 text-sm text-slate-600">{{ describe(tariff) }}</p>
-            <p class="mt-0.5 text-xs text-slate-400">
+            <p class="mt-1 text-sm text-ink-muted">{{ describe(tariff) }}</p>
+            <p class="mt-0.5 text-xs text-ink-faint">
               {{ window(tariff) }} · أولوية {{ tariff.priority }}
             </p>
           </div>
@@ -156,15 +156,15 @@ onMounted(async () => {
           </button>
         </div>
 
-        <div v-if="expanded === tariff.id" class="mt-4 border-t border-slate-100 pt-4">
+        <div v-if="expanded === tariff.id" class="mt-4 border-t border-line pt-4">
           <UiSkeleton v-if="!previews[tariff.id]" :rows="4" />
           <UiTable v-else :columns="previewColumns">
             <tr v-for="row in previews[tariff.id]" :key="row.minutes">
-              <td class="px-4 py-2 tabular-nums text-slate-700">{{ row.minutes }} دقيقة</td>
-              <td class="px-4 py-2 text-end font-medium tabular-nums text-slate-900">
+              <td class="px-4 py-2 tabular-nums text-ink">{{ row.minutes }} دقيقة</td>
+              <td class="px-4 py-2 text-end font-medium tabular-nums text-ink">
                 {{ money(row.charge) }}
               </td>
-              <td class="px-4 py-2 text-sm text-slate-500">{{ explain(row, tariff) }}</td>
+              <td class="px-4 py-2 text-sm text-ink-muted">{{ explain(row, tariff) }}</td>
             </tr>
           </UiTable>
         </div>

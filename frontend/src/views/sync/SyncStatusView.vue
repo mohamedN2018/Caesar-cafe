@@ -128,8 +128,8 @@ onUnmounted(() => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">حالة المزامنة</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">حالة المزامنة</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         جهاز توقف عن الإرسال معناه مبيعات موجودة على قرص صلب فقط.
       </p>
     </div>
@@ -146,23 +146,23 @@ onUnmounted(() => {
 
       <div class="grid gap-4 sm:grid-cols-3">
         <UiCard>
-          <p class="text-sm text-slate-500">الأجهزة</p>
-          <p class="mt-1 text-2xl font-bold text-slate-900">{{ status.devices.length }}</p>
+          <p class="text-sm text-ink-muted">الأجهزة</p>
+          <p class="mt-1 text-2xl font-bold text-ink">{{ status.devices.length }}</p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">غير متصلة</p>
+          <p class="text-sm text-ink-muted">غير متصلة</p>
           <p
             class="mt-1 text-2xl font-bold"
-            :class="status.stale_devices ? 'text-amber-700' : 'text-slate-900'"
+            :class="status.stale_devices ? 'text-warning' : 'text-ink'"
           >
             {{ status.stale_devices }}
           </p>
         </UiCard>
         <UiCard>
-          <p class="text-sm text-slate-500">تعارضات مفتوحة</p>
+          <p class="text-sm text-ink-muted">تعارضات مفتوحة</p>
           <p
             class="mt-1 text-2xl font-bold"
-            :class="status.open_conflicts ? 'text-red-700' : 'text-slate-900'"
+            :class="status.open_conflicts ? 'text-danger' : 'text-ink'"
           >
             {{ status.open_conflicts }}
           </p>
@@ -170,7 +170,7 @@ onUnmounted(() => {
       </div>
 
       <UiCard>
-        <h2 class="mb-3 text-sm font-semibold text-slate-700">التعارضات</h2>
+        <h2 class="mb-3 text-sm font-semibold text-ink">التعارضات</h2>
         <UiEmpty
           v-if="!conflicts.length"
           icon="check"
@@ -181,26 +181,26 @@ onUnmounted(() => {
           <div
             v-for="conflict in conflicts"
             :key="conflict.id"
-            class="rounded-lg border border-red-200 bg-red-50/50 p-4"
+            class="rounded-lg border border-danger bg-danger-bg/50 p-4"
           >
             <div class="flex flex-wrap items-start justify-between gap-3">
               <div class="min-w-0">
                 <div class="flex flex-wrap items-center gap-2">
                   <UiBadge tone="danger">{{ conflict.code }}</UiBadge>
-                  <span class="text-sm text-slate-500">{{ conflict.entity_type }}</span>
-                  <span v-if="conflict.device_name" class="text-sm text-slate-500">
+                  <span class="text-sm text-ink-muted">{{ conflict.entity_type }}</span>
+                  <span v-if="conflict.device_name" class="text-sm text-ink-muted">
                     · {{ conflict.device_name }}
                   </span>
                 </div>
-                <p class="mt-2 font-medium text-slate-900">{{ conflict.message_ar }}</p>
-                <p v-if="CONFLICT_HELP[conflict.code]" class="mt-1 text-sm text-slate-600">
+                <p class="mt-2 font-medium text-ink">{{ conflict.message_ar }}</p>
+                <p v-if="CONFLICT_HELP[conflict.code]" class="mt-1 text-sm text-ink-muted">
                   {{ CONFLICT_HELP[conflict.code] }}
                 </p>
-                <p class="mt-1 text-xs text-slate-400">{{ dateTime(conflict.created_at) }}</p>
+                <p class="mt-1 text-xs text-ink-faint">{{ dateTime(conflict.created_at) }}</p>
 
                 <pre
                   v-if="Object.keys(conflict.server_state).length"
-                  class="mt-2 overflow-x-auto rounded bg-white p-2 text-xs text-slate-600"
+                  class="mt-2 overflow-x-auto rounded bg-surface p-2 text-xs text-ink-muted"
                   dir="ltr"
                 >{{ JSON.stringify(conflict.server_state, null, 2) }}</pre>
               </div>
@@ -234,7 +234,7 @@ onUnmounted(() => {
       </UiCard>
 
       <UiCard>
-        <h2 class="mb-3 text-sm font-semibold text-slate-700">الأجهزة</h2>
+        <h2 class="mb-3 text-sm font-semibold text-ink">الأجهزة</h2>
         <UiEmpty
           v-if="!status.devices.length"
           icon="monitor"
@@ -242,33 +242,33 @@ onUnmounted(() => {
           description="فعّل جهازاً بمفتاح ترخيص ليظهر هنا."
         />
         <UiTable v-else :columns="deviceColumns">
-          <tr v-for="device in status.devices" :key="device.device_id" class="hover:bg-slate-50">
+          <tr v-for="device in status.devices" :key="device.device_id" class="hover:bg-surface-muted">
             <td class="px-4 py-3">
               <div class="flex items-center gap-2">
-                <span class="font-medium text-slate-900">{{ device.device_name }}</span>
+                <span class="font-medium text-ink">{{ device.device_name }}</span>
                 <UiBadge :tone="isStale(device) ? 'danger' : 'success'">
                   {{ isStale(device) ? 'غير متصل' : 'متصل' }}
                 </UiBadge>
               </div>
-              <p class="text-xs text-slate-400">
+              <p class="text-xs text-ink-faint">
                 {{ device.app_version || 'إصدار غير معروف' }}
               </p>
             </td>
-            <td class="px-4 py-3 text-sm text-slate-500">
+            <td class="px-4 py-3 text-sm text-ink-muted">
               {{ relativeMinutes(device.last_seen_at) }}
             </td>
             <td class="px-4 py-3 text-end tabular-nums">
-              <span :class="device.pending ? 'font-medium text-amber-700' : 'text-slate-500'">
+              <span :class="device.pending ? 'font-medium text-warning' : 'text-ink-muted'">
                 {{ device.pending }}
               </span>
             </td>
             <td class="px-4 py-3 text-end tabular-nums">
-              <span :class="device.rejected ? 'font-medium text-red-700' : 'text-slate-500'">
+              <span :class="device.rejected ? 'font-medium text-danger' : 'text-ink-muted'">
                 {{ device.rejected }}
               </span>
             </td>
             <td class="px-4 py-3 text-end tabular-nums">
-              <span :class="device.open_conflicts ? 'font-medium text-red-700' : 'text-slate-500'">
+              <span :class="device.open_conflicts ? 'font-medium text-danger' : 'text-ink-muted'">
                 {{ device.open_conflicts }}
               </span>
             </td>

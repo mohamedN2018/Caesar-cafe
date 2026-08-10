@@ -61,8 +61,8 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <div>
-      <h1 class="text-2xl font-bold text-slate-900">الورديات</h1>
-      <p class="mt-1 text-sm text-slate-500">
+      <h1 class="text-2xl font-bold text-ink">الورديات</h1>
+      <p class="mt-1 text-sm text-ink-muted">
         فرق النقدية المتكرر على نفس الشخص هو أول إشارة على وجود مشكلة.
       </p>
     </div>
@@ -77,12 +77,12 @@ onMounted(async () => {
         description="تُفتح الوردية من نقطة البيع قبل أول عملية بيع."
       />
       <UiTable v-else :columns="columns">
-        <tr v-for="shift in shifts" :key="shift.id" class="hover:bg-slate-50">
-          <td class="px-4 py-3 font-medium text-slate-900">{{ shift.user_name ?? '—' }}</td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500">
+        <tr v-for="shift in shifts" :key="shift.id" class="hover:bg-surface-muted">
+          <td class="px-4 py-3 font-medium text-ink">{{ shift.user_name ?? '—' }}</td>
+          <td class="whitespace-nowrap px-4 py-3 text-sm text-ink-muted">
             {{ dateTime(shift.opened_at) }}
           </td>
-          <td class="whitespace-nowrap px-4 py-3 text-sm text-slate-500">
+          <td class="whitespace-nowrap px-4 py-3 text-sm text-ink-muted">
             {{ dateTime(shift.closed_at) }}
           </td>
           <td class="px-4 py-3 text-end tabular-nums">{{ money(shift.opening_cash) }}</td>
@@ -92,11 +92,11 @@ onMounted(async () => {
               <UiBadge :tone="varianceTone(shift.variance)">
                 {{ Number(shift.variance) > 0 ? '+' : '' }}{{ money(shift.variance) }}
               </UiBadge>
-              <span v-if="shift.variance_reason" class="text-xs text-slate-500">
+              <span v-if="shift.variance_reason" class="text-xs text-ink-muted">
                 {{ shift.variance_reason }}
               </span>
             </div>
-            <span v-else class="text-slate-400">—</span>
+            <span v-else class="text-ink-faint">—</span>
           </td>
           <td class="px-4 py-3">
             <UiBadge :tone="shift.status === 'OPEN' ? 'info' : 'neutral'">

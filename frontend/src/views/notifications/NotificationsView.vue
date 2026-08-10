@@ -204,7 +204,7 @@ onMounted(load)
       <!-- ── devices ─────────────────────────────────────────────────────── -->
       <UiCard v-if="devices.length">
         <h2 class="text-sm font-semibold text-ink">الأجهزة المشتركة</h2>
-        <ul class="mt-3 divide-y divide-[var(--border)]">
+        <ul class="mt-3 divide-y divide-line divide-[var(--border)]">
           <li
             v-for="device in devices"
             :key="device.id"
@@ -237,7 +237,7 @@ onMounted(load)
           description="مفيش حاجة استدعت تنبيهاً — وده هو المطلوب."
         />
 
-        <ul v-else class="mt-3 divide-y divide-[var(--border)]">
+        <ul v-else class="mt-3 divide-y divide-line divide-[var(--border)]">
           <li v-for="alert in history" :key="alert.id" class="py-3">
             <div class="flex flex-wrap items-center gap-2">
               <UiBadge tone="neutral">{{ alert.kind_label }}</UiBadge>

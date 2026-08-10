@@ -114,8 +114,8 @@ onMounted(async () => {
     <template v-else-if="order">
       <div class="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 class="text-2xl font-bold text-slate-900">{{ order.local_number }}</h1>
-          <p class="mt-1 text-sm text-slate-500">
+          <h1 class="text-2xl font-bold text-ink">{{ order.local_number }}</h1>
+          <p class="mt-1 text-sm text-ink-muted">
             {{ order.table_number ? `طاولة ${order.table_number}` : 'تيك أواي' }} ·
             {{ dateTime(order.opened_at) }}
             <span v-if="order.opened_by_name"> · {{ order.opened_by_name }}</span>
@@ -130,7 +130,7 @@ onMounted(async () => {
 
       <div class="grid gap-6 lg:grid-cols-[1fr_320px]">
         <UiCard title="الأصناف">
-          <ul class="divide-y divide-slate-100">
+          <ul class="divide-y divide-line">
             <li
               v-for="item in items"
               :key="item.id"
@@ -138,21 +138,21 @@ onMounted(async () => {
               :class="item.status === 'VOIDED' && 'opacity-50'"
             >
               <div class="min-w-0">
-                <p class="font-medium text-slate-900">
+                <p class="font-medium text-ink">
                   <span class="tabular-nums">{{ quantity(item.quantity) }}×</span>
                   {{ item.name_snapshot }}
                   <UiBadge v-if="item.status === 'VOIDED'" tone="danger">ملغي</UiBadge>
                 </p>
-                <p v-if="item.modifiers.length" class="text-sm text-slate-500">
+                <p v-if="item.modifiers.length" class="text-sm text-ink-muted">
                   {{ item.modifiers.map((m) => m.name_snapshot).join('، ') }}
                 </p>
-                <p v-if="item.note" class="flex items-center gap-1.5 text-sm text-slate-500">
+                <p v-if="item.note" class="flex items-center gap-1.5 text-sm text-ink-muted">
                   <UiIcon name="note" size="0.9rem" /> {{ item.note }}
                 </p>
-                <p v-if="item.void_reason" class="text-sm text-red-600">
+                <p v-if="item.void_reason" class="text-sm text-danger">
                   سبب الإلغاء: {{ item.void_reason }}
                 </p>
-                <p v-if="item.price_override !== null" class="text-sm text-amber-700">
+                <p v-if="item.price_override !== null" class="text-sm text-warning">
                   سعر يدوي
                   <span v-if="item.price_override_reason">— {{ item.price_override_reason }}</span>
                 </p>
@@ -165,12 +165,12 @@ onMounted(async () => {
                   charged, and strike through what it should have been — the
                   comparison is the whole point of recording both.
                 -->
-                <p class="text-xs text-slate-500 tabular-nums">
+                <p class="text-xs text-ink-muted tabular-nums">
                   {{ money(item.price_override ?? item.unit_price_snapshot) }} للوحدة
                 </p>
                 <p
                   v-if="item.price_override !== null"
-                  class="text-xs text-slate-400 line-through tabular-nums"
+                  class="text-xs text-ink-faint line-through tabular-nums"
                 >
                   {{ money(item.unit_price_snapshot) }}
                 </p>
@@ -182,39 +182,39 @@ onMounted(async () => {
         <UiCard title="الحساب">
           <dl class="space-y-2.5 text-sm">
             <div class="flex justify-between">
-              <dt class="text-slate-600">الإجمالي</dt>
+              <dt class="text-ink-muted">الإجمالي</dt>
               <dd class="tabular-nums">{{ money(order.subtotal) }}</dd>
             </div>
-            <div v-if="Number(order.discount_total)" class="flex justify-between text-emerald-700">
+            <div v-if="Number(order.discount_total)" class="flex justify-between text-success">
               <dt>خصم</dt>
               <dd class="tabular-nums">− {{ money(order.discount_total) }}</dd>
             </div>
             <div v-if="Number(order.service_total)" class="flex justify-between">
-              <dt class="text-slate-600">خدمة {{ percent(order.service_percent) }}</dt>
+              <dt class="text-ink-muted">خدمة {{ percent(order.service_percent) }}</dt>
               <dd class="tabular-nums">{{ money(order.service_total) }}</dd>
             </div>
             <div v-if="Number(order.tax_total)" class="flex justify-between">
-              <dt class="text-slate-600">ض.ق.م {{ percent(order.vat_percent) }}</dt>
+              <dt class="text-ink-muted">ض.ق.م {{ percent(order.vat_percent) }}</dt>
               <dd class="tabular-nums">{{ money(order.tax_total) }}</dd>
             </div>
             <div
               v-if="Number(order.rounding_adjustment)"
-              class="flex justify-between text-slate-500"
+              class="flex justify-between text-ink-muted"
             >
               <dt>تقريب</dt>
               <dd class="tabular-nums">{{ money(order.rounding_adjustment) }}</dd>
             </div>
-            <div class="flex justify-between border-t border-slate-200 pt-2.5 text-base font-bold">
+            <div class="flex justify-between border-t border-line pt-2.5 text-base font-bold">
               <dt>المطلوب</dt>
               <dd class="tabular-nums">{{ money(order.grand_total) }}</dd>
             </div>
-            <div v-if="Number(order.paid_total)" class="flex justify-between text-emerald-700">
+            <div v-if="Number(order.paid_total)" class="flex justify-between text-success">
               <dt>المدفوع</dt>
               <dd class="tabular-nums">{{ money(order.paid_total) }}</dd>
             </div>
             <div
               v-if="Number(order.balance_due) > 0"
-              class="flex justify-between font-semibold text-amber-700"
+              class="flex justify-between font-semibold text-warning"
             >
               <dt>المتبقي</dt>
               <dd class="tabular-nums">{{ money(order.balance_due) }}</dd>
@@ -231,18 +231,18 @@ onMounted(async () => {
           <li v-for="event in events" :key="event.id" class="flex gap-3">
             <span
               class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full
-                     bg-slate-100 text-xs font-semibold tabular-nums text-slate-600"
+                     bg-surface-sunken text-xs font-semibold tabular-nums text-ink-muted"
             >
               {{ event.sequence }}
             </span>
             <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-slate-900">
+              <p class="text-sm font-medium text-ink">
                 {{ EVENT_LABELS[event.event_type] ?? event.event_type }}
               </p>
-              <p class="text-xs text-slate-500">
+              <p class="text-xs text-ink-muted">
                 {{ dateTime(event.occurred_at) }}
                 <span v-if="event.actor_name"> · {{ event.actor_name }}</span>
-                <span v-if="event.approved_by_name" class="text-amber-700">
+                <span v-if="event.approved_by_name" class="text-warning">
                   · بموافقة {{ event.approved_by_name }}
                 </span>
               </p>

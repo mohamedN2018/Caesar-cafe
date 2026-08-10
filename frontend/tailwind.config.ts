@@ -51,6 +51,36 @@ export default {
           muted: 'var(--ink-muted)',
           faint: 'var(--ink-faint)',
         },
+        // The state colours existed in `brand.css` and were never mapped here,
+        // so every screen that needed a warning reached for `amber-50` /
+        // `amber-900` straight out of Tailwind's default palette — which is not
+        // the brand's amber and drifts a shade further with every screen that
+        // guesses. Mapped once, they stay one colour.
+        success: {
+          DEFAULT: 'var(--success)',
+          bg: 'var(--success-bg)',
+        },
+        warning: {
+          DEFAULT: 'var(--warning)',
+          bg: 'var(--warning-bg)',
+        },
+        danger: {
+          DEFAULT: 'var(--danger)',
+          bg: 'var(--danger-bg)',
+        },
+        info: {
+          DEFAULT: 'var(--info)',
+          bg: 'var(--info-bg)',
+        },
+        // A NAMED line colour, so it can be written as `border-line`,
+        // `divide-line` and `ring-line`. `borderColor.DEFAULT` cannot serve
+        // that job: the bare class `border` is Tailwind's border-WIDTH utility,
+        // so mapping a colour onto it silently draws a 1px box around whatever
+        // it lands on — and `divide` and `ring` have no bare form at all.
+        line: {
+          DEFAULT: 'var(--border)',
+          strong: 'var(--border-strong)',
+        },
       },
       borderColor: {
         DEFAULT: 'var(--border)',

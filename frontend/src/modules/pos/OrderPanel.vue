@@ -128,7 +128,17 @@ async function discount() {
     </header>
 
     <div class="lines">
-      <p v-if="!pos.order?.items.length" class="idle">اختر صنفاً للبدء</p>
+      <!--
+        The idle state is the first thing anybody sees on this screen, including
+        a customer standing at the counter. "اختر صنفاً للبدء" as bare grey text
+        read as something broken; a framed glyph and a line of guidance reads as
+        a till waiting.
+      -->
+      <div v-if="!pos.order?.items.length" class="idle">
+        <span class="idle-mark"><UiIcon name="receipt" size="1.4rem" /></span>
+        <p class="idle-title">لا توجد أصناف بعد</p>
+        <p class="idle-hint">اختر صنفاً من المنيو ليبدأ الطلب</p>
+      </div>
 
       <div
         v-for="item in pos.order?.items ?? []"
@@ -255,8 +265,28 @@ async function discount() {
 }
 
 .idle {
-  padding: 2.5rem 1rem;
+  padding: 3rem 1rem;
   text-align: center;
+}
+.idle-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  margin-bottom: 0.75rem;
+  border-radius: 999px;
+  background: var(--surface-sunken);
+  color: var(--ink-faint);
+}
+.idle-title {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+.idle-hint {
+  margin-top: 0.25rem;
+  font-size: 0.82rem;
   color: var(--ink-faint);
 }
 
