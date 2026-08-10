@@ -18,8 +18,14 @@
 
 :root {
   /* ── brand ─────────────────────────────────────────────────────────────── */
-  --brand-50: #fdf4f4;
-  --brand-100: #fae4e5;
+  /* The two lightest steps are WARM.
+     They were #fdf4f4 and #fae4e5 — neutral pinks with no yellow in them — and
+     they are the steps that get used as a tint behind something, sitting on
+     cream surfaces (#fbf7f0, #f4ede1). A pink patch on cream is the single
+     thing that made the sidebar look wrong: it reads as a different palette
+     rather than a lighter one. Warmed to share the surfaces' hue. */
+  --brand-50: #fbf2ee;
+  --brand-100: #f4dfd9;
   --brand-200: #f3c4c7;
   --brand-300: #e59aa0;
   --brand-400: #d06a74;

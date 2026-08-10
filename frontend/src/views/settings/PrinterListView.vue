@@ -276,7 +276,7 @@ onMounted(load)
               </p>
             </div>
 
-            <div v-if="mayEdit" class="flex items-center gap-2">
+            <div v-if="mayEdit" class="flex flex-wrap items-center gap-2">
               <UiButton size="sm" variant="secondary" @click="edit(printer)">تعديل</UiButton>
               <UiButton
                 v-if="!printer.is_default && printer.is_active"

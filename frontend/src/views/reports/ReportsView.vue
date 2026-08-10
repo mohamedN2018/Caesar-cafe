@@ -16,6 +16,7 @@ import { ApiError, api } from '@/api/client'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiCard from '@/components/ui/UiCard.vue'
+import UiChart from '@/components/ui/UiChart.vue'
 import UiEmpty from '@/components/ui/UiEmpty.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import UiTable from '@/components/ui/UiTable.vue'
@@ -40,6 +41,21 @@ interface Tab {
   section: string
   columns: Column[]
   note?: string
+  /**
+   * What to plot above the table, if anything.
+   *
+   * Not every report earns a chart. A waste log is a list of incidents to read
+   * line by line; drawing it as bars invites a comparison nobody is making. So
+   * this is opt-in per tab rather than a chart on everything.
+   */
+  chart?: {
+    label: string
+    value: string
+    kind: 'bar' | 'horizontal' | 'line'
+    title: string
+    /** Cap the bars drawn. A chart of eighty products is a wall, not a chart. */
+    top?: number
+  }
 }
 
 const TABS: Tab[] = [
@@ -56,6 +72,12 @@ const TABS: Tab[] = [
       { key: 'profit', label: 'الربح', align: 'end', money: true },
       { key: 'share_percent', label: 'النسبة %', align: 'end' },
     ],
+    chart: {
+      label: "category",
+      value: "revenue",
+      kind: "horizontal",
+      title: "الإيراد حسب القسم",
+    },
   },
   {
     key: 'methods',
@@ -68,6 +90,12 @@ const TABS: Tab[] = [
       { key: 'count', label: 'العدد', align: 'end' },
       { key: 'amount', label: 'المبلغ', align: 'end', money: true },
     ],
+    chart: {
+      label: "method",
+      value: "amount",
+      kind: "horizontal",
+      title: "المحصَّل بكل طريقة",
+    },
     note: 'مطابقة النقدي مع البطاقات — الفرق بينهما هو ما يجب أن يكون في الدرج.',
   },
   {
@@ -85,6 +113,13 @@ const TABS: Tab[] = [
       { key: 'profit', label: 'الربح', align: 'end', money: true },
       { key: 'margin_percent', label: 'الهامش %', align: 'end' },
     ],
+    chart: {
+      label: "name",
+      value: "profit",
+      kind: "horizontal",
+      title: "أعلى ١٢ صنفاً ربحاً",
+      top: 12,
+    },
     note: 'الصنف الأعلى إيراداً ليس دائماً الأجدر بالترويج — الهامش هو ما يفرق.',
   },
   {
@@ -191,6 +226,29 @@ function isNegative(row: Record<string, string | number>, column: Column): boole
   return Boolean(column.money) && Number(row[column.key]) < 0
 }
 
+/**
+ * The rows the chart draws, biggest first and capped.
+ *
+ * Sorted because a bar chart in table order is a comparison the eye has to do
+ * itself; sorted, the ranking IS the chart. Capped because eighty products is
+ * a wall of hairlines, and the table underneath still has all of them.
+ */
+const chartRows = computed(() => {
+  const spec = active.value?.chart
+  if (!spec || !rows.value.length) return null
+
+  const points = rows.value
+    .map((row) => ({
+      label: String(row[spec.label] ?? '—'),
+      value: Number(row[spec.value] ?? 0),
+    }))
+    .filter((point) => Number.isFinite(point.value))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, spec.top ?? 20)
+
+  return points.length ? points : null
+})
+
 async function load() {
   if (!active.value) return
   loading.value = true
@@ -286,7 +344,7 @@ onMounted(async () => {
           :class="
             active?.key === tab.key
               ? 'bg-brand-50 text-brand-800 ring-brand-200'
-              : 'bg-surface text-ink ring hover:bg-surface-muted'
+              : 'bg-surface text-ink-muted ring-line hover:bg-surface-muted hover:text-ink'
           "
           @click="active = tab"
         >
@@ -306,7 +364,26 @@ onMounted(async () => {
           title="لا توجد بيانات"
           description="لا توجد حركة في هذه الفترة."
         />
-        <UiTable v-else :columns="active.columns">
+
+        <template v-else>
+          <!--
+            The chart sits ABOVE the table and the table keeps every row. The
+            chart answers "which is biggest" at a glance; the table answers
+            "what exactly" — and neither does the other's job well, so this is
+            not a choice between them.
+          -->
+          <section v-if="active.chart && chartRows" class="mb-6">
+            <h3 class="mb-2 text-sm font-semibold text-ink">{{ active.chart.title }}</h3>
+            <UiChart
+              :labels="chartRows.map((point) => point.label)"
+              :values="chartRows.map((point) => point.value)"
+              :kind="active.chart.kind"
+              :format="(value) => money(value)"
+              :height="Math.max(220, chartRows.length * 30)"
+            />
+          </section>
+
+          <UiTable :columns="active.columns">
           <tr v-for="(row, index) in rows" :key="index" class="hover:bg-surface-muted">
             <td
               v-for="column in active.columns"
@@ -320,7 +397,8 @@ onMounted(async () => {
               {{ cell(row, column) }}
             </td>
           </tr>
-        </UiTable>
+          </UiTable>
+        </template>
       </UiCard>
     </template>
   </div>

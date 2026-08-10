@@ -159,13 +159,24 @@ async function signOut() {
           </p>
           <ul class="space-y-1">
             <li v-for="item in group.items" :key="item.to">
+              <!--
+                Inactive rows are MUTED, not full ink. Every item at full
+                strength means the list shouts in one voice and the active row
+                has to win on colour alone; letting the rest recede is what
+                makes "where am I" readable at a glance.
+
+                The active row also carries a bar on its leading edge. In RTL
+                that is the right-hand side, and `border-s` follows the writing
+                direction rather than being pinned left — a hard-coded side is
+                the classic RTL bug that puts the marker on the wrong edge.
+              -->
               <RouterLink
                 :to="item.to"
-                class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition"
+                class="flex items-center gap-3 rounded-lg border-s-[3px] px-3 py-2.5 text-sm transition"
                 :class="
                   isActive(item.to)
-                    ? 'bg-brand-50 text-brand-800'
-                    : 'text-ink hover:bg-surface-sunken'
+                    ? 'border-brand-700 bg-brand-50 font-semibold text-brand-800'
+                    : 'border-transparent font-medium text-ink-muted hover:bg-surface-muted hover:text-ink'
                 "
                 @click="sidebarOpen = false"
               >
