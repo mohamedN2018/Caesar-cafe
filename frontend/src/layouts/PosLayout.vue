@@ -24,11 +24,13 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { usePosStore } from '@/stores/pos'
 import { useAuthStore } from '@/stores/auth'
+import { usePosStore } from '@/stores/pos'
+import { useTerminalStore } from '@/stores/terminal'
 
 const auth = useAuthStore()
 const pos = usePosStore()
+const terminal = useTerminalStore()
 const router = useRouter()
 
 const clock = ref(new Date())
@@ -46,8 +48,19 @@ onMounted(() => {
 })
 onUnmounted(() => window.clearInterval(ticking))
 
+/**
+ * Ends the PERSON's session, not the machine's enrolment.
+ *
+ * The till stays a till and the next cashier signs in with four digits. Sending
+ * them to the admin dashboard instead — which is what this did — drops somebody
+ * with `orders.create` and nothing else onto a screen with nothing on it.
+ */
 async function leave() {
-  await router.push('/')
+  // `auth.logout()` rather than just dropping the tokens: it revokes the
+  // refresh token server-side too, so a cashier who has finished their shift
+  // cannot be resumed from a token that survived in a browser somewhere.
+  await auth.logout()
+  await router.push({ name: 'pos-sign-in' })
 }
 </script>
 
@@ -56,6 +69,12 @@ async function leave() {
     <header class="pos-header">
       <div class="flex items-center gap-3">
         <span class="pos-brand">القيصر</span>
+        <!--
+          Which till this is. Three terminals in a branch look identical on
+          screen, and "which one rang this" is the first question asked when a
+          drawer is short.
+        -->
+        <span v-if="terminal.deviceName" class="pos-where">{{ terminal.deviceName }}</span>
         <span class="pos-clock tabular-nums">{{ time }}</span>
       </div>
 
@@ -113,6 +132,13 @@ async function leave() {
   font-weight: 800;
   letter-spacing: 0.02em;
   color: var(--gold-300);
+}
+
+.pos-where {
+  font-size: 0.82rem;
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.14);
 }
 
 .pos-clock {

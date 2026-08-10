@@ -207,6 +207,21 @@ const router = createRouter({
     },
     {
       /**
+       * The till's own sign-in. PUBLIC, and that is the point.
+       *
+       * A cashier arrives with no session at all — they have a PIN and a badge
+       * and a terminal the branch enrolled, which is the whole credential. The
+       * page is reachable without a token because being reachable is what makes
+       * it a till; what protects it is that `pos-login` refuses any PIN not
+       * presented from an enrolled device.
+       */
+      path: '/pos/sign-in',
+      name: 'pos-sign-in',
+      component: () => import('@/views/pos/PosSignInView.vue'),
+      meta: { public: true, layout: 'blank' },
+    },
+    {
+      /**
        * The till, outside the admin shell on purpose.
        *
        * `PosLayout` takes the whole viewport and drops the sidebar, the
@@ -241,10 +256,20 @@ router.beforeEach(async (to) => {
   if (!auth.ready) await auth.load()
 
   if (to.meta.public) {
-    return auth.isAuthenticated && to.name === 'login' ? { name: 'dashboard' } : true
+    if (!auth.isAuthenticated) return true
+    // Already signed in and standing on a sign-in screen: send them where that
+    // screen was going to send them anyway.
+    if (to.name === 'login') return { name: 'dashboard' }
+    if (to.name === 'pos-sign-in') return { name: 'pos' }
+    return true
   }
 
   if (!auth.isAuthenticated) {
+    // **A cashier is never sent to the admin login.** They have no email and no
+    // password — the whole design is that they do not have an account — so
+    // landing them on a form asking for both is a dead end with no way out of
+    // it. Anything under /pos goes to the till's own PIN screen.
+    if (to.path.startsWith('/pos')) return { name: 'pos-sign-in' }
     return { name: 'login', query: { next: to.fullPath } }
   }
 
