@@ -180,6 +180,43 @@ def _settled_items(branch, start, end):
     ).select_related("variant", "variant__product", "variant__product__category")
 
 
+def _net_up_to_same_hour(branch, day: date) -> Decimal:
+    """
+    Net sales on `day`, but only as far into it as today has reached.
+
+    Both windows start at the branch's business-day boundary, so "as far in" is
+    measured as elapsed time since that boundary rather than as a wall-clock
+    hour. With a 04:00 boundary and the clock at 06:00, this is the first two
+    hours of yesterday — not everything before 06:00 yesterday, which would
+    include the previous evening's trading and quietly flatter today.
+
+    Read from the raw tables rather than a rollup: a rollup holds a whole day,
+    and there is no partial-day row to read.
+    """
+    from django.utils import timezone
+
+    start_today, _ = business_day.day_window(branch, business_day.today(branch))
+    elapsed = timezone.now() - start_today
+
+    start, end = business_day.day_window(branch, day)
+    cutoff = min(start + elapsed, end)
+
+    settled = Order.objects.filter(
+        branch=branch,
+        status__in=rollups.SETTLED,
+        opened_at__gte=start,
+        opened_at__lt=cutoff,
+    )
+    grand = settled.aggregate(total=Sum("grand_total"))["total"] or ZERO
+    refunds = (
+        Refund.objects.filter(
+            order__branch=branch, created_at__gte=start, created_at__lt=cutoff
+        ).aggregate(total=Sum("amount"))["total"]
+        or ZERO
+    )
+    return grand - refunds
+
+
 def sales_by_hour(branch, date_from: date, date_to: date) -> dict:
     """Peak-hour staffing. Bucketed by the clock on the wall, not the day offset."""
     raw_from = _ensure_rollups(branch, date_from, date_to)
@@ -795,10 +832,23 @@ def dashboard(branch) -> dict:
     week = sales_summary(branch, week_start, today)
 
     net_today = Decimal(today_summary["net_sales"])
-    net_yesterday = Decimal(yesterday_summary["net_sales"])
+
+    # **Compared at the same point in the day, not against yesterday's total.**
+    #
+    # Today is always partial. Measuring three hours of trading against a full
+    # fourteen made every morning open with "▼ 92%" — a collapse that had not
+    # happened, on the one number the screen leads with. An owner learns within
+    # a week that the figure means nothing before closing, and then it means
+    # nothing at all.
+    #
+    # So yesterday is truncated to the same hour reached today. By close the two
+    # windows are the same length and the comparison is the plain one; before
+    # then it answers the question actually being asked — is today busier than
+    # yesterday was by now?
+    net_yesterday_so_far = _net_up_to_same_hour(branch, yesterday)
     change = (
-        ((net_today - net_yesterday) / net_yesterday * 100).quantize(Decimal("0.01"))
-        if net_yesterday
+        ((net_today - net_yesterday_so_far) / net_yesterday_so_far * 100).quantize(Decimal("0.01"))
+        if net_yesterday_so_far
         else None
     )
 
@@ -816,7 +866,12 @@ def dashboard(branch) -> dict:
         "business_date": today.isoformat(),
         "boundary": business_day.boundary_for(branch).strftime("%H:%M"),
         "today": today_summary,
+        # Yesterday's full day, for context, and the slice the percentage was
+        # actually measured against. Sending only the full total beside a
+        # same-hour percentage would invite exactly the arithmetic the
+        # comparison exists to avoid.
         "yesterday_net": yesterday_summary["net_sales"],
+        "yesterday_net_so_far": _money(net_yesterday_so_far),
         "change_percent": str(change) if change is not None else None,
         "week": {
             "net_sales": week["net_sales"],

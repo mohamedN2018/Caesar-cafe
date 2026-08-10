@@ -50,10 +50,10 @@ from apps.orders.models import EventType, Order
 from apps.organizations.models import Branch, Organization
 from apps.payments.models import PaymentMethod
 from apps.printing.models import Printer
-from apps.purchasing.models import GoodsReceipt, GRLine
+from apps.purchasing.models import GoodsReceipt, GRLine, PurchaseOrder
 from apps.recipes.models import Recipe, RecipeLine
 from apps.shifts.models import Shift
-from apps.suppliers.models import Supplier
+from apps.suppliers.models import Supplier, SupplierLedgerEntry
 
 #: Fixed, so Tuesday's demo is Monday's demo.
 SEED = 20260808
@@ -438,6 +438,18 @@ class Command(BaseCommand):
         OrderItem.objects.filter(order__in=orders).delete()
         PlaySession.objects.filter(organization=org).delete()
         StockMovement.objects.filter(branch_id__in=branches).delete()
+
+        # Purchasing goes with the movements, and forgetting it was a real bug.
+        # `_receive_stock` skips itself when the branch already has a receipt —
+        # correct, so a re-run does not double the stock. But the reset was
+        # clearing the MOVEMENTS and leaving the RECEIPT, so the guard tripped,
+        # no stock was received, `post_receipt` never ran, and nothing recosted
+        # the recipes. Every variant kept a cost of zero and the dashboard
+        # reported a 100% margin on a fortnight of trading.
+        SupplierLedgerEntry.objects.filter(supplier__branch_id__in=branches).delete()
+        GRLine.objects.filter(receipt__branch_id__in=branches).delete()
+        GoodsReceipt.objects.filter(branch_id__in=branches).delete()
+        PurchaseOrder.objects.filter(branch_id__in=branches).delete()
         removed = orders.count()
         orders.delete()
 
@@ -958,7 +970,67 @@ class Command(BaseCommand):
                     user=cashier,
                 )
 
+        # ── today, up to now ────────────────────────────────────────────────
+        #
+        # The loop above stops at yesterday, which left the dashboard's hero
+        # figure, its hourly chart and its top-products list all empty on a
+        # fresh seed — the three things anybody looks at first. A demo whose
+        # headline number is 0.00 does not demonstrate a dashboard.
+        #
+        # Only the hours that have ALREADY PASSED. Selling at 20:00 when it is
+        # 10am would put sales in the future: the hourly chart would show a
+        # peak that has not happened, and the business-day boundary would sort
+        # them into a day that has not started.
+        #
+        # This shift is left OPEN on purpose. A cafe at 3pm has a drawer open,
+        # and it is what makes the till's shift screen show something real.
+        now_hour = timezone.localtime().hour
+        today = timezone.localdate()
+        cashier = cashiers[0]
+        open_shift = self._shift_for(branch, today, cashier)
+
+        for hour, count in weights.items():
+            if hour > now_hour:
+                continue
+            for _ in range(int(count * 0.9)):
+                self._one_sale(
+                    branch,
+                    sellable,
+                    methods,
+                    cashier,
+                    open_shift,
+                    today,
+                    hour,
+                    order_services,
+                    payment_services,
+                )
+
+        self._rebuild_rollups(branch, days)
         return days
+
+    def _rebuild_rollups(self, branch, days: int) -> None:
+        """
+        Recompute every day this command just wrote into.
+
+        **A rollup is a cache that cannot tell it is stale.** `_ensure_rollups`
+        builds a closed day only when its row is MISSING — which is right for a
+        real cafe, where a closed day never gains orders afterwards.
+
+        This command breaks that assumption on purpose: it back-dates a
+        fortnight of trading into days that are already closed. If any row for
+        those dates exists first — left by a previous run, or written by the
+        nightly Celery task while `--reset` had the orders deleted — it says
+        zero, and nothing will ever correct it. Every historical report then
+        reads zero on top of a database full of sales, which is exactly what
+        happened here: a stored 0.00 against 158 real settled orders.
+
+        `build_day` is delete-then-insert, so this is idempotent and cheap.
+        """
+        from apps.reporting import business_day, rollups
+
+        today = business_day.today(branch)
+        for offset in range(days, -1, -1):
+            rollups.build_day(branch, today - timedelta(days=offset))
 
     def _shift_for(self, branch, day: date, cashier) -> Shift:
         from apps.shifts import services as shift_services

@@ -106,6 +106,42 @@ def _no_tax(branch):
 _sequence = itertools.count(1)
 
 
+@pytest.fixture
+def at_hour(monkeypatch):
+    """
+    Pin how far into the business day "now" is.
+
+    The same-hour comparison reads the wall clock, so a test that does not fix
+    it passes or fails depending on when the suite runs — which is the worst
+    kind of flake, because it looks like a real regression at 3am and like
+    nothing at noon.
+
+    The hour given is an OFFSET from the branch's business-day boundary, since
+    that is what the comparison actually measures.
+    """
+
+    def _set(hours_into_the_day: int):
+        from apps.reporting import business_day
+
+        def _now(branch):
+            start, _ = business_day.day_window(branch, business_day.today(branch))
+            return start + timedelta(hours=hours_into_the_day)
+
+        # `_net_up_to_same_hour` imports `timezone` inside the function, so the
+        # patch has to land on the module it reaches for.
+        holder = {}
+
+        def fake_now():
+            return holder["value"]
+
+        from apps.organizations.models import Branch
+
+        holder["value"] = _now(Branch.objects.first())
+        monkeypatch.setattr(timezone, "now", fake_now)
+
+    return _set
+
+
 def sell(branch, variant, quantity=1, *, method=None, user=None, at=None):
     """One complete, paid order. Optionally back-dated."""
     import uuid
@@ -632,10 +668,11 @@ class TestDashboard:
         assert len(payload["by_hour"]) == 24
         assert payload["top_products"][0]["name"].startswith("كابتشينو")
 
-    def test_the_day_over_day_change_is_computed(self, branch, menu, cash) -> None:
+    def test_the_day_over_day_change_is_computed(self, branch, menu, cash, at_hour) -> None:
+        at_hour(12)
         yesterday = business_day.today(branch) - timedelta(days=1)
         start, _ = business_day.day_window(branch, yesterday)
-        sell(branch, menu["tea"], 2, method=cash, at=start + timedelta(hours=10))  # 50
+        sell(branch, menu["tea"], 2, method=cash, at=start + timedelta(hours=1))  # 50
         sell(branch, menu["cappuccino"], method=cash)  # 60 today
 
         payload = reports.dashboard(branch)
@@ -646,6 +683,43 @@ class TestDashboard:
         """A division by nothing is not a 0% change, and pretending it is misleads."""
         sell(branch, menu["cappuccino"], method=cash)
         assert reports.dashboard(branch)["change_percent"] is None
+
+    def test_the_morning_is_compared_against_the_same_hour_yesterday(
+        self, branch, menu, cash, at_hour
+    ) -> None:
+        """
+        The bug this exists to prevent: three hours of trading measured against
+        a full fourteen opened every morning with a collapse that had not
+        happened, on the number the screen leads with. An owner learns within a
+        week that it means nothing before closing — and then it means nothing.
+        """
+        at_hour(6)  # two hours past a 04:00 boundary
+        yesterday = business_day.today(branch) - timedelta(days=1)
+        start, _ = business_day.day_window(branch, yesterday)
+
+        sell(branch, menu["tea"], 2, method=cash, at=start + timedelta(hours=1))  # 50, early
+        sell(branch, menu["cappuccino"], 10, method=cash, at=start + timedelta(hours=9))  # evening
+        sell(branch, menu["cappuccino"], method=cash)  # 60 today, so far
+
+        payload = reports.dashboard(branch)
+
+        # Yesterday's evening rush is excluded — it has not happened yet today.
+        assert payload["yesterday_net_so_far"] == "50.00"
+        assert payload["change_percent"] == "20.00"
+        # The full day is still reported, for context.
+        assert payload["yesterday_net"] == "650.00"
+
+    def test_by_close_the_two_windows_are_the_whole_day(self, branch, menu, cash, at_hour) -> None:
+        """Late enough in the day, the comparison is simply day against day."""
+        at_hour(23)
+        yesterday = business_day.today(branch) - timedelta(days=1)
+        start, _ = business_day.day_window(branch, yesterday)
+        sell(branch, menu["tea"], 2, method=cash, at=start + timedelta(hours=1))
+        sell(branch, menu["cappuccino"], 10, method=cash, at=start + timedelta(hours=9))
+
+        payload = reports.dashboard(branch)
+
+        assert payload["yesterday_net_so_far"] == payload["yesterday_net"] == "650.00"
 
 
 # ── export ───────────────────────────────────────────────────────────────────

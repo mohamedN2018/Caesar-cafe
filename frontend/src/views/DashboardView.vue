@@ -57,6 +57,8 @@ interface Dashboard {
   boundary: string
   today: Summary
   yesterday_net: string
+  /** Yesterday truncated to the hour today has reached — what the % compares to. */
+  yesterday_net_so_far: string
   change_percent: string | null
   week: { net_sales: string; order_count: number; average_ticket: string }
   open_orders: number
@@ -220,10 +222,16 @@ onMounted(async () => {
           <div>
             <p class="hero-label">صافي مبيعات اليوم</p>
             <p class="hero-value">{{ money(board.today.net_sales) }}</p>
+            <!--
+              "بنفس الوقت أمس", not "عن أمس". The percentage compares today so
+              far against yesterday truncated to the same point, so the label
+              has to say so — otherwise a reader assumes it is measured against
+              yesterday's full total and the number looks wrong all morning.
+            -->
             <p v-if="change !== null" class="hero-delta" :class="change >= 0 ? 'is-up' : 'is-down'">
               <span aria-hidden="true">{{ change >= 0 ? '▲' : '▼' }}</span>
-              {{ Math.abs(change) }}% عن أمس
-              <span class="hero-base">({{ money(board.yesterday_net) }})</span>
+              {{ Math.abs(change) }}% عن نفس الوقت أمس
+              <span class="hero-base">({{ money(board.yesterday_net_so_far) }})</span>
             </p>
             <p v-else class="hero-delta is-flat">لا توجد مبيعات أمس للمقارنة</p>
           </div>
