@@ -349,3 +349,84 @@ class TestCrossTenantIsolation:
             format="json",
         )
         assert response.status_code == 401
+
+
+class TestTheAccountantSeesEverythingAndChangesAlmostNothing:
+    """
+    "هيبقى في المحاسب بردو بيشوف كل حاجة زي الأدمن وبس."
+
+    An accountant reconciling a month needs to open every screen an owner can,
+    because "why is the 14th short" is not a question that stays inside the
+    finance screens. Withholding them made the accountant ask an owner to read a
+    screen aloud — and what actually happened next was the owner sharing a
+    session, which is worse for control than the access would have been.
+
+    So the role is every READ code in the catalogue, and the shortest possible
+    list of writes. These tests are what keep the second half true: a permission
+    added next year lands in the catalogue, and if somebody sweeps it into this
+    role without thinking, the write test fails.
+    """
+
+    #: The only writes an accountant holds, and why each is the finance function
+    #: itself rather than an operational power.
+    ALLOWED_WRITES = {
+        "purchasing.manage_suppliers",  # a supplier record is bookkeeping
+        "purchasing.pay_supplier",  # paying one is the job
+        "orders.reprint",  # a copy of a receipt changes nothing
+    }
+
+    @property
+    def held(self) -> set[str]:
+        return set(catalog.SYSTEM_ROLES["ACCOUNTANT"]["permissions"])
+
+    def test_it_holds_every_read_code_in_the_catalogue(self) -> None:
+        readable = {
+            code
+            for code in catalog.PERMISSION_CODES
+            if code.endswith((".view", ".view_all")) or code.startswith("reports.")
+        }
+        missing = sorted(readable - self.held)
+
+        assert not missing, (
+            "the accountant is meant to see everything an owner can:\n  " + "\n  ".join(missing)
+        )
+
+    def test_it_holds_no_write_beyond_the_named_three(self) -> None:
+        """
+        The half that stops this becoming a second owner. Anything that is not
+        a read and is not on the short list is a power an accountant does not
+        need — and every one of them either moves money or changes a sale.
+        """
+        reads = {c for c in self.held if c.endswith((".view", ".view_all"))}
+        reports = {c for c in self.held if c.startswith("reports.")}
+        writes = self.held - reads - reports - self.ALLOWED_WRITES
+
+        assert not writes, "an accountant must not be able to change these:\n  " + "\n  ".join(
+            sorted(writes)
+        )
+
+    def test_it_cannot_touch_a_till_or_a_drawer(self) -> None:
+        """Named individually, because these are the ones that cost money."""
+        forbidden = {
+            "orders.create",
+            "orders.edit_items",
+            "orders.void_item",
+            "orders.void_order",
+            "orders.discount",
+            "orders.change_price",
+            "orders.refund",
+            "payments.take",
+            "payments.split",
+            "shifts.open",
+            "shifts.close",
+            "shifts.cash_movement",
+            "inventory.adjust",
+            "staff.manage_users",
+            "staff.reset_pin",
+        }
+        assert not (self.held & forbidden)
+
+    def test_every_code_it_names_actually_exists(self) -> None:
+        """A typo here is a permission that silently does nothing."""
+        unknown = sorted(c for c in self.held if not catalog.is_valid(c))
+        assert not unknown, f"unknown codes on ACCOUNTANT: {unknown}"

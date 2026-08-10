@@ -238,6 +238,15 @@ const router = createRouter({
           name: 'pos',
           component: () => import('@/views/pos/PosBoardView.vue'),
         },
+        {
+          path: 'shift',
+          name: 'pos-shift',
+          component: () => import('@/views/pos/PosShiftView.vue'),
+          // No `permission` of its own: the screen shows what the person may
+          // do and says so plainly when they may not open a drawer. Gating the
+          // route instead would send a waiter who can only READ their shift to
+          // the dashboard, which is not an answer to anything.
+        },
       ],
     },
     {

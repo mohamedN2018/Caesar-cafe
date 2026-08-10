@@ -78,20 +78,24 @@ async function leave() {
         <span class="pos-clock tabular-nums">{{ time }}</span>
       </div>
 
-      <!--
-        Tabs land here as the floor, today's-orders and shift screens are built.
-        Drawing them now would be three links to nothing, and a control that
-        does nothing is worse than a control that is not there yet.
-      -->
+      <div class="flex items-center gap-2">
+        <RouterLink to="/pos" class="pos-tab" active-class="is-active" exact>نقطة البيع</RouterLink>
+        <RouterLink to="/pos/shift" class="pos-tab" active-class="is-active">الوردية</RouterLink>
+      </div>
 
       <div class="flex items-center gap-2">
         <!--
-          Amber, not hidden, when there is no shift. A disabled control tells a
-          cashier what they cannot do; a coloured one tells them what to do next.
+          A LINK now, not a label. It was amber and inert, which told a cashier
+          they needed a shift and gave them nowhere to go — the one thing worse
+          than not saying it.
         -->
-        <span class="pos-shift" :class="shiftOpen ? 'is-open' : 'is-needed'">
-          {{ shiftOpen ? `وردية · ${pos.shift?.opening_cash}` : 'لا توجد وردية' }}
-        </span>
+        <RouterLink
+          to="/pos/shift"
+          class="pos-shift"
+          :class="shiftOpen ? 'is-open' : 'is-needed'"
+        >
+          {{ shiftOpen ? `وردية · ${pos.shift?.opening_cash}` : 'افتح وردية' }}
+        </RouterLink>
 
         <span class="pos-user">{{ auth.me?.full_name_ar ?? '—' }}</span>
         <button type="button" class="pos-exit" @click="leave">خروج</button>

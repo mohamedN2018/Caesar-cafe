@@ -352,24 +352,50 @@ SYSTEM_ROLES: dict[str, dict] = {
     },
     "ACCOUNTANT": {
         "name_ar": "محاسب",
+        # **Sees everything, changes almost nothing.**
+        #
+        # An accountant reconciling a month needs to open every screen an owner
+        # can open — the floor, the kitchen, the kids area, the devices, the
+        # sync state — because "why is the 14th short" is not a question that
+        # stays inside the finance screens. Withholding those made them ask an
+        # owner to read a screen aloud, which is worse for control, not better:
+        # the owner ends up sharing a session.
+        #
+        # So this is EVERY read code in the catalogue, and the write codes are
+        # only the two that are genuinely an accountant's job — a supplier
+        # record and paying one. Listed explicitly rather than derived from a
+        # `.view` suffix: a future permission named `payments.view_all` that
+        # happened to grant a write would be swept in silently, and this role's
+        # whole value is that it cannot move money out of a till.
         "permissions": [
+            # Read across the whole product.
             "orders.view",
             "orders.reprint",
             "payments.view_all",
             "catalog.view",
             "inventory.view",
             "purchasing.view",
-            "purchasing.manage_suppliers",
-            "purchasing.pay_supplier",
+            "floor.view",
+            "kitchen.view",
+            "kids.view",
+            "staff.view",
+            "devices.view",
+            "licenses.view",
+            "sync.view",
             "shifts.view_all",
+            "branch.view",
+            "audit.view",
+            # Every report, including the export an accountant lives in.
             "reports.sales",
             "reports.products",
             "reports.inventory",
             "reports.financial",
             "reports.employees",
             "reports.export",
-            "branch.view",
-            "audit.view",
+            # The only writes. Both are the finance function itself, and
+            # neither can take money out of a drawer or alter a sale.
+            "purchasing.manage_suppliers",
+            "purchasing.pay_supplier",
         ],
     },
 }

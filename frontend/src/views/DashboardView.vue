@@ -64,6 +64,7 @@ interface Dashboard {
   open_tickets: number
   open_shifts: number
   kids_inside: number
+  kids_capacity: number
   top_products: { variant_id: string; name: string; quantity: string; revenue: string }[]
   by_hour: { hour: number; order_count: number; net_sales: string }[]
 }
@@ -108,7 +109,17 @@ const room = computed(() => {
   return [
     { icon: 'receipt', label: 'طلبات مفتوحة', value: data.open_orders, note: money(data.open_orders_value), to: '/orders' },
     { icon: 'kitchen', label: 'تذاكر في المطبخ', value: data.open_tickets, note: '', to: '/kitchen' },
-    { icon: 'kids', label: 'أطفال في الصالة', value: data.kids_inside, note: '', to: '/kids' },
+    {
+      icon: 'kids',
+      label: 'أطفال في الصالة',
+      value: data.kids_inside,
+      // Against capacity, because the count alone answers nothing. "8 children"
+      // is a fact; "8 of 25" is the decision about whether the party of four at
+      // the door can come in — which is what somebody glancing at this is
+      // actually asking.
+      note: data.kids_capacity ? `من ${data.kids_capacity}` : '',
+      to: '/kids',
+    },
     { icon: 'cash', label: 'ورديات مفتوحة', value: data.open_shifts, note: '', to: '/shifts' },
   ]
 })

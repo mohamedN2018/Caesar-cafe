@@ -782,6 +782,7 @@ def dashboard(branch) -> dict:
     dashboard they check and one they stop opening.
     """
     from apps.kids import services as kids_services
+    from apps.kids.models import PlayArea
     from apps.kitchen.models import OPEN_STATUSES, KitchenTicket
     from apps.shifts.models import Shift, ShiftStatus
 
@@ -831,6 +832,16 @@ def dashboard(branch) -> dict:
         ).count(),
         "open_shifts": Shift.objects.filter(branch=branch, status=ShiftStatus.OPEN).count(),
         "kids_inside": len(kids_services.outstanding_sessions(branch)),
+        # Capacity beside the count, because the count alone answers nothing.
+        # "8 children" is a fact; "8 of 25" is a decision about whether the
+        # party of four at the door can come in — and that is what somebody
+        # glancing at a dashboard is actually asking.
+        "kids_capacity": (
+            PlayArea.objects.filter(branch=branch, is_active=True).aggregate(
+                total=Sum("max_capacity")
+            )["total"]
+            or 0
+        ),
         "top_products": products_top(branch, today, today, limit=5)["top"],
         "by_hour": sales_by_hour(branch, today, today)["hours"],
     }
