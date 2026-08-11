@@ -1478,6 +1478,172 @@ one who memorised the steps stops the first time the screen looks different.
 
 ---
 
+## A face on the menu, and three guards that were checking nothing 🟡 UNVERIFIED (2026-08-11)
+
+**⚠ Not verified. Nothing in this section has been run.** The machine this was written on has
+neither Docker, Node nor a usable Python, so `pytest`, `ruff`, `mypy`, `vitest`, `vue-tsc`,
+`vite build`, `spectacular` and `caddy validate` have all had to be left for whoever has a
+toolchain. §66 is explicit that a claim of "should work" is a defect in the report, so this heading
+says so rather than borrowing the confidence of the sections above it. The gate to run, in the order
+that fails cheapest first:
+
+    make lint && make typecheck && make test        # includes tests/test_catalog_images.py
+    make schema                                     # ProductSerializer declares image explicitly now
+    make prod-config                                # the Caddyfile gained a request_body limit
+    cd frontend && npm run lint && npx vue-tsc --noEmit && npx vitest run && npm run build
+
+### A product can have a photograph
+
+A cashier reading a wall of identical burgundy tiles is reading, and reading is slower than
+recognising. So a product carries a photo, uploaded from the phone that took it, and the POS tile
+draws it as a **blurred backdrop** rather than as the tile's content: a cafe photograph is busy —
+steam, a wooden counter, somebody's hand — and a name laid over a sharp one at tile size is
+unreadable, which on a till means a mis-tap and a wrong bill. The blur turns the picture into colour
+and mood, and the name and the price stay the only sharp things on the tile.
+
+**The server did not check the file, and the screen said it did.** The upload form carried a comment
+claiming its 4MB limit was "checked here as well as on the server, not instead of it". `ImageField`
+verified that the bytes decoded as an image and nothing else — no size limit, no dimension limit, no
+re-encode. So the till, which fetches the whole menu in one request over the mobile connection C11
+exists for, would have been fetching forty-three phone photos at full resolution. A comment that
+describes a control the code does not have is worse than no comment, because the next person reads
+it instead of the code.
+
+`apps/catalog/images.py` is that control. Four things it does, each for a reason that is not
+tidiness:
+
+1. **The size gate runs before anything decodes.** It is a separate function called from a custom
+   serializer field's `to_internal_value`, not a `validate_image` hook, because DRF runs Pillow's
+   `verify()` first and field-level validators after — so a hook would report a 40MB upload as "not
+   a valid image" when it was malformed, and would have decoded it when it was not. The second is
+   exactly the work the refusal exists to avoid.
+2. **The orientation tag is applied before the metadata carrying it is dropped.** A phone writes
+   "rotate 90°" rather than rotating the pixels. Re-encode without `exif_transpose` first and every
+   portrait photo in the cafe is permanently on its side.
+3. **EXIF is deleted, not carried.** `/media/` is served publicly by Caddy with a day of cache, and
+   a phone's EXIF block holds the GPS fix of wherever the picture was taken. Nothing in this product
+   reads it; everything about shipping it is a liability. The test asserts the block is *empty*
+   rather than picking off individual tags — a tag-by-tag check passes the day a camera writes one
+   nobody thought of.
+4. **The stored name is random.** Caddy sets `max-age=86400` on `/media/*`, so a stable filename
+   means the person who just replaced a photo keeps seeing the old one — which reads as the upload
+   having failed rather than as a cache.
+
+Two decisions worth recording. **WebP where the build has it, JPEG where it does not**: WebP is
+about a third smaller at the same visible quality and keeps an alpha channel, so a cut-out survives
+instead of being flattened onto a guess at the background colour — but libwebp's presence depends on
+how Pillow was installed, and discovering that as an exception on the first upload after a deploy is
+worse than storing a slightly larger JPEG. And **the file a photo replaced is deleted on commit, by
+a signal**: Django never removes it, so a menu revised a few times would leave every previous
+version on a volume that shares a disk with Postgres and the nightly backups. After the commit,
+never inside it — a rolled-back transaction that had already unlinked the file would leave the
+surviving row pointing at nothing, and a broken photo with no explanation is worse than an orphan
+nobody sees.
+
+The Caddyfile gained `request_body { max_size 10MB }` on `/api/*`, because Django refuses an
+oversized photo in the serializer only *after* the multipart parser has written the whole thing to a
+temp file. The proxy is the only place that can refuse a body without first receiving it. 10MB from
+the two largest legitimate bodies — a 4MB photo and a sync push of 500 queued operations — with room
+in both directions, since the failure mode of setting it too low is a terminal whose outbox can
+never drain.
+
+**Deliberately not built: the Desktop till shows no photos.** A URL in `m_products` would be useless
+on the machine that is offline when it matters, so this needs the puller to download and cache the
+binaries and the mirror to hold them — a real feature, not a column. The Web till has them; the
+Desktop grid still reads as it did.
+
+### `LOW_STOCK` — the only alert about tomorrow
+
+The other five alert kinds are about something that has already gone wrong. This one is about a
+delivery that has not been ordered yet, which is why it is the one that can wait until nine and does
+not survive quiet hours.
+
+**One alert for the branch, not one per item.** Low stock arrives in clusters — a delivery is missed
+and eleven things go under together — and eleven buzzes is how an owner learns to swipe the app away,
+after which the drawer that closed four hundred short is muted too. The alert names the count and
+the first few items; the list is a screen away.
+
+Three details that each went against the convenient option. It reads **`quantity_available`, not
+`quantity_on_hand`**, because milk that is physically in the fridge but spoken for by four unpaid
+tickets is not milk you can sell, and an alert saying otherwise sends somebody to check a shelf that
+looks fine. Items with **no minimum set are skipped entirely**, because a minimum of zero is an
+unconfigured item rather than a threshold, and `0 <= 0` would put every such item into the alert on
+the day it emptied — burying the ones somebody deliberately set a level for. And the dedupe key is
+the **set** of low items, hashed: keyed on the count it would stay silent when one item is restocked
+and another falls the same hour, and unhashed six UUIDs do not fit in the 200-character column, so a
+truncated key would silently collapse two different sets onto one alert and the second would never
+send. The failure being silence, which nobody reports.
+
+### Three guards that passed while checking nothing
+
+The interesting half of this batch. Each of these was a test that had been green for weeks, and each
+was green for a reason that had nothing to do with the thing it was written to catch.
+
+1. **The emoji sweep only looked above U+FFFF.** Its own comment argued the case well — "a curated
+   list is a thing somebody has to keep adding to; Arabic is in the basic plane, so a surrogate pair
+   is a reliable signal on its own" — and the first half of that is simply false. `UiAlert`, the
+   banner component on every screen in the app, carried ⛔ ⚠ ℹ ✅ through the entire emoji sweep and
+   for weeks after it, because all four are basic-plane. So did the delta triangles on every stat
+   tile and the dashboard hero. A guard that passes on the worst instance of the thing it guards
+   against is worse than no guard, because it is also a claim that somebody checked. The pattern now
+   names the pictograph blocks as well as the astral plane, arrows and box-drawing and Arabic
+   punctuation stay legal on purpose, and the regression is pinned by a test that asserts those four
+   characters are caught *and* that `—`, `…`, `→` and `── قسم ──` are not — because a guard that
+   accumulates exceptions stops being enforced.
+2. **Both file-sweeping guards resolved their root with `new URL(...).pathname`**, which is still
+   URL-encoded and still carries the leading slash a Windows path must not have. This repo lives
+   under a directory with a space in it, so the sweeps threw `ENOENT` on every run outside the Linux
+   container. They failed loudly, which was lucky: the same mistake one directory up resolves to an
+   *empty* tree and passes while reading nothing.
+3. **Nothing checked that a `var(--x)` resolved to anything.** Scoped CSS asked for `var(--line)`,
+   which is the Tailwind colour name rather than the custom property — that one is `--border`. An
+   unresolvable `var()` does not fall back and does not warn; it makes the whole declaration `unset`,
+   so a cream hairline came out as a heavy ring in the inherited text colour. It looked like a design
+   decision, which is why a screenshot would not have caught it either. Every `.vue` and `.css` file
+   is now swept for references to properties nothing defines, with comments blanked first so the
+   paragraph explaining the bug does not trip the guard that exists because of it.
+
+### The mark, and the till that never offered to open a drawer
+
+**The brand is the cafe's own mark now**, not a monogram and not a coffee emoji. The login screen —
+the first thing anyone sees of the product — was rendering ☕ at 48px in whatever font the machine
+happened to have, in colours belonging to no part of the brand. The PWA icons were hand-drawn
+stand-ins, and the 192 was **broken outright**: a 512 viewBox with a 192 background rect, so the
+burgundy filled the top-left quadrant and the rest of the mark sat on transparency. That was the
+icon on the owner's home screen. Served at 64 and 256 from a 1.5MB source, because a megabyte and a
+half on every page load for a 36px slot is paid on the phone the owner actually uses this from.
+
+**`/shifts/current/` answers `{"shift": …}`, and the store assigned the wrapper.** So `pos.shift` was
+truthy with no drawer open: the header read "وردية · undefined", the till never offered to open a
+shift, and the X-report was fetched from `/shifts/undefined/x-report/`. A shape that is always truthy
+is worse than a null, because nothing downstream can tell the difference.
+
+**The DOM environment was selected by a path glob that only matched on Linux.** `stores/terminal`
+keeps the device credential in `localStorage`, and `environmentMatchGlobs: [['src/stores/**', …]]`
+missed on Windows, where vitest hands the matcher a backslashed absolute path — so the file ran
+DOM-less and all nine tests died the first time anybody ran the suite outside the container. It asks
+for happy-dom in its own docblock now, which cannot fall out of step with the file it applies to. And
+happy-dom's `localStorage` is itself undefined on Node 26, which defines a global stub that stays
+empty without `--localstorage-file`; the setup file installs a faithful stand-in only when the
+environment supplied none, so a Node with real web storage still tests the real thing.
+
+### Reports that add up
+
+A totals row, opt-in per column and never inferred from the type. Money and counts add up; a
+percentage does not — the sum of eight margin percentages is a number with no meaning, and printing
+it under a column of real ones is worse than printing nothing because it looks like an answer. Raw
+stock quantities are excluded for the same reason: 3 kg of coffee plus 40 cups is a number, not a
+fact, while the value column beside it is honest because money is one unit.
+
+The row lives **inside** the table rather than in a card beneath it, so it stays under its own
+columns when the table scrolls sideways on a phone.
+
+And the date range was built with `toISOString()`, which converts to UTC first. Egypt is UTC+3, so
+from midnight until 03:00 — the tail of every trading night, which is exactly when a manager is
+closing up and pulling a report — "last 7 days" silently started a day early.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the
