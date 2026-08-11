@@ -1478,19 +1478,68 @@ one who memorised the steps stops the first time the screen looks different.
 
 ---
 
-## A face on the menu, and three guards that were checking nothing 🟡 UNVERIFIED (2026-08-11)
+## A face on the menu, and three guards that were checking nothing ✅ COMPLETE (2026-08-11)
 
-**⚠ Not verified. Nothing in this section has been run.** The machine this was written on has
-neither Docker, Node nor a usable Python, so `pytest`, `ruff`, `mypy`, `vitest`, `vue-tsc`,
-`vite build`, `spectacular` and `caddy validate` have all had to be left for whoever has a
-toolchain. §66 is explicit that a claim of "should work" is a defect in the report, so this heading
-says so rather than borrowing the confidence of the sections above it. The gate to run, in the order
-that fails cheapest first:
+**Verified:** ruff + `format --check` clean across 287 files · **1,066 backend tests passing** ·
+**34 frontend tests passing** · `makemigrations --check` clean · `spectacular --fail-on-warn` clean ·
+vendored parity clean (4 modules) · `vue-tsc` clean · `eslint` clean · `vite build` clean ·
+`docker compose -f docker-compose.prod.yml config` valid · `caddy validate` → *Valid configuration* ·
+live smoke against the running stack: `/system/health/` 200 with `database: true`, `/auth/login/` 200
+with a token pair.
 
-    make lint && make typecheck && make test        # includes tests/test_catalog_images.py
-    make schema                                     # ProductSerializer declares image explicitly now
-    make prod-config                                # the Caddyfile gained a request_body limit
-    cd frontend && npm run lint && npx vue-tsc --noEmit && npx vitest run && npm run build
+mypy reports 86 errors, which is exactly the baseline commit 40abf49 recorded and accepted. It was
+90 before this batch — the four extra were mine and are gone.
+
+Two things this section cannot claim. The **Desktop suite was not run** (it needs the PySide6 image,
+and nothing here touches the Desktop — `vendor_shared.py --check` is the seam that would have caught
+a backend change reaching it, and it is clean). And this was verified on Windows against Docker
+Desktop rather than in CI, so the Linux run is still the one that counts.
+
+### What running it actually found
+
+An earlier revision of this section was published with an UNVERIFIED heading, because the machine
+appeared to have no toolchain. That turned out to be wrong in the most ordinary way: Docker Desktop
+was installed **user-scope** under `AppData\Local\Programs`, which a search of `Program Files` and a
+depth-limited sweep of `C:\Users` both miss. Node and Python were genuinely absent and were
+installed. Four findings came out of running the gate, and the third is the one worth reading:
+
+1. **mypy: four assignment errors in `images.py`.** `Image.open()` returns an `ImageFile`, a
+   subclass, so rebinding that same name to the plain `Image` that `convert()` returns narrows the
+   variable to the subclass and every reassignment after it is an error. The opened file keeps its
+   own name now and the working variable is annotated.
+
+2. **ruff S311** on `random.Random` in the test fixture. It generates test pixels, and the seed is
+   the point — `secrets` would make every run a different image, so a size assertion that failed
+   today would pass tomorrow and nobody could tell which run was the truth.
+
+3. **`transaction.on_commit` never fires in a `django_db` test**, so two of the superseded-file
+   tests failed and a third passed while proving nothing. A `django_db` test runs inside a
+   transaction that is always rolled back and never committed, which is precisely the condition
+   under which the deferred delete is *supposed* to do nothing. The fix was in the tests, not the
+   receiver — the deferral is deliberate, so that a rolled-back save cannot leave a surviving row
+   pointing at a file that is already gone.
+
+   The instructive part is `test_an_ordinary_edit_leaves_the_photo_alone`, which **passed on the
+   first run**. It passed because the callback never fired, which means it would equally have passed
+   against a receiver that deleted the file on every single save of every product. A test that
+   cannot fail is worse than a missing one, because it also reads as a claim that somebody checked —
+   the same shape as the three guards this batch went on to widen, found in the batch's own tests.
+
+4. **`schema.yml` had drifted, and nothing in this branch caused it.** Regenerating removed 111
+   lines and added none: the whole of `/api/v1/schema/`. `SPECTACULAR_SETTINGS` has carried
+   `"SERVE_INCLUDE_SCHEMA": False` since Phase 1, so the regenerated file is the one obeying the
+   setting. The cause is `drf-spectacular>=0.27` with no upper bound and no lockfile on the Python
+   side: CI resolves the newest release every run, so a committed artifact and its generator drift
+   apart with nobody touching a line of code, and the first symptom is a red build on a pull request
+   that changed something else entirely. It also settles the open question from the batch —
+   declaring `image` as a custom `ProductImageField` did **not** change the schema, and the diff
+   proves it rather than assuming it.
+
+One test-isolation smell, recorded rather than fixed: `tests/test_backups.py` dumps the database
+named in `DATABASE_URL`, not the pytest test database, so three tests failed on a first run purely
+because the dev database had no schema yet. They pass against a migrated one. The tests are correct
+about what `backups.create()` does; it is the coupling that is worth knowing about before somebody
+spends an hour on it.
 
 ### A product can have a photograph
 

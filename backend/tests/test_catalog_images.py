@@ -294,7 +294,24 @@ class TestRefusals:
 
 
 class TestSupersededFiles:
-    def test_replacing_a_photo_deletes_the_one_it_replaced(self, client, product) -> None:
+    """
+    Every test here has to model a commit, and that is not a detail of the tests.
+
+    The deletion is deliberately scheduled with `transaction.on_commit`, so that a
+    rolled-back save cannot leave a surviving row pointing at a file that is
+    already gone. A plain `django_db` test runs inside a transaction that is
+    always rolled back and never committed, so those callbacks never fire at all.
+
+    Without `django_capture_on_commit_callbacks(execute=True)` these tests pass
+    no matter what the receiver does — including deleting a file it was supposed
+    to keep. That is worse than having no tests here, because it also reads as a
+    claim that the behaviour was checked. Two of them failed on the first run for
+    exactly this reason, which is how the fixture came to be here.
+    """
+
+    def test_replacing_a_photo_deletes_the_one_it_replaced(
+        self, client, product, django_capture_on_commit_callbacks
+    ) -> None:
         """
         Django never removes the old file. A menu revised a few times would leave
         every previous version on a volume that shares a disk with Postgres and
@@ -305,7 +322,8 @@ class TestSupersededFiles:
         first = Path(product.image.path)
         assert first.exists()
 
-        upload(client, product, photo(size=(700, 500)))
+        with django_capture_on_commit_callbacks(execute=True):
+            upload(client, product, photo(size=(700, 500)))
         product.refresh_from_db()
 
         assert not first.exists()
@@ -329,7 +347,7 @@ class TestSupersededFiles:
         assert product.image.name != first
 
     def test_clearing_the_photo_empties_the_field_and_removes_the_file(
-        self, client, product
+        self, client, product, django_capture_on_commit_callbacks
     ) -> None:
         """
         An empty multipart value, which is the only way a form can say "none" —
@@ -339,35 +357,43 @@ class TestSupersededFiles:
         product.refresh_from_db()
         path = Path(product.image.path)
 
-        response = client.patch(
-            f"/api/v1/catalog/products/{product.id}/", {"image": ""}, format="multipart"
-        )
+        with django_capture_on_commit_callbacks(execute=True):
+            response = client.patch(
+                f"/api/v1/catalog/products/{product.id}/", {"image": ""}, format="multipart"
+            )
 
         assert response.status_code == 200
         product.refresh_from_db()
         assert not product.image
         assert not path.exists()
 
-    def test_an_ordinary_edit_leaves_the_photo_alone(self, client, product) -> None:
+    def test_an_ordinary_edit_leaves_the_photo_alone(
+        self, client, product, django_capture_on_commit_callbacks
+    ) -> None:
         """
         The receiver runs on every save of a product, so a rename must not take
         the photo with it — and neither must a targeted
         `save(update_fields=[...])`, which is how the recipe cost rollup and the
         sort order are written.
+
+        Commits captured here for the same reason as everywhere else in this
+        class, and it matters most in this test: without it, a receiver that
+        deleted the file on every single save would still pass.
         """
         upload(client, product, photo(size=(800, 600)))
         product.refresh_from_db()
         path = Path(product.image.path)
         name = product.image.name
 
-        client.patch(
-            f"/api/v1/catalog/products/{product.id}/",
-            {"name_ar": "كابتشينو مزدوج"},
-            format="json",
-        )
-        product.refresh_from_db()
-        product.sort_order = 5
-        product.save(update_fields=["sort_order"])
+        with django_capture_on_commit_callbacks(execute=True):
+            client.patch(
+                f"/api/v1/catalog/products/{product.id}/",
+                {"name_ar": "كابتشينو مزدوج"},
+                format="json",
+            )
+            product.refresh_from_db()
+            product.sort_order = 5
+            product.save(update_fields=["sort_order"])
 
         product.refresh_from_db()
         assert product.image.name == name
