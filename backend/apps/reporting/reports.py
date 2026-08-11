@@ -836,7 +836,7 @@ def dashboard(branch) -> dict:
     # **Compared at the same point in the day, not against yesterday's total.**
     #
     # Today is always partial. Measuring three hours of trading against a full
-    # fourteen made every morning open with "▼ 92%" — a collapse that had not
+    # fourteen made every morning open with "-92%" — a collapse that had not
     # happened, on the one number the screen leads with. An owner learns within
     # a week that the figure means nothing before closing, and then it means
     # nothing at all.

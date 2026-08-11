@@ -10,6 +10,7 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ApiError } from '@/api/client'
+import logoBig from '@/assets/brand/logo-256.png'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiInput from '@/components/ui/UiInput.vue'
@@ -60,7 +61,12 @@ async function submit() {
   <div class="flex min-h-screen items-center justify-center bg-surface-sunken px-4">
     <div class="w-full max-w-md">
       <div class="mb-8 text-center">
-        <div class="text-5xl" aria-hidden="true">☕</div>
+        <!--
+          The real mark. This was a coffee emoji at 48px — the first thing
+          anyone saw of the product, rendered in whatever font the machine
+          happened to have, in colours belonging to no part of the brand.
+        -->
+        <img :src="logoBig" alt="" class="mx-auto h-16 w-auto" aria-hidden="true" />
         <h1 class="mt-3 text-2xl font-bold text-ink">القيصر</h1>
         <p class="mt-1 text-sm text-ink-muted">نظام الإدارة</p>
       </div>

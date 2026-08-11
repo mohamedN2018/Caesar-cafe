@@ -17,12 +17,12 @@
  * cannot load the page. Money is never served from a cache.
  */
 
-const VERSION = 'caesar-v1'
+const VERSION = 'caesar-v2'
 const SHELL = `${VERSION}-shell`
 
 /* The minimum to render "the app is here, the network is not". Everything else
    is fetched normally and fails normally. */
-const SHELL_ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.svg']
+const SHELL_ASSETS = ['/', '/index.html', '/manifest.webmanifest', '/icons/icon-192.png']
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -95,8 +95,8 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(payload.title || 'كافيه القيصر', {
       body: payload.body || '',
-      icon: '/icons/icon-192.svg',
-      badge: '/icons/icon-192.svg',
+      icon: '/icons/icon-192.png',
+      badge: '/icons/icon-192.png',
       dir: 'rtl',
       lang: 'ar',
       /* Same tag collapses in the tray. Two evaluations of one late ticket

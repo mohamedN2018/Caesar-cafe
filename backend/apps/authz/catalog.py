@@ -178,9 +178,9 @@ SYSTEM_ROLES: dict[str, dict] = {
         # ones a branch manager should never hold. Note the deliberate absences:
         #   system.settings        → they get branch.edit_settings only, so they
         #                            cannot weaken security.* or licensing
-        #   staff.manage_roles     → 🔓 step-up, not held directly
-        #   devices.manage         → 🔓 step-up
-        #   orders.change_price    → 🔓 step-up
+        #   staff.manage_roles     → step-up only, never held directly
+        #   devices.manage         → step-up only
+        #   orders.change_price    → step-up only
         #   licenses.manage        → Super Admin only
         #   backups.manage         → Super Admin only
         "permissions": [

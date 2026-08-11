@@ -27,6 +27,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import logoBig from '@/assets/brand/logo-256.png'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiIcon from '@/components/ui/UiIcon.vue'
 import UiInput from '@/components/ui/UiInput.vue'
@@ -104,7 +105,7 @@ onMounted(() => {
   <div class="screen">
     <div class="panel">
       <header class="brand">
-        <span class="monogram" aria-hidden="true">ق</span>
+        <img :src="logoBig" alt="" class="mark" aria-hidden="true" />
         <div>
           <p class="brand-name">القيصر</p>
           <p v-if="terminal.isEnrolled" class="brand-where">
@@ -210,16 +211,9 @@ onMounted(() => {
   align-items: center;
   gap: 0.75rem;
 }
-.monogram {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.7rem;
-  background: var(--brand-700);
-  color: var(--gold-300);
-  font-weight: 700;
+.mark {
+  height: 2.6rem;
+  width: auto;
 }
 .brand-name {
   font-size: 1.05rem;

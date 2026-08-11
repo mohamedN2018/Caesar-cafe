@@ -1,4 +1,19 @@
 /**
+ * @vitest-environment happy-dom
+ *
+ * Declared HERE and not as an `environmentMatchGlobs` entry in `vite.config.ts`.
+ * The glob was `src/stores/**`, which matched under Linux and silently did not
+ * match on Windows, where vitest hands the matcher a backslashed absolute path —
+ * so this file ran without a DOM and all nine tests died on `localStorage` the
+ * first time anyone ran the suite outside the container. A file that needs a DOM
+ * is the file that should say so; it cannot fall out of step with a path pattern
+ * kept somewhere else.
+ *
+ * The pragma has to be a block comment, and the first one in the file: vitest
+ * reads it out of the leading docblock and ignores a `//` line.
+ */
+
+/**
  * The browser as a till.
  *
  * The rule everything here defends: **a PIN is only ever accepted from an

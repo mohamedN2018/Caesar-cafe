@@ -17,6 +17,7 @@ import UiAlert from '@/components/ui/UiAlert.vue'
 import UiBadge from '@/components/ui/UiBadge.vue'
 import UiCard from '@/components/ui/UiCard.vue'
 import UiEmpty from '@/components/ui/UiEmpty.vue'
+import UiIcon from '@/components/ui/UiIcon.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import { money, time } from '@/lib/format'
 
@@ -245,9 +246,10 @@ onUnmounted(() => {
               </p>
               <p
                 v-if="session.medical_notes"
-                class="mt-2 rounded-lg bg-warning-bg px-3 py-1.5 text-sm text-warning"
+                class="mt-2 flex items-start gap-2 rounded-lg bg-warning-bg px-3 py-1.5 text-sm text-warning"
               >
-                ⚕️ {{ session.medical_notes }}
+                <UiIcon name="alert" size="0.9rem" class="mt-0.5 flex-none" />
+                <span>{{ session.medical_notes }}</span>
               </p>
             </div>
 

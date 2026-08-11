@@ -67,9 +67,20 @@ const PATHS: Record<string, string[]> = {
   printer: ['M7 9V4h10v5', 'M5 9h14a2 2 0 012 2v5h-4', 'M7 16H3v-5a2 2 0 012-2', 'M7 14h10v7H7z'],
   settings: ['M12 12m-3 0a3 3 0 106 0a3 3 0 10-6 0', 'M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.2 2.2M16.9 16.9l2.2 2.2M19.1 4.9l-2.2 2.2M7.1 16.9l-2.2 2.2'],
 
+  camera: ['M3 8h4l2-2h6l2 2h4v12H3z', 'M12 13m-3.5 0a3.5 3.5 0 107 0a3.5 3.5 0 10-7 0'],
+
   // ── states ──────────────────────────────────────────────────────────────
   empty: ['M4 7h16v13H4z', 'M4 12h5a3 3 0 006 0h5', 'M8 4h8'],
   check: ['M4 13l5 5L20 7'],
+  close: ['M6 6l12 12M18 6L6 18'],
+  alert: ['M12 3.5L22 20H2z', 'M12 10v4', 'M12 17.2v.1'],
+  info: ['M12 12m-9 0a9 9 0 1018 0a9 9 0 10-18 0', 'M12 11v5', 'M12 7.8v.1'],
+  // The delta arrows. Drawn rather than the solid up/down triangles, which are
+  // font-dependent: the two glyphs are different sizes in most Arabic-capable
+  // faces, so a rising figure and a falling one were not the same weight next
+  // to each other.
+  'arrow-up': ['M12 20V5', 'M6 11l6-6 6 6'],
+  'arrow-down': ['M12 4v15', 'M6 13l6 6 6-6'],
   silent: ['M18 15V10a6 6 0 00-9.3-5', 'M6 9v6l-2 3h13', 'M3 3l18 18'],
   balloon: ['M12 14c3 0 5-2.7 5-6a5 5 0 10-10 0c0 3.3 2 6 5 6z', 'M12 14v2', 'M10 20c1-1 3-1 4 0'],
   child: ['M12 8m-3 0a3 3 0 106 0a3 3 0 10-6 0', 'M7 21a5 5 0 0110 0', 'M12 3v1'],

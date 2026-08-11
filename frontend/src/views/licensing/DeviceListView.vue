@@ -14,6 +14,7 @@ import UiBadge from '@/components/ui/UiBadge.vue'
 import UiButton from '@/components/ui/UiButton.vue'
 import UiCard from '@/components/ui/UiCard.vue'
 import UiEmpty from '@/components/ui/UiEmpty.vue'
+import UiIcon from '@/components/ui/UiIcon.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import UiTable from '@/components/ui/UiTable.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -106,10 +107,11 @@ onMounted(load)
             <p class="text-xs text-ink-muted">{{ device.platform || '—' }}</p>
             <p
               v-if="device.fingerprint_changed_count > 0"
-              class="text-xs text-warning"
+              class="flex items-center gap-1 text-xs text-warning"
               title="بصمة الجهاز تغيّرت — قد تكون بيانات الاعتماد منسوخة"
             >
-              ⚠ تغيّرت البصمة {{ device.fingerprint_changed_count }} مرة
+              <UiIcon name="alert" size="0.8rem" class="flex-none" />
+              تغيّرت البصمة {{ device.fingerprint_changed_count }} مرة
             </p>
           </td>
           <td class="px-4 py-3 text-ink-muted">{{ device.mode }}</td>

@@ -24,6 +24,7 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
+import logoSmall from '@/assets/brand/logo-64.png'
 import { useAuthStore } from '@/stores/auth'
 import { usePosStore } from '@/stores/pos'
 import { useTerminalStore } from '@/stores/terminal'
@@ -68,7 +69,7 @@ async function leave() {
   <div class="pos-shell">
     <header class="pos-header">
       <div class="flex items-center gap-3">
-        <span class="pos-brand">القيصر</span>
+        <img :src="logoSmall" alt="القيصر" class="pos-logo" />
         <!--
           Which till this is. Three terminals in a branch look identical on
           screen, and "which one rang this" is the first question asked when a
@@ -131,11 +132,9 @@ async function leave() {
   box-shadow: 0 1px 0 rgb(0 0 0 / 0.15);
 }
 
-.pos-brand {
-  font-size: 1.15rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  color: var(--gold-300);
+.pos-logo {
+  height: 1.9rem;
+  width: auto;
 }
 
 .pos-where {

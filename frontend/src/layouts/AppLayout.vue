@@ -10,6 +10,7 @@
 import { computed, ref } from 'vue'
 import { RouterLink, RouterView, useRoute, useRouter } from 'vue-router'
 
+import logoSmall from '@/assets/brand/logo-64.png'
 import UiIcon from '@/components/ui/UiIcon.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -134,15 +135,12 @@ async function signOut() {
     >
       <div class="flex h-16 items-center gap-3 border-b border-line px-5">
         <!--
-          A monogram, not a picture of a coffee cup. Every cafe system on earth
-          uses the cup; the letter is the one mark that is actually this cafe's.
+          The cafe's own mark, at 64px from a 1.5MB source. The original is
+          1536×1024 with baked-in padding, which would have been a megabyte and
+          a half on every page load for a 36px slot — on the phone the owner
+          actually uses this from.
         -->
-        <span
-          class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-700 text-base font-bold text-gold-300"
-          aria-hidden="true"
-        >
-          ق
-        </span>
+        <img :src="logoSmall" alt="" class="h-9 w-auto" aria-hidden="true" />
         <div>
           <p class="text-sm font-bold leading-tight text-ink">القيصر</p>
           <p class="text-xs text-ink-muted">نظام الإدارة</p>
@@ -192,7 +190,7 @@ async function signOut() {
     <div class="lg:ps-64">
       <header
         class="sticky top-0 z-10 flex h-16 items-center justify-between gap-4
-               border-b border-line bg-surface/90 px-4 backdrop-blur sm:px-6"
+               border-b border-line bg-surface px-4 sm:px-6"
       >
         <button
           class="rounded-lg p-2 text-ink-muted hover:bg-surface-sunken lg:hidden"

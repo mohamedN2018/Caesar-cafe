@@ -9,7 +9,7 @@ defineProps<{ columns: { key: string; label: string; align?: 'start' | 'end' }[]
 <template>
   <div class="overflow-x-auto">
     <table class="w-full min-w-full text-sm">
-      <thead class="border-b border-line bg-surface-muted/80">
+      <thead class="border-b border-line bg-surface-muted">
         <tr>
           <th
             v-for="column in columns"

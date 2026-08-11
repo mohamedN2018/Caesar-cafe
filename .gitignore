@@ -45,3 +45,10 @@ Thumbs.db
 /data/
 *.dump
 *.log
+
+# Brand source artwork — the full-size originals the icons were cut from.
+# What the app loads is committed: frontend/src/assets/brand/ and
+# frontend/public/icons/. The originals are ~3MB of PNG, and a binary that size
+# is in the history for good once it is pushed. Kept out until somebody decides
+# it belongs in the repo under a name that is not the export default.
+/frontend/logo/

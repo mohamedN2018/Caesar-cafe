@@ -21,6 +21,8 @@
  */
 import { computed } from 'vue'
 
+import UiIcon from './UiIcon.vue'
+
 const props = withDefaults(
   defineProps<{
     label: string
@@ -43,9 +45,10 @@ const tone = computed(() => {
   return good ? 'good' : 'bad'
 })
 
+/** `''` when flat — a delta of exactly zero has no direction to point in. */
 const arrow = computed(() => {
   if (props.delta === null || props.delta === 0) return ''
-  return props.delta > 0 ? '▲' : '▼'
+  return props.delta > 0 ? 'arrow-up' : 'arrow-down'
 })
 </script>
 
@@ -55,7 +58,7 @@ const arrow = computed(() => {
     <p class="stat-value">{{ value }}</p>
 
     <p v-if="delta !== null" class="stat-delta" :class="`is-${tone}`">
-      <span aria-hidden="true">{{ arrow }}</span>
+      <UiIcon v-if="arrow" :name="arrow" size="0.72rem" />
       {{ Math.abs(delta).toFixed(1) }}%
       <span v-if="deltaLabel" class="stat-since">عن {{ deltaLabel }}</span>
     </p>

@@ -11,13 +11,22 @@
     <!-- Installable (C11): the owner adds this to a home screen and watches the
          cafe from it. -->
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="icon" type="image/svg+xml" href="/icons/icon-192.svg" />
+    <!--
+      The real logo, cropped to the emblem. These were hand-drawn SVGs of a
+      laurel and a cup — a stand-in from before there was artwork — and the
+      192 was broken besides: a 512 viewBox with a 192 background rect, so the
+      burgundy filled the top-left quadrant and the rest of the mark sat on
+      transparency. Two sizes because 32px in a tab and 512px on a home screen
+      want different amounts of detail, not the same file scaled.
+    -->
+    <link rel="icon" type="image/png" sizes="64x64" href="/icons/favicon-64.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
     <meta name="theme-color" content="#7b1e28" />
 
     <!-- Safari still reads these rather than the manifest for the home-screen
          title and status bar. Without them an iOS install is called
          "index.html". -->
-    <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="القيصر" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
