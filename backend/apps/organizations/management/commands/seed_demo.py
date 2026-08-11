@@ -46,6 +46,8 @@ from apps.floor.models import Area, Table, TableSession, TableShape, TableStatus
 from apps.inventory.models import InventoryItem, ItemType, Unit, UnitConversion
 from apps.kids.models import PlayArea, PlayTariff, TariffMode
 from apps.kitchen.models import Station
+from apps.licensing import services as licensing_services
+from apps.licensing.models import Device, InvoiceBlock, License, LicenseEvent, LicenseType
 from apps.orders.models import EventType, Order
 from apps.organizations.models import Branch, Organization
 from apps.payments.models import PaymentMethod
@@ -370,6 +372,7 @@ class Command(BaseCommand):
                 org, branch, suppliers["GROCER"], items, units, staff["store@caesar.test"]
             )
             self._kids(org, branch, menu)
+            self._license(org, branch, staff["owner@caesar.test"])
 
         # Trading runs outside the setup transaction: a fortnight is thousands
         # of rows, and one long transaction holding every lock is how a seed
@@ -424,7 +427,7 @@ class Command(BaseCommand):
         from apps.payments.models import Invoice, Payment
         from apps.reporting.models import HourlyDaily, ProductDaily, SalesDaily
         from apps.shifts.models import CashMovement, Shift
-        from apps.sync.models import ChangeLog
+        from apps.sync.models import ChangeLog, DeviceCursor
 
         branches = list(org.branches.values_list("id", flat=True))
         orders = Order.objects.filter(organization=org)
@@ -459,6 +462,25 @@ class Command(BaseCommand):
         for rollup in (SalesDaily, ProductDaily, HourlyDaily):
             rollup.objects.filter(branch_id__in=branches).delete()
         ChangeLog.objects.filter(branch_id__in=branches).delete()
+
+        # Licensing, in dependency order rather than by cascade.
+        #
+        # `InvoiceBlock.device` is PROTECT, so the blocks go before the devices
+        # that reserved them — a device cannot be deleted while it still holds a
+        # range of invoice numbers, which is the right rule for a live cafe and
+        # means a reset has to name it. `LicenseEvent` would cascade off the
+        # licence, but it is deleted explicitly for the same reason every other
+        # level here is: a cascade is the accident with a friendlier name.
+        #
+        # The devices have to go. A browser or a terminal holds a device secret
+        # for a licence that no longer exists, and leaving the rows behind would
+        # let a stale credential keep answering while the licence it belongs to
+        # is gone — a re-seeded demo that still lets an old till sell.
+        InvoiceBlock.objects.filter(device__branch_id__in=branches).delete()
+        DeviceCursor.objects.filter(device__branch_id__in=branches).delete()
+        LicenseEvent.objects.filter(license__organization=org).delete()
+        Device.objects.filter(branch_id__in=branches).delete()
+        License.objects.filter(organization=org).delete()
 
         # The catalogue, which this command authors — bottom up, because every
         # link in the chain is PROTECT. That is the right setting for a live
@@ -561,6 +583,50 @@ class Command(BaseCommand):
             people[email] = user
 
         return people
+
+    def _license(self, org, branch, owner) -> None:
+        """
+        A licence for the branch, so a terminal can actually be activated.
+
+        Without this the demo seeded a whole cafe and then locked the till: ten
+        staff with a PIN each, and no way for any of them to reach a keypad,
+        because the POS opens for nothing without a valid licence (C5). The
+        activation screen is the first thing anyone sees after `seed_demo`, and
+        the only thing that got them past it was hand-issuing a licence through
+        the API.
+
+        **The key is random, not a constant in this file, and that is deliberate
+        even though everything else about this command is deterministic.**
+        `keys.generate` uses `secrets` because `random` is a Mersenne Twister and
+        observing a few outputs predicts the rest — `apps/licensing/keys.py` says
+        so at the top, and routing around it for a demo would make this file the
+        counter-example to its own module's argument. The determinism that
+        matters here is the trading data, which is what somebody debugs; a
+        credential is not. And `--reset` deletes the devices along with the
+        licence, so a re-seed forces a re-activation regardless — a fixed key
+        would have saved copying a string, not a step.
+
+        Issued through the real service, like everything else this command
+        drives, so the LicenseEvent and the audit row exist too.
+        """
+        issued = licensing_services.issue_license(
+            organization=org,
+            branch=branch,
+            customer_email=owner.email,
+            customer_name="كافيه القيصر — Demo",
+            license_type=LicenseType.LIFETIME,
+            # Three, because the room the demo draws has a door till, an inside
+            # till and a KDS, and a seat limit of one turns "activate the second
+            # terminal" into a support question on the first day.
+            max_devices=3,
+            notes="Seeded by seed_demo. Demo use only.",
+            actor=owner,
+        )
+        # Held for `_summary`: this is the ONLY moment the plaintext exists.
+        # `issue_license` stores a hash, so a key not printed now is a licence
+        # nobody can ever activate against.
+        self.license_key = issued.plaintext_key
+        self.license_email = issued.license.customer_email
 
     def _stations(self, org, branch) -> dict[str, Station]:
         """
@@ -1277,6 +1343,21 @@ class Command(BaseCommand):
         write("")
         for email, name, role, pin in STAFF:
             write(f"      {email:<26} {name:<18} {role:<18} PIN {pin}")
+        write("")
+
+        # Printed here and nowhere else. `issue_license` keeps a hash, so this
+        # is the last moment the plaintext exists anywhere — a key that scrolls
+        # past unread is a licence nobody can activate against, and the only
+        # remedy is for an owner to regenerate it.
+        write(ok("  Activate a till — the POS opens for nothing without this:"))
+        write(f"      licence key   {self.license_key}")
+        write(f"      licence email {self.license_email}")
+        write("      device name   anything — «كاشير الباب»")
+        write("")
+        write(
+            "      Shown once. Re-run with --reset for a new one; the owner can also\n"
+            "      regenerate it from the licensing screen."
+        )
         write("")
         write(
             self.style.WARNING(
