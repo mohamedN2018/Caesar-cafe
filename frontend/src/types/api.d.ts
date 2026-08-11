@@ -3394,28 +3394,6 @@ export interface paths {
         patch: operations["roles_partial_update"];
         trace?: never;
     };
-    "/api/v1/schema/": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * @description OpenApi3 schema for this API. Format can be selected via content negotiation.
-         *
-         *     - YAML: application/vnd.oai.openapi
-         *     - JSON: application/vnd.oai.openapi+json
-         */
-        get: operations["schema_retrieve"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/v1/settings/": {
         parameters: {
             query?: never;
@@ -13968,71 +13946,6 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["Role"];
-                        meta?: {
-                            /** @description Correlates this response with server logs. */
-                            request_id?: string;
-                        };
-                    };
-                };
-            };
-        };
-    };
-    schema_retrieve: {
-        parameters: {
-            query?: {
-                format?: "json" | "yaml";
-                lang?: "ar" | "en";
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/vnd.oai.openapi": {
-                        /** @enum {boolean} */
-                        success: true;
-                        data: {
-                            [key: string]: unknown;
-                        };
-                        meta?: {
-                            /** @description Correlates this response with server logs. */
-                            request_id?: string;
-                        };
-                    };
-                    "application/yaml": {
-                        /** @enum {boolean} */
-                        success: true;
-                        data: {
-                            [key: string]: unknown;
-                        };
-                        meta?: {
-                            /** @description Correlates this response with server logs. */
-                            request_id?: string;
-                        };
-                    };
-                    "application/vnd.oai.openapi+json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        data: {
-                            [key: string]: unknown;
-                        };
-                        meta?: {
-                            /** @description Correlates this response with server logs. */
-                            request_id?: string;
-                        };
-                    };
-                    "application/json": {
-                        /** @enum {boolean} */
-                        success: true;
-                        data: {
-                            [key: string]: unknown;
-                        };
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;
