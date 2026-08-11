@@ -30,7 +30,7 @@ import { RouterLink } from 'vue-router'
 import { api } from '@/api/client'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiCard from '@/components/ui/UiCard.vue'
-import UiColumns from '@/components/ui/UiColumns.vue'
+import UiChart from '@/components/ui/UiChart.vue'
 import UiIcon from '@/components/ui/UiIcon.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import UiStat from '@/components/ui/UiStat.vue'
@@ -89,11 +89,22 @@ const change = computed(() => {
   return raw === null || raw === undefined ? null : Number(raw)
 })
 
-/** Trading hours only. Padding the axis with a silent 4am says nothing. */
+/**
+ * Trading hours only, labelled as clock times.
+ *
+ * Two things the hand-rolled version got wrong. The labels were bare numbers —
+ * "8", "9", "20" — which read as a count rather than a time, and the gridline
+ * ticks overlapped the first bar because they were positioned outside a box
+ * that had no room for them. Both are why it looked broken rather than sparse.
+ *
+ * Silent hours are still dropped: an axis padded with a 4am that sold nothing
+ * says nothing, and it squeezes the hours that did.
+ */
 const hours = computed(() => {
   const rows = board.value?.by_hour ?? []
-  const trading = rows.filter((h) => h.order_count > 0)
-  return trading.map((h) => ({ label: `${h.hour}`, value: Number(h.net_sales) }))
+  return rows
+    .filter((h) => h.order_count > 0)
+    .map((h) => ({ label: `${String(h.hour).padStart(2, '0')}:00`, value: Number(h.net_sales) }))
 })
 
 /** The busiest line, so the bars below it are read as proportions of something. */
@@ -229,7 +240,7 @@ onMounted(async () => {
               yesterday's full total and the number looks wrong all morning.
             -->
             <p v-if="change !== null" class="hero-delta" :class="change >= 0 ? 'is-up' : 'is-down'">
-              <span aria-hidden="true">{{ change >= 0 ? '▲' : '▼' }}</span>
+              <UiIcon :name="change >= 0 ? 'arrow-up' : 'arrow-down'" size="0.8rem" />
               {{ Math.abs(change) }}% عن نفس الوقت أمس
               <span class="hero-base">({{ money(board.yesterday_net_so_far) }})</span>
             </p>
@@ -283,7 +294,14 @@ onMounted(async () => {
             <p v-if="!hours.length" class="py-10 text-center text-sm text-ink-muted">
               لا توجد مبيعات اليوم بعد.
             </p>
-            <UiColumns v-else :points="hours" :format="(v) => money(v).replace(' ج.م', '')" />
+            <UiChart
+              v-else
+              :labels="hours.map((h) => h.label)"
+              :values="hours.map((h) => h.value)"
+              kind="bar"
+              :format="(value) => money(value)"
+              :height="240"
+            />
           </UiCard>
 
           <UiCard title="الأكثر بيعاً اليوم">

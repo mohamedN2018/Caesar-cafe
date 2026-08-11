@@ -298,3 +298,38 @@ describe('the bill', () => {
     expect(pos.isSettled).toBe(false)
   })
 })
+
+describe('the current shift', () => {
+  it('unwraps the shift out of its envelope', async () => {
+    // `/shifts/current/` answers `{"shift": …}`, not a bare shift. Assigning
+    // the wrapper made `pos.shift` truthy with no drawer open — the header read
+    // "وردية · undefined" and the till never offered to open one.
+    get.mockResolvedValue({ shift: { id: 's1', opening_cash: '500.00', status: 'OPEN' } })
+
+    const pos = usePosStore()
+    await pos.loadShift()
+
+    expect(pos.shift?.id).toBe('s1')
+    expect(pos.shift?.opening_cash).toBe('500.00')
+  })
+
+  it('is null when no drawer is open', async () => {
+    get.mockResolvedValue({ shift: null })
+
+    const pos = usePosStore()
+    await pos.loadShift()
+
+    // Null, not `{shift: null}` — a shape that is always truthy is worse than
+    // a null, because nothing downstream can tell the difference.
+    expect(pos.shift).toBeNull()
+  })
+
+  it('is null when the caller may not read it', async () => {
+    get.mockRejectedValue(new ApiError('PERMISSION_DENIED', 'ليس لديك صلاحية', {}, 403))
+
+    const pos = usePosStore()
+    await pos.loadShift()
+
+    expect(pos.shift).toBeNull()
+  })
+})

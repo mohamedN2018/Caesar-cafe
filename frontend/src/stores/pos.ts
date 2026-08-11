@@ -60,6 +60,8 @@ export interface Product {
   station_name: string | null
   name_ar: string
   sku: string
+  /** Absolute or media-relative URL; null for most of the menu. */
+  image: string | null
   is_sellable: boolean
   is_active: boolean
   sort_order: number
@@ -209,7 +211,13 @@ export const usePosStore = defineStore('pos', () => {
   }
 
   async function loadShift(): Promise<void> {
-    shift.value = await api.optional<Shift>('/shifts/current/')
+    // The endpoint answers `{"shift": … | null}`, not a bare shift. Assigning
+    // the wrapper made `pos.shift` truthy even with no drawer open: the header
+    // read "وردية · undefined", the till never offered to open one, and the
+    // X-report was fetched from `/shifts/undefined/x-report/`. A shape that is
+    // always truthy is worse than a null, because nothing downstream can tell.
+    const payload = await api.optional<{ shift: Shift | null }>('/shifts/current/')
+    shift.value = payload?.shift ?? null
   }
 
   /** Wraps a mutation so one failure never leaves the panel half-updated. */

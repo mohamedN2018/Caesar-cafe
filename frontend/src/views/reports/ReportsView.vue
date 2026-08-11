@@ -18,6 +18,7 @@ import UiButton from '@/components/ui/UiButton.vue'
 import UiCard from '@/components/ui/UiCard.vue'
 import UiChart from '@/components/ui/UiChart.vue'
 import UiEmpty from '@/components/ui/UiEmpty.vue'
+import UiIcon from '@/components/ui/UiIcon.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import UiTable from '@/components/ui/UiTable.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -30,6 +31,15 @@ interface Column {
   /** Render as money. Values arrive as strings and stay strings until here. */
   money?: boolean
   time?: boolean
+  /**
+   * Include this column in the totals row.
+   *
+   * Opt-in, never inferred from the type. Money and counts add up; a percentage
+   * does not — the sum of eight margin percentages is a number with no meaning,
+   * and printing it under a column of real ones is worse than printing nothing,
+   * because it looks like an answer.
+   */
+  sum?: boolean
 }
 
 interface Tab {
@@ -67,9 +77,9 @@ const TABS: Tab[] = [
     section: 'categories',
     columns: [
       { key: 'category', label: 'القسم' },
-      { key: 'quantity', label: 'الكمية', align: 'end' },
-      { key: 'revenue', label: 'الإيراد', align: 'end', money: true },
-      { key: 'profit', label: 'الربح', align: 'end', money: true },
+      { key: 'quantity', label: 'الكمية', align: 'end', sum: true },
+      { key: 'revenue', label: 'الإيراد', align: 'end', money: true, sum: true },
+      { key: 'profit', label: 'الربح', align: 'end', money: true, sum: true },
       { key: 'share_percent', label: 'النسبة %', align: 'end' },
     ],
     chart: {
@@ -87,8 +97,8 @@ const TABS: Tab[] = [
     section: 'methods',
     columns: [
       { key: 'method', label: 'الطريقة' },
-      { key: 'count', label: 'العدد', align: 'end' },
-      { key: 'amount', label: 'المبلغ', align: 'end', money: true },
+      { key: 'count', label: 'العدد', align: 'end', sum: true },
+      { key: 'amount', label: 'المبلغ', align: 'end', money: true, sum: true },
     ],
     chart: {
       label: "method",
@@ -107,10 +117,10 @@ const TABS: Tab[] = [
     columns: [
       { key: 'name', label: 'الصنف' },
       { key: 'category', label: 'القسم' },
-      { key: 'quantity', label: 'الكمية', align: 'end' },
-      { key: 'revenue', label: 'الإيراد', align: 'end', money: true },
-      { key: 'cost', label: 'التكلفة', align: 'end', money: true },
-      { key: 'profit', label: 'الربح', align: 'end', money: true },
+      { key: 'quantity', label: 'الكمية', align: 'end', sum: true },
+      { key: 'revenue', label: 'الإيراد', align: 'end', money: true, sum: true },
+      { key: 'cost', label: 'التكلفة', align: 'end', money: true, sum: true },
+      { key: 'profit', label: 'الربح', align: 'end', money: true, sum: true },
       { key: 'margin_percent', label: 'الهامش %', align: 'end' },
     ],
     chart: {
@@ -130,9 +140,12 @@ const TABS: Tab[] = [
     section: 'items',
     columns: [
       { key: 'item', label: 'الصنف' },
+      // No `sum` on the quantity: these rows are raw stock items, each in its
+      // own base unit. Adding 3 kg of coffee to 40 cups is a number, not a
+      // fact. The value column is the honest total, because money is one unit.
       { key: 'quantity', label: 'الكمية', align: 'end' },
-      { key: 'value', label: 'القيمة', align: 'end', money: true },
-      { key: 'events', label: 'عدد المرات', align: 'end' },
+      { key: 'value', label: 'القيمة', align: 'end', money: true, sum: true },
+      { key: 'events', label: 'عدد المرات', align: 'end', sum: true },
     ],
   },
   {
@@ -146,8 +159,9 @@ const TABS: Tab[] = [
       { key: 'count_reference', label: 'الجرد' },
       { key: 'system_quantity', label: 'رصيد النظام', align: 'end' },
       { key: 'counted_quantity', label: 'المعدود', align: 'end' },
+      // Same as the waste tab: quantities here are per-item units, value is not.
       { key: 'variance', label: 'الفرق', align: 'end' },
-      { key: 'value', label: 'القيمة', align: 'end', money: true },
+      { key: 'value', label: 'القيمة', align: 'end', money: true, sum: true },
     ],
     note: 'الفرق ملاحظة وليس اتهاماً — أغلب الأسباب وصفة غير مضبوطة أو خطأ في العد.',
   },
@@ -159,8 +173,10 @@ const TABS: Tab[] = [
     section: 'employees',
     columns: [
       { key: 'name', label: 'الموظف' },
-      { key: 'order_count', label: 'الطلبات', align: 'end' },
-      { key: 'net_sales', label: 'صافي المبيعات', align: 'end', money: true },
+      { key: 'order_count', label: 'الطلبات', align: 'end', sum: true },
+      { key: 'net_sales', label: 'صافي المبيعات', align: 'end', money: true, sum: true },
+      // An average is not additive — the branch average is the total over the
+      // total, not the sum of the per-cashier averages.
       { key: 'average_ticket', label: 'متوسط الفاتورة', align: 'end', money: true },
     ],
   },
@@ -172,9 +188,9 @@ const TABS: Tab[] = [
     section: 'employees',
     columns: [
       { key: 'name', label: 'الموظف' },
-      { key: 'order_count', label: 'الطلبات', align: 'end' },
-      { key: 'voided_orders', label: 'طلبات ملغاة', align: 'end' },
-      { key: 'voided_items', label: 'أصناف ملغاة', align: 'end' },
+      { key: 'order_count', label: 'الطلبات', align: 'end', sum: true },
+      { key: 'voided_orders', label: 'طلبات ملغاة', align: 'end', sum: true },
+      { key: 'voided_items', label: 'أصناف ملغاة', align: 'end', sum: true },
       { key: 'void_rate_percent', label: 'نسبة الإلغاء %', align: 'end' },
       { key: 'discount_rate_percent', label: 'نسبة الخصم %', align: 'end' },
     ],
@@ -189,7 +205,9 @@ const TABS: Tab[] = [
     columns: [
       { key: 'closed_at', label: 'وقت الإغلاق', time: true },
       { key: 'user', label: 'الموظف' },
-      { key: 'variance', label: 'الفرق', align: 'end', money: true },
+      // The one figure the owner is here for: whether the shortfalls and the
+      // overs cancel out across the period, or the drawer is quietly down.
+      { key: 'variance', label: 'الفرق', align: 'end', money: true, sum: true },
       { key: 'reason', label: 'السبب' },
     ],
     note: 'ليلة واحدة خطأ؛ اتجاه ثابت نمط.',
@@ -204,14 +222,26 @@ const active = ref<Tab | null>(null)
 const dateFrom = ref('')
 const dateTo = ref('')
 const rows = ref<Record<string, string | number>[]>([])
-const summary = ref<Record<string, unknown> | null>(null)
 const loading = ref(true)
 const error = ref('')
 
+/** A range that runs backwards returns nothing — say so before asking for it. */
+const rangeInvalid = computed(() => Boolean(dateFrom.value && dateTo.value && dateFrom.value > dateTo.value))
+
+/**
+ * A calendar date, `days` ago, in the *cafe's* timezone.
+ *
+ * Built from the local parts rather than `toISOString()`, which converts to UTC
+ * first. Egypt is UTC+3, so from midnight until 03:00 — the tail of every
+ * trading night, which is exactly when a manager is closing up and pulling a
+ * report — `toISOString()` returns *yesterday*, and the range silently misses
+ * the day being asked about.
+ */
 function isoDaysAgo(days: number): string {
   const day = new Date()
   day.setDate(day.getDate() - days)
-  return day.toISOString().slice(0, 10)
+  const month = String(day.getMonth() + 1).padStart(2, '0')
+  return `${day.getFullYear()}-${month}-${String(day.getDate()).padStart(2, '0')}`
 }
 
 function cell(row: Record<string, string | number>, column: Column): string {
@@ -249,8 +279,34 @@ const chartRows = computed(() => {
   return points.length ? points : null
 })
 
+/**
+ * The totals row.
+ *
+ * Computed from the rows on screen rather than read off the payload, because
+ * the two would otherwise be able to disagree — and a total that disagrees with
+ * the column above it is the one number in a report nobody can act on. Only the
+ * columns marked `sum` appear; the rest are left blank rather than zeroed, so a
+ * gap reads as "this does not add up", not as "this is zero".
+ */
+const totals = computed<Record<string, number> | null>(() => {
+  const columns = active.value?.columns.filter((column) => column.sum) ?? []
+  if (!columns.length || rows.value.length < 2) return null
+
+  const result: Record<string, number> = {}
+  for (const column of columns) {
+    result[column.key] = rows.value.reduce((sum, row) => sum + (Number(row[column.key]) || 0), 0)
+  }
+  return result
+})
+
+function totalCell(column: Column): string {
+  const value = totals.value?.[column.key]
+  if (value === undefined) return ''
+  return column.money ? money(value) : String(Number(value.toFixed(3)))
+}
+
 async function load() {
-  if (!active.value) return
+  if (!active.value || rangeInvalid.value) return
   loading.value = true
   try {
     const payload = await api.get<Record<string, unknown>>(`/reports/${active.value.path}/`, {
@@ -258,7 +314,6 @@ async function load() {
       date_to: dateTo.value,
     })
     rows.value = (payload[active.value.section] ?? []) as Record<string, string | number>[]
-    summary.value = payload
     error.value = ''
   } catch (exc) {
     rows.value = []
@@ -331,9 +386,14 @@ onMounted(async () => {
               class="mt-1 block rounded-lg border border-line-strong px-3 py-2 text-sm"
             />
           </label>
-          <UiButton @click="load">تحديث</UiButton>
-          <UiButton variant="secondary" @click="download">تنزيل CSV</UiButton>
+          <UiButton :disabled="rangeInvalid" @click="load">تحديث</UiButton>
+          <UiButton variant="secondary" :disabled="rangeInvalid" @click="download">
+            تنزيل CSV
+          </UiButton>
         </div>
+        <p v-if="rangeInvalid" class="mt-3 text-sm text-danger">
+          تاريخ البداية بعد تاريخ النهاية.
+        </p>
       </UiCard>
 
       <div class="flex flex-wrap gap-2">
@@ -355,7 +415,10 @@ onMounted(async () => {
       <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
 
       <UiCard v-if="active">
-        <p v-if="active.note" class="mb-3 text-sm text-ink-muted">ⓘ {{ active.note }}</p>
+        <p v-if="active.note" class="mb-3 flex items-start gap-2 text-sm text-ink-muted">
+          <UiIcon name="note" size="0.95rem" class="mt-0.5 flex-none" />
+          <span>{{ active.note }}</span>
+        </p>
 
         <UiSkeleton v-if="loading" :rows="6" />
         <UiEmpty
@@ -395,6 +458,26 @@ onMounted(async () => {
               ]"
             >
               {{ cell(row, column) }}
+            </td>
+          </tr>
+          <!--
+            The totals row is inside the table, not a card beneath it, so it
+            stays under its own columns when the table scrolls sideways on a
+            phone. A total that has drifted away from its column is a total
+            being read against the wrong heading.
+          -->
+          <tr v-if="totals" class="border-t-2 border-line-strong bg-surface-muted font-semibold">
+            <td
+              v-for="(column, index) in active.columns"
+              :key="column.key"
+              class="px-4 py-3"
+              :class="[
+                column.align === 'end' ? 'text-end tabular-nums' : '',
+                totals[column.key] !== undefined && totals[column.key] < 0 ? 'text-danger' : '',
+              ]"
+            >
+              <template v-if="index === 0">الإجمالي</template>
+              <template v-else>{{ totalCell(column) }}</template>
             </td>
           </tr>
           </UiTable>
