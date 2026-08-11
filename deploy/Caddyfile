@@ -40,6 +40,21 @@
 
 	# ── API ──────────────────────────────────────────────────────────────────
 	handle /api/* {
+		# Django refuses an oversized product photo in the serializer, but only
+		# after the multipart parser has already written the whole thing to a
+		# temp file — so an unbounded POST fills the api container's disk before
+		# any application code gets an opinion. This is the only place that can
+		# refuse a body without first receiving it.
+		#
+		# 10MB, from the two largest legitimate bodies: a 4MB photo
+		# (apps/catalog/images.py) and a sync push of 500 queued operations,
+		# which runs to a couple of megabytes at worst. Room to spare in both
+		# directions, because the failure mode of setting this too low is a
+		# terminal whose outbox can never drain.
+		request_body {
+			max_size 10MB
+		}
+
 		reverse_proxy api:8000 {
 			# X-Forwarded-* are set by default; only X-Real-IP needs stating.
 			# The audit trail reads the left-most X-Forwarded-For entry, which is

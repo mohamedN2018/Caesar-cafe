@@ -195,6 +195,17 @@ export const api = {
   post: <T>(url: string, body?: unknown, headers?: Record<string, string>) =>
     unwrap<T>(http.post(url, body, { headers })),
   patch: <T>(url: string, body?: unknown) => unwrap<T>(http.patch(url, body)),
+  /**
+   * A file upload.
+   *
+   * The instance sets `Content-Type: application/json` for every request, which
+   * is right for all but this one: a multipart body needs a boundary parameter
+   * that only the browser can generate, and sending the JSON header with a
+   * `FormData` makes the server parse an empty body and report the field as
+   * missing. Setting the header to `undefined` is what lets axios fill it in.
+   */
+  upload: <T>(url: string, form: FormData) =>
+    unwrap<T>(http.patch(url, form, { headers: { 'Content-Type': undefined } })),
   delete: <T>(url: string) => unwrap<T>(http.delete(url)),
   /** `null` when the server says this caller may not see it. See above. */
   optional: <T>(url: string, params?: Record<string, unknown>) =>

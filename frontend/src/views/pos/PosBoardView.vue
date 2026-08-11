@@ -189,9 +189,24 @@ onMounted(async () => {
             :key="product.id"
             type="button"
             class="tile"
+            :class="{ 'has-photo': product.image }"
             :disabled="pos.busy"
             @click="tap(product)"
           >
+            <!--
+              The photo is a BACKDROP, blurred and dimmed, not the tile's
+              content. A cafe photograph is busy — steam, a wooden counter,
+              somebody's hand — and a name laid over a sharp one at this size is
+              unreadable, which on a till means a mis-tap and a wrong bill. The
+              blur turns it into colour and mood; the name and the price stay
+              the only sharp things on the tile.
+            -->
+            <span
+              v-if="product.image"
+              class="tile-photo"
+              :style="{ backgroundImage: `url(${JSON.stringify(product.image)})` }"
+              aria-hidden="true"
+            />
             <span class="tile-name">{{ product.name_ar }}</span>
             <span class="tile-foot">
               <!--
@@ -366,6 +381,8 @@ onMounted(async () => {
 }
 
 .tile {
+  position: relative;
+  overflow: hidden; /* keeps the blurred backdrop inside the rounded corners */
   min-height: 6rem; /* thumb-sized, sometimes a wet thumb */
   display: flex;
   flex-direction: column;
@@ -378,6 +395,48 @@ onMounted(async () => {
   background: var(--surface);
   text-align: start;
   transition: transform 0.08s ease, box-shadow 0.12s ease;
+}
+
+.tile-photo {
+  position: absolute;
+  /* Inset NEGATIVE: a blur samples beyond its own edge, and without the bleed
+     the border shows a pale halo where there is nothing left to sample. */
+  inset: -12px;
+  background-size: cover;
+  background-position: center;
+  filter: blur(7px) saturate(1.1);
+  /* Low enough that dark ink still clears contrast over any photograph. A
+     cafe picture can be almost white (milk, marble) or almost black (espresso,
+     a night shot), so the tile cannot rely on the image being one or the
+     other — the wash is what makes the text safe either way. */
+  opacity: 0.28;
+}
+
+.tile.has-photo {
+  border-color: var(--border-strong);
+}
+/* A scrim under the text only, so the name stays crisp against the busiest
+   part of any photo without dulling the whole tile. */
+.tile.has-photo::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgb(255 255 255 / 0.72), rgb(255 255 255 / 0.25));
+  pointer-events: none;
+}
+/* Three explicit layers: photo (0), scrim (1), text (2). Without the numbers
+   the photo — being a child like any other — lands on top of its own scrim. */
+.tile-photo {
+  z-index: 0;
+}
+.tile.has-photo::after {
+  z-index: 1;
+}
+.tile.has-photo > .tile-name,
+.tile.has-photo > .tile-foot,
+.tile.has-photo > .tile-hint {
+  position: relative;
+  z-index: 2;
 }
 .tile:active:not(:disabled) {
   /* A visible press, because on a touch screen there is no hover to confirm

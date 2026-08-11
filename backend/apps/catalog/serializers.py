@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from rest_framework import serializers
 
+from . import images
 from .models import (
     Category,
     Modifier,
@@ -64,8 +65,24 @@ class ProductVariantSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "cost", "margin", "margin_percent"]
 
 
+class ProductImageField(serializers.ImageField):
+    """
+    A photograph, bounded and re-encoded on the way in. See `catalog/images.py`.
+
+    A field rather than a `validate_image` hook, because the order matters: the
+    size gate has to run before DRF asks Pillow whether the bytes are an image,
+    and `validate_<field>` runs after. Overriding `to_internal_value` is the only
+    seam that sits on the correct side of that decode.
+    """
+
+    def to_internal_value(self, data):
+        images.assert_within_limit(data)
+        return images.normalise(super().to_internal_value(data))
+
+
 class ProductSerializer(serializers.ModelSerializer):
     variants = ProductVariantSerializer(many=True, read_only=True)
+    image = ProductImageField(required=False, allow_null=True)
     category_name = serializers.CharField(source="category.name_ar", read_only=True)
     station_name = serializers.CharField(source="station.name_ar", read_only=True, default=None)
 
