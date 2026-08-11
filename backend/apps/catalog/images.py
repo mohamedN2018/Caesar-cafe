@@ -124,12 +124,12 @@ def normalise(uploaded: Any) -> ContentFile:
     # unusable for reading pixels. Opening again from the start is required.
     uploaded.seek(0)
     try:
-        image = Image.open(uploaded)
+        source = Image.open(uploaded)
         # `open()` is lazy: a file truncated mid-transfer parses its header
         # fine and fails on the first pixel. `load()` moves that failure here,
         # where it becomes a 400, instead of into the resize below where it
         # would be a 500.
-        image.load()
+        source.load()
     # `DecompressionBombError` explicitly: a small file can decode to a
     # gigapixel image, which is the classic way to turn an upload form into a
     # memory exhaustion. Django's own ImageField catches it during `verify()` and
@@ -142,9 +142,14 @@ def normalise(uploaded: Any) -> ContentFile:
         ) from exc
 
     # Bake the orientation in before the re-encode discards the tag that
-    # describes it. `or image` because this returns None on some Pillow paths
+    # describes it. `or source` because this returns None on some Pillow paths
     # and a silent None here would be a 500 on a valid photo.
-    image = ImageOps.exif_transpose(image) or image
+    #
+    # Annotated, and a different name from what `open()` returned, because that
+    # is an `ImageFile` — a subclass. Rebinding the same name to the plain
+    # `Image` that `convert()` hands back narrows to the subclass and every
+    # reassignment below becomes a type error.
+    image: Image.Image = ImageOps.exif_transpose(source) or source
 
     image_format, extension = _target_format()
     if image_format == "JPEG" and _has_alpha(image):

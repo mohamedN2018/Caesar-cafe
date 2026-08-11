@@ -83,7 +83,10 @@ def product(organization, branch) -> Product:
 
 
 def frame(size: tuple[int, int], *, mode: str = "RGB") -> Image.Image:
-    rng = random.Random(SEED)
+    # These are test pixels, not a secret, and the seed is the point: `secrets`
+    # would make every run a different image, so a size assertion that failed
+    # today would pass tomorrow and nobody could tell which run was the truth.
+    rng = random.Random(SEED)  # noqa: S311
     channels = len(Image.new(mode, (1, 1)).getbands())
     block = (48, 36)
     seed = Image.frombytes(
@@ -141,9 +144,7 @@ class TestNormalisation:
         upload(client, product, photo(size=(240, 240)))
         assert stored(product).size == (240, 240)
 
-    def test_the_stored_file_is_much_smaller_than_what_was_uploaded(
-        self, client, product
-    ) -> None:
+    def test_the_stored_file_is_much_smaller_than_what_was_uploaded(self, client, product) -> None:
         """
         The whole point of this module. The till fetches the entire menu in one
         request over a mobile connection, so the number that matters is bytes on
@@ -158,9 +159,7 @@ class TestNormalisation:
         # Twenty times fewer pixels. A third is a floor, not an expectation.
         assert product.image.size < uploaded_bytes / 3
 
-    def test_the_upload_is_re_encoded_rather_than_stored_as_sent(
-        self, client, product
-    ) -> None:
+    def test_the_upload_is_re_encoded_rather_than_stored_as_sent(self, client, product) -> None:
         upload(client, product, photo(image_format="PNG", size=(1200, 1200)))
         product.refresh_from_db()
 
@@ -197,9 +196,7 @@ class TestMetadata:
         exif[0x0110] = "Phone 12"  # Model
         return exif
 
-    def test_a_rotated_photo_is_stored_the_way_up_it_was_taken(
-        self, client, product
-    ) -> None:
+    def test_a_rotated_photo_is_stored_the_way_up_it_was_taken(self, client, product) -> None:
         """
         Orientation 6 means "rotate 90° clockwise to display". A phone writes the
         tag rather than rotating the pixels, and the re-encode drops the tag — so
@@ -211,9 +208,7 @@ class TestMetadata:
         width, height = stored(product).size
         assert height > width, "the orientation tag was dropped without being applied"
 
-    def test_what_the_camera_wrote_does_not_reach_the_public_file(
-        self, client, product
-    ) -> None:
+    def test_what_the_camera_wrote_does_not_reach_the_public_file(self, client, product) -> None:
         """
         `/media/` is served by Caddy to anyone holding the URL, with a day of
         cache. A phone's EXIF block carries the GPS fix of wherever the picture
@@ -273,9 +268,7 @@ class TestRefusals:
         product.refresh_from_db()
         assert not product.image
 
-    def test_something_that_is_not_an_image_at_all_is_refused(
-        self, client, product
-    ) -> None:
+    def test_something_that_is_not_an_image_at_all_is_refused(self, client, product) -> None:
         text = SimpleUploadedFile(
             "menu.jpg", b"this is a spreadsheet, actually" * 50, content_type="image/jpeg"
         )
