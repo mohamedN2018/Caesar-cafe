@@ -16533,6 +16533,7 @@ components:
       - TERMINAL_OFFLINE
       - BACKUP_FAILED
       - SYNC_CONFLICT
+      - LOW_STOCK
       type: string
       description: |-
         * `CASH_VARIANCE` - CASH_VARIANCE
@@ -16541,6 +16542,7 @@ components:
         * `TERMINAL_OFFLINE` - TERMINAL_OFFLINE
         * `BACKUP_FAILED` - BACKUP_FAILED
         * `SYNC_CONFLICT` - SYNC_CONFLICT
+        * `LOW_STOCK` - LOW_STOCK
     SetActiveRequest:
       type: object
       properties:

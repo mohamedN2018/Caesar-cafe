@@ -1200,6 +1200,7 @@ register(
         "KIDS_OVERDUE",
         "TERMINAL_OFFLINE",
         "BACKUP_FAILED",
+        "LOW_STOCK",
     ],
     scope=Scope.BRANCH,
     group="alerts",

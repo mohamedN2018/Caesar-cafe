@@ -200,6 +200,102 @@ class TestKitchenLate:
         assert not [a for a in alerts.evaluate(branch) if a.kind == AlertKind.KITCHEN_LATE]
 
 
+class TestLowStock:
+    def _item(self, branch, name, *, minimum, on_hand, reserved=Decimal("0")):
+        from apps.inventory.models import InventoryItem, StockLevel, Unit
+
+        unit, _ = Unit.objects.get_or_create(
+            organization=branch.organization, code="G", defaults={"name_ar": "جرام"}
+        )
+        item = InventoryItem.objects.create(
+            organization=branch.organization,
+            branch=branch,
+            code=name.upper(),
+            name_ar=name,
+            base_unit=unit,
+            minimum_stock=minimum,
+        )
+        StockLevel.objects.create(item=item, quantity_on_hand=on_hand, quantity_reserved=reserved)
+        return item
+
+    def _raised(self, branch):
+        return [a for a in alerts.evaluate(branch) if a.kind == AlertKind.LOW_STOCK]
+
+    def test_an_item_at_its_minimum_is_raised(self, branch) -> None:
+        self._item(branch, "لبن", minimum=Decimal("5000"), on_hand=Decimal("4000"))
+        raised = self._raised(branch)
+
+        assert len(raised) == 1
+        assert "لبن" in raised[0].body
+        assert raised[0].url == "/inventory"
+
+    def test_plenty_in_stock_says_nothing(self, branch) -> None:
+        self._item(branch, "لبن", minimum=Decimal("5000"), on_hand=Decimal("90000"))
+        assert not self._raised(branch)
+
+    def test_items_with_no_minimum_set_are_ignored(self, branch) -> None:
+        """
+        A minimum of zero is an unconfigured item, not a threshold. Counting it
+        would put every such item into the alert the day it emptied and bury
+        the ones somebody deliberately set a level for.
+        """
+        self._item(branch, "منديل", minimum=Decimal("0"), on_hand=Decimal("0"))
+        assert not self._raised(branch)
+
+    def test_stock_committed_to_open_orders_does_not_count_as_available(self, branch) -> None:
+        """
+        Milk in the fridge that four unpaid tickets are already spoken for is
+        not milk you can sell, and an alert that says otherwise sends somebody
+        to check a shelf that looks fine.
+        """
+        self._item(
+            branch,
+            "لبن",
+            minimum=Decimal("5000"),
+            on_hand=Decimal("6000"),
+            reserved=Decimal("2000"),
+        )
+        assert self._raised(branch)
+
+    def test_many_low_items_are_one_alert_not_many(self, branch) -> None:
+        """
+        Low stock arrives in clusters — a delivery is missed and everything goes
+        under together. Five buzzes is how an owner learns to swipe the app away.
+        """
+        for name in ["لبن", "بن", "سكر", "شاي", "كاكاو"]:
+            self._item(branch, name, minimum=Decimal("5000"), on_hand=Decimal("10"))
+
+        raised = self._raised(branch)
+        assert len(raised) == 1
+        assert "5" in raised[0].title
+        assert "وغيرها" in raised[0].body
+
+    def test_a_newly_low_item_is_a_new_subject(self, branch) -> None:
+        """
+        The dedupe key is the SET of low items. A key on the count alone would
+        stay silent when one item is restocked and another falls the same hour.
+        """
+        self._item(branch, "لبن", minimum=Decimal("5000"), on_hand=Decimal("10"))
+        first = self._raised(branch)[0].dedupe_key
+
+        self._item(branch, "بن", minimum=Decimal("5000"), on_hand=Decimal("10"))
+        assert self._raised(branch)[0].dedupe_key != first
+
+    def test_the_key_fits_the_column(self, branch) -> None:
+        """
+        Six UUIDs do not fit in 200 characters. A truncated key would collapse
+        two different sets of low items onto one alert, and the second would
+        never send — the failure being silence, which nobody reports.
+        """
+        from apps.notifications.models import SentAlert
+
+        for index in range(12):
+            self._item(branch, f"صنف {index}", minimum=Decimal("5000"), on_hand=Decimal("10"))
+
+        limit = SentAlert._meta.get_field("dedupe_key").max_length
+        assert len(self._raised(branch)[0].dedupe_key) <= limit
+
+
 class TestBackupFailed:
     def test_no_backup_in_26_hours_is_raised(self, branch) -> None:
         raised = [a for a in alerts.evaluate(branch) if a.kind == AlertKind.BACKUP_FAILED]

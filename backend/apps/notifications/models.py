@@ -77,6 +77,9 @@ class AlertKind(models.TextChoices):
     SYNC_CONFLICT = "SYNC_CONFLICT", "SYNC_CONFLICT"
     """An operation needs a human and has been waiting."""
 
+    LOW_STOCK = "LOW_STOCK", "LOW_STOCK"
+    """Stock has fallen to its minimum. The only alert here about tomorrow."""
+
 
 class SentAlert(BaseModel):
     """

@@ -57,4 +57,5 @@ KIND_LABELS = {
     AlertKind.TERMINAL_OFFLINE: "جهاز غير متصل",
     AlertKind.BACKUP_FAILED: "فشل نسخة احتياطية",
     AlertKind.SYNC_CONFLICT: "تعارض مزامنة",
+    AlertKind.LOW_STOCK: "نقص مخزون",
 }

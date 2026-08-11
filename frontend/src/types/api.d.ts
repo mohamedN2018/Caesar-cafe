@@ -183,6 +183,38 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/pos-login/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sign in at a terminal with a PIN or badge
+         * @description Sign a cashier in at an enrolled terminal, with a PIN or a badge.
+         *
+         *     The permission is `""` — explicitly public *within* an otherwise-guarded
+         *     view — because the caller is not a person yet. What guards this endpoint is
+         *     the DEVICE token: the request must already come from a terminal the branch
+         *     enrolled, and that requirement is what makes a four-digit PIN acceptable at
+         *     all. A PIN on the open internet is guessable in an afternoon.
+         *
+         *     A cashier therefore has **no account to log into**. Giving every one of them
+         *     an email and a password would mean a password typed on a shared screen in
+         *     front of a queue, which is a password written on the till within a week. The
+         *     admin still signs in with an email, from a different screen, because an
+         *     admin is doing a different job in a different place.
+         */
+        post: operations["auth_pos_login_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/refresh/": {
         parameters: {
             query?: never;
@@ -3642,6 +3674,31 @@ export interface paths {
         patch: operations["staff_partial_update"];
         trace?: never;
     };
+    "/api/v1/staff/{id}/activity/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * What this person has been doing
+         * @description Orders rung, money taken, and every sensitive thing they did.
+         *
+         *     An owner asking "what has this person been doing" wants one number they
+         *     can compare across staff and one list they can read. Both come from
+         *     records that already exist — orders, payments, the audit trail — rather
+         *     than from a second tally kept alongside, which could disagree with them.
+         */
+        get: operations["staff_activity_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/staff/{id}/assign-role/": {
         parameters: {
             query?: never;
@@ -3657,6 +3714,30 @@ export interface paths {
          *     with its own serializer because it also mints a role assignment.
          */
         post: operations["staff_assign_role_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/staff/{id}/badge/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Print a new badge for this person
+         * @description Gated on `staff.reset_pin`, not `staff.manage_users`.
+         *
+         *     A badge unlocks a till exactly as a PIN does, so it answers to the same
+         *     risk. Editing somebody's phone number is administration; minting the
+         *     thing that lets a person ring up sales as them is not.
+         */
+        post: operations["staff_badge_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -5897,6 +5978,17 @@ export interface components {
             is_default?: boolean;
             is_active?: boolean;
         };
+        /**
+         * @description One of the two, never neither.
+         *
+         *     Both are optional individually because a terminal offers a keypad and a
+         *     scanner side by side, and which one arrives depends on what the cashier
+         *     reached for.
+         */
+        PosSignInRequest: {
+            pin?: string;
+            badge?: string;
+        };
         PriceChangeRequest: {
             /** Format: uuid */
             variant: string;
@@ -6018,6 +6110,7 @@ export interface components {
             sku: string;
             /** Format: decimal */
             price: string;
+            readonly channel_prices: components["schemas"]["VariantChannelPrice"][];
             /**
              * Format: decimal
              * @description Computed from the recipe. Never entered by hand.
@@ -6419,9 +6512,10 @@ export interface components {
          *     * `TERMINAL_OFFLINE` - TERMINAL_OFFLINE
          *     * `BACKUP_FAILED` - BACKUP_FAILED
          *     * `SYNC_CONFLICT` - SYNC_CONFLICT
+         *     * `LOW_STOCK` - LOW_STOCK
          * @enum {string}
          */
-        SentAlertKindEnum: "CASH_VARIANCE" | "KITCHEN_LATE" | "KIDS_OVERDUE" | "TERMINAL_OFFLINE" | "BACKUP_FAILED" | "SYNC_CONFLICT";
+        SentAlertKindEnum: "CASH_VARIANCE" | "KITCHEN_LATE" | "KIDS_OVERDUE" | "TERMINAL_OFFLINE" | "BACKUP_FAILED" | "SYNC_CONFLICT" | "LOW_STOCK";
         SetActiveRequest: {
             is_active: boolean;
         };
@@ -6579,7 +6673,7 @@ export interface components {
             email: string;
             full_name_ar: string;
             phone?: string;
-            password: string;
+            password?: string;
             /** @description A role code, e.g. CASHIER. Assigned to the caller's branch. */
             role: string;
             /**
@@ -6587,6 +6681,14 @@ export interface components {
              * @default true
              */
             branch_scoped: boolean;
+        };
+        StaffRequest: {
+            /** Format: email */
+            email: string;
+            phone?: string;
+            full_name_ar: string;
+            full_name_en?: string;
+            is_active?: boolean;
         };
         Station: {
             /** Format: uuid */
@@ -6987,6 +7089,18 @@ export interface components {
             public_key: string | null;
             configured: boolean;
         };
+        VariantChannelPrice: {
+            /** Format: uuid */
+            readonly id: string;
+            order_type: string;
+            /** Format: decimal */
+            price: string;
+        };
+        VariantChannelPriceRequest: {
+            order_type: string;
+            /** Format: decimal */
+            price: string;
+        };
         /** @description Step-up approval: a manager authorizes one action for one target. */
         VerifyPinRequestRequest: {
             /**
@@ -7352,6 +7466,39 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["MFASetup"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    auth_pos_login_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PosSignInRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PosSignInRequest"];
+                "multipart/form-data": components["schemas"]["PosSignInRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TokenPair"];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;
@@ -14415,6 +14562,41 @@ export interface operations {
             };
         };
     };
+    staff_activity_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Window, default 30. */
+                days?: number;
+            };
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: {
+                            [key: string]: unknown;
+                        };
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     staff_assign_role_create: {
         parameters: {
             query?: never;
@@ -14442,6 +14624,44 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["Staff"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    staff_badge_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا user. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StaffRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["StaffRequest"];
+                "multipart/form-data": components["schemas"]["StaffRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: {
+                            [key: string]: unknown;
+                        };
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

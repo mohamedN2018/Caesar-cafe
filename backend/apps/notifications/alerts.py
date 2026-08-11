@@ -22,7 +22,9 @@ service anywhere near it.
 
 from __future__ import annotations
 
+import hashlib
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, time, timedelta
 from decimal import Decimal
@@ -62,6 +64,19 @@ def settings_for(branch) -> dict:
         ],
         context,
     )
+
+
+def _digest(parts: Iterable[str]) -> str:
+    """
+    A short, stable key for a SET of things.
+
+    Sorted first, so the same set in a different query order is the same key —
+    otherwise a reordered result set reads as a new subject and re-alerts.
+    Truncated to 16 hex characters: this is a dedupe key, not a security
+    boundary, and a collision costs one suppressed notification.
+    """
+    joined = ",".join(sorted(parts))
+    return hashlib.sha256(joined.encode()).hexdigest()[:16]
 
 
 def in_quiet_hours(window: str, *, now: datetime | None = None) -> bool:
@@ -293,6 +308,64 @@ def sync_conflicts(branch, config: dict) -> list[Alert]:
     ]
 
 
+def low_stock(branch, config: dict) -> list[Alert]:
+    """
+    Stock that has fallen to its minimum.
+
+    **One alert for the whole branch, not one per item.** Low stock arrives in
+    clusters — a delivery is missed and eleven things go under together — and
+    eleven buzzes is how an owner learns to swipe the app away. The alert names
+    the count and the first few items; the list itself is a screen away.
+
+    **`quantity_available`, not `quantity_on_hand`.** The reserved figure is
+    committed to orders already open on the floor. Milk that is physically in
+    the fridge but spoken for by four unpaid tickets is not milk you can sell,
+    and an alert that says otherwise sends somebody to check a shelf that looks
+    fine.
+
+    **Items with no minimum set are skipped entirely.** A minimum of zero is
+    not a threshold, it is an unconfigured item, and `0 <= 0` would put every
+    such item into the alert on the day it ran out — burying the ones somebody
+    deliberately set a level for.
+
+    Off during quiet hours like everything but a failed backup: nothing about
+    this is fixable at 03:00, and it will still be true at nine.
+    """
+    from apps.inventory.models import StockLevel
+
+    levels = (
+        StockLevel.objects.filter(item__branch=branch, item__is_active=True)
+        .exclude(item__minimum_stock__lte=0)
+        .select_related("item", "item__base_unit")
+        .order_by("item__name_ar")
+    )
+
+    low = [level for level in levels if level.is_low]
+    if not low:
+        return []
+
+    names = [level.item.name_ar for level in low]
+    shown = "، ".join(names[:3])
+    body = shown if len(names) <= 3 else f"{shown} وغيرها"
+
+    return [
+        Alert(
+            kind=AlertKind.LOW_STOCK,
+            # Keyed on WHICH items are low, not how many. A count would stay
+            # silent when one item is restocked and another falls the same
+            # hour, and would re-fire on every wobble across a threshold.
+            #
+            # Hashed because the column holds 200 characters and six UUIDs do
+            # not fit — a truncated key would silently collapse two different
+            # sets of low items onto one alert, and the second would never send.
+            dedupe_key="items:" + _digest(str(level.item_id) for level in low),
+            title=f"{len(names)} صنف وصل للحد الأدنى",
+            body=body,
+            url="/inventory",
+        )
+    ]
+
+
 #: Every rule, by the kind it raises. Iterated in this order, which is roughly
 #: "how much money is at stake".
 RULES = {
@@ -301,6 +374,7 @@ RULES = {
     AlertKind.TERMINAL_OFFLINE: terminal_offline,
     AlertKind.KITCHEN_LATE: kitchen_late,
     AlertKind.KIDS_OVERDUE: kids_overdue,
+    AlertKind.LOW_STOCK: low_stock,
     AlertKind.SYNC_CONFLICT: sync_conflicts,
 }
 
