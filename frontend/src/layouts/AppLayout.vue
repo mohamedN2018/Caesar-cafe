@@ -50,29 +50,29 @@ const groups: NavGroup[] = [
   {
     label: 'الصالة والمطبخ',
     items: [
-      { label: 'مخطط الصالة', to: '/floor', icon: 'table', permission: 'floor.view' },
+      { label: 'مخطط الصالة', to: '/floor', icon: 'table', permission: 'branch.manage_tables' },
       { label: 'المطبخ الآن', to: '/kitchen', icon: 'kitchen', permission: 'kitchen.view' },
-      { label: 'المحطات', to: '/kitchen/stations', icon: 'station', permission: 'kitchen.view' },
+      { label: 'المحطات', to: '/kitchen/stations', icon: 'station', permission: 'kitchen.manage_stations' },
     ],
   },
   {
     label: 'صالة الأطفال',
     items: [
       { label: 'اللوحة المباشرة', to: '/kids', icon: 'kids', permission: 'kids.view' },
-      { label: 'الجلسات', to: '/kids/sessions', icon: 'clock', permission: 'kids.view' },
+      { label: 'الجلسات', to: '/kids/sessions', icon: 'clock', permission: 'kids.view_reports' },
       { label: 'أولياء الأمور', to: '/kids/guardians', icon: 'guardians', permission: 'kids.view' },
       { label: 'سجل الوقائع', to: '/kids/incidents', icon: 'clipboard', permission: 'kids.view' },
-      { label: 'التعريفات', to: '/kids/tariffs', icon: 'ticket', permission: 'kids.view' },
+      { label: 'التعريفات', to: '/kids/tariffs', icon: 'ticket', permission: 'kids.manage_tariffs' },
     ],
   },
   {
     label: 'المنتجات والمخزون',
     items: [
-      { label: 'المنتجات', to: '/products', icon: 'cup', permission: 'catalog.view' },
-      { label: 'الأقسام', to: '/categories', icon: 'folders', permission: 'catalog.view' },
-      { label: 'الوصفات والتكلفة', to: '/recipes', icon: 'receipt', permission: 'catalog.view' },
-      { label: 'أرصدة المخزون', to: '/stock', icon: 'box', permission: 'inventory.view' },
-      { label: 'حركة المخزون', to: '/stock/movements', icon: 'history', permission: 'inventory.view' },
+      { label: 'المنتجات', to: '/products', icon: 'cup', permission: 'catalog.edit' },
+      { label: 'الأقسام', to: '/categories', icon: 'folders', permission: 'catalog.edit' },
+      { label: 'الوصفات والتكلفة', to: '/recipes', icon: 'receipt', permission: 'catalog.manage_recipes' },
+      { label: 'أرصدة المخزون', to: '/stock', icon: 'box', permission: 'reports.inventory' },
+      { label: 'حركة المخزون', to: '/stock/movements', icon: 'history', permission: 'reports.inventory' },
     ],
   },
   {
