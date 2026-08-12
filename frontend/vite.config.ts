@@ -33,5 +33,20 @@ export default defineConfig({
     port: 5173,
     // Required for HMR to work through the Docker port mapping.
     watch: { usePolling: true },
+    /*
+     * The browser reaches this through a published port, not the container's.
+     *
+     * compose maps `${FRONTEND_PORT}:5173`, and this machine sets 5183. Vite's
+     * HMR client takes its port from `server.port` unless told otherwise, so it
+     * dialled `ws://localhost:5173` from a page served on 5183 and failed:
+     *
+     *     [vite] failed to connect to websocket.
+     *     (browser) localhost:5183/ <--[WebSocket (failing)]--> localhost:5173/
+     *
+     * The cost was not just the console noise — it is why every change needed a
+     * manual reload, which is how a fix gets tested against a stale bundle and
+     * reported as not working.
+     */
+    hmr: { clientPort: Number(process.env.FRONTEND_PORT ?? 5173) },
   },
 })
