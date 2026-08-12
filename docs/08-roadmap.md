@@ -2048,6 +2048,41 @@ Two details that decide piasters:
 The documented example — 2× cappuccino + 1× turkish, 12% service, 14% VAT — comes to **204.29** in
 the browser: the same figure as docs/04, the Phase 1 fixture, the server and the Desktop's fold.
 
+### Step 2 — the local store ✅ COMPLETE
+
+**Verified:** 18 tests · 110 frontend tests in total · `vue-tsc`, `eslint`, `vite build` clean.
+
+`frontend/src/offline/db.ts` — IndexedDB, with the Desktop's `m_`/`l_` split intact. Four rules, and
+each one is a test:
+
+1. **The mirror is not writable by the application.** `put()` on an `m_` store raises
+   `MirrorIsReadOnly`; only `applyMirror` writes them. The Desktop's reason holds exactly: a terminal
+   that can edit its own copy of a price can charge whatever it likes, and the drift is invisible
+   until a customer complains.
+2. **A sale and its outbox row commit together or not at all.** Tested by aborting mid-write: neither
+   the order nor the queued operation survives.
+3. **Money is text, never a `number`.** A total stored as IEEE 754 reintroduces exactly the
+   imprecision `money.ts` exists to avoid, on the one machine that computes it offline.
+4. **An unknown entity type is skipped and reported, not fatal.** A till that refused to sync over a
+   feature it does not have is a till that stops selling.
+
+**The thing worth reading this file for.** In IndexedDB, a transaction auto-commits as soon as the
+microtask queue drains with no request outstanding — so **a single `await` between two writes ends the
+transaction early and the second write lands in a different one.** Rule 2 would be silently gone, and
+nothing would fail: the sale and the outbox row would both exist, just not atomically, and the gap
+would only show up as a lost sale after a crash at exactly the wrong moment.
+
+So `transact()` takes a **synchronous** callback, typed to forbid a promise. It issues every request in
+one go and resolves on `oncomplete`, never on an individual request. `enqueue()` reads the outbox
+sequence *before* opening the transaction for the same reason — reading it inside would put an `await`
+in the middle of the atomic write. A duplicate sequence is harmless, because the drain order is a hint
+and `op_uuid` is what makes a replay idempotent on the server.
+
+Also carried over from the Desktop's own scars: the cached connection is checked for being closed
+before reuse (`connect()` once returned a closed handle, and the activation flow restarts in-process),
+and the mirror stores **the whole payload** rather than the columns the UI reads today —
+`m_variants.sort_order` and `m_tables.pos_x` were both features that silently had no data behind them.
+
 ### Not started, and not to be assumed
 
 Steps 2–6. Also outstanding from the same conversation: a printable badge for every cashier by
