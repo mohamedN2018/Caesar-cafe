@@ -81,10 +81,44 @@ export default {
           DEFAULT: 'var(--border)',
           strong: 'var(--border-strong)',
         },
+        // The dim behind a modal. Written as `bg-scrim` so the one at each call
+        // site cannot drift — the hand-written ones were `black/40` in some
+        // dialogs and `black/50` in others, and a product that dims the room
+        // differently per dialog reads as two products.
+        scrim: 'var(--scrim)',
       },
       borderColor: {
         DEFAULT: 'var(--border)',
         strong: 'var(--border-strong)',
+      },
+      // Depth, from the same file as the colour. Tailwind's own shadows are
+      // black-tinted, and pure black over a cream surface greys it — the card
+      // stops looking like paper on a warm desk and starts looking like paper
+      // behind glass. Overriding the scale rather than extending it means a
+      // stray `shadow-md` picks up the warm one instead of the default.
+      boxShadow: {
+        xs: 'var(--shadow-xs)',
+        sm: 'var(--shadow-sm)',
+        DEFAULT: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
+        brand: 'var(--shadow-brand)',
+        none: 'none',
+      },
+      backgroundImage: {
+        brand: 'var(--brand-gradient)',
+        'brand-soft': 'var(--brand-gradient-soft)',
+        gold: 'var(--gold-gradient)',
+        'page-wash': 'var(--page-wash)',
+      },
+      transitionTimingFunction: {
+        out: 'var(--ease-out)',
+      },
+      transitionDuration: {
+        fast: 'var(--duration-fast)',
+        base: 'var(--duration-base)',
+        slow: 'var(--duration-slow)',
       },
     },
   },

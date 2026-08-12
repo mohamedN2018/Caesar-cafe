@@ -58,21 +58,29 @@ async function submit() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-surface-sunken px-4">
-    <div class="w-full max-w-md">
+  <!--
+    The room, not a login form on a grey field.
+
+    Deep burgundy with a gold bloom behind the card — the same two colours the
+    cafe is painted in, and the same treatment the dashboard hero and the POS
+    header use. This is the first thing anybody ever sees of the product, and a
+    centred box on `--surface-sunken` said nothing about whose product it is.
+  -->
+  <div class="login-screen flex min-h-screen items-center justify-center px-4 py-10">
+    <div class="login-panel w-full max-w-md">
       <div class="mb-8 text-center">
         <!--
           The real mark. This was a coffee emoji at 48px — the first thing
           anyone saw of the product, rendered in whatever font the machine
           happened to have, in colours belonging to no part of the brand.
         -->
-        <img :src="logoBig" alt="" class="mx-auto h-16 w-auto" aria-hidden="true" />
-        <h1 class="mt-3 text-2xl font-bold text-ink">القيصر</h1>
-        <p class="mt-1 text-sm text-ink-muted">نظام الإدارة</p>
+        <img :src="logoBig" alt="" class="login-mark mx-auto h-20 w-auto" aria-hidden="true" />
+        <h1 class="login-title mt-4 text-3xl font-bold">القيصر</h1>
+        <p class="login-subtitle mt-1 text-sm">نظام الإدارة</p>
       </div>
 
       <form
-        class="space-y-5 rounded-xl border border-line bg-surface p-6 shadow-sm"
+        class="space-y-5 rounded-xl border border-line bg-surface p-6 shadow-xl"
         @submit.prevent="submit"
       >
         <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
@@ -123,9 +131,65 @@ async function submit() {
         </UiButton>
       </form>
 
-      <p class="mt-6 text-center text-xs text-ink-faint">
+      <p class="login-footnote mt-6 text-center text-xs">
         الاتصال مؤمَّن. لا تشارك بيانات الدخول مع أحد.
       </p>
     </div>
   </div>
 </template>
+
+<style scoped>
+.login-screen {
+  position: relative;
+  overflow: hidden;
+  background-image: var(--brand-gradient);
+}
+
+/*
+   A gold bloom behind the card, off-centre.
+
+   Off-centre on purpose: a glow centred exactly behind a centred card reads as
+   a rendering artefact — a halo — while one offset above and to the trailing
+   side reads as light coming from somewhere in the room.
+*/
+.login-screen::before {
+  content: '';
+  position: absolute;
+  inset-block-start: -20%;
+  inset-inline-end: -15%;
+  width: 40rem;
+  height: 40rem;
+  background: radial-gradient(circle, rgba(201, 162, 39, 0.22) 0%, transparent 62%);
+  pointer-events: none;
+}
+.login-screen::after {
+  content: '';
+  position: absolute;
+  inset-block-end: -25%;
+  inset-inline-start: -20%;
+  width: 34rem;
+  height: 34rem;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.22) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.login-panel {
+  position: relative;
+}
+
+.login-title {
+  color: var(--fg-on-brand);
+}
+.login-subtitle {
+  color: var(--fg-on-brand-muted);
+}
+.login-footnote {
+  color: var(--fg-on-brand-faint);
+}
+
+/* The mark sits on burgundy now, so it needs a shadow to have an edge. Without
+   one the darker parts of the artwork merge into the background. */
+.login-mark {
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+</style>

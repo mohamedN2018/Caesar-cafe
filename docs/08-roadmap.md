@@ -1806,6 +1806,85 @@ completed that added a code, so it is the first one that could have hit it.
 
 ---
 
+## The rail goes burgundy ✅ COMPLETE (2026-08-12)
+
+**Verified:** `vue-tsc` clean · `eslint` clean **and silent** · 34 frontend tests · `vite build` clean ·
+`brand.css` changes proven additive-only, so the Desktop parity guard cannot break.
+
+A visual pass over the whole admin. The palette was already right — the work was depth, motion and
+consistency, plus three colour bugs that were invisible to the guards.
+
+### The sidebar was the one place the product stopped looking like itself
+
+The POS chrome has been burgundy-and-gold since it was built. The admin sidebar was a cream panel on a
+cream page, which is why the shell read as a stack of similar rectangles rather than as furniture
+around a workspace. It is now a `--brand-gradient` rail with gold marking the current page — gold
+because it is the accent the brand owns, and against burgundy it is unmistakable in a way a lighter
+red is not.
+
+A gradient rather than a flat fill, here and on the primary button, for a specific reason: 16rem by
+full height is a large area of one value, and large flat areas are what make an interface look
+unfinished. The eye expects a surface to catch light unevenly.
+
+### Depth, and why the shadows are warm
+
+Tailwind's shadow scale is black-tinted. Pure black over a cream surface *greys* it — the card stops
+looking like paper on a warm desk and starts looking like paper behind glass. `--shadow-*` is tinted
+with the ink colour instead, and each step is two layers: a tight contact shadow plus a wider ambient
+one, because a single large blur reads as fog while the pair reads as an object with an edge.
+
+`raised` on a card is opt-in and most cards should not use it. If everything is lifted, nothing is —
+elevation is a way of saying "this one first", and a page of twelve equally-floating panels has
+thrown that away.
+
+One easing curve and three durations, so everything accelerates the same way; mixed easings are the
+difference between an interface that feels designed and one that feels assembled. Nothing bounces — a
+cashier tapping through forty orders an hour wants the screen to keep up, not to have personality.
+And `prefers-reduced-motion` zeroes all three, which the floor plan already honoured and the rest of
+the product now agrees with.
+
+### Three colour bugs the guards could not see
+
+The token guard bans Tailwind's default palette **by class name**. All three of these slipped past it
+because none of them was a banned class:
+
+1. **Every neutral badge had a blue ring.** `UiBadge` set `ring` — a *width* utility with no colour —
+   so it fell through to Tailwind's default `--tw-ring-color`, which is blue-500 at half opacity. A
+   faint blue outline on a burgundy-and-gold product, on the most-used component in the admin. The
+   guard looks for a banned colour; this was a **missing** one.
+2. **The dashboard hero's delta arrows were raw hex** — `#a7e8bd` and `#f6b8b3` in scoped CSS. They
+   exist because `--success` and `--danger` are tuned for cream and are both unreadable on burgundy
+   (the danger red is very nearly the background), so the values were right and their *location* was
+   wrong. Now `--success-on-brand` / `--danger-on-brand`.
+3. **The input focus ring drew twice.** `focus:ring-2 ring-brand-700/30` plus a border swap put a ring
+   outside the border while the border changed colour underneath, so a focused field grew a two-tone
+   halo. Worse, `/30` opacity on a `var()`-backed colour only works because Tailwind rewrites it, and
+   that rewriting fails silently for a token that is not a bare hex. Replaced with one inset ring that
+   thickens the existing border plus a soft outer glow.
+
+Scrims are a token now (`bg-scrim`). The hand-written ones had drifted to `black/40` in two dialogs
+and `ink/40` in the shell, and a product that dims the room differently per dialog reads as two
+products.
+
+### A contrast promise this batch nearly broke
+
+`brand.css` opens by stating that every `--fg-on-*` pairing clears WCAG AA at body size, and calls
+that a floor rather than a target. The new `--fg-on-brand-faint` was set at 48% white by eye, which
+composites to #ba8a8f over brand-700 — **3.5:1**, under the 4.5:1 AA wants, and it carries the sidebar
+group headings and the login footnote at 12px. Raised to 62% (#cba9ad, 4.8:1), with the arithmetic and
+the worst-case reasoning written into the file: brand-700 is the *lightest* point of the sidebar
+gradient, so it is the value to check against.
+
+A token that fails the contract the file states is a broken promise, not a debatable aesthetic choice.
+
+### Not verified
+
+Nobody has looked at any of this in a browser. There are no component tests in this project, so what
+the gate proves is that the types, the lint, the token guards and the build are clean — not that the
+result is well-composed on a real screen.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

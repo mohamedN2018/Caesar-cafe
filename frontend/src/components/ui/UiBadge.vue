@@ -9,7 +9,12 @@ withDefaults(defineProps<{ tone?: 'neutral' | 'success' | 'warning' | 'danger' |
 })
 
 const tones = {
-  neutral: 'bg-surface-sunken text-ink ring',
+  // `ring-line`, not a bare `ring`. It was `ring` — a WIDTH utility with no
+  // colour — so the ring fell through to Tailwind's default, which is blue-500
+  // at half opacity. Every neutral badge in the product had a faint blue outline
+  // that belongs to no part of this palette. The token guard could not catch it:
+  // it looks for banned colour classes, and this was a MISSING one.
+  neutral: 'bg-surface-sunken text-ink ring-line',
   success: 'bg-success-bg text-success ring-success',
   warning: 'bg-warning-bg text-warning ring-warning',
   danger: 'bg-danger-bg text-danger ring-danger',

@@ -342,15 +342,45 @@ onMounted(async () => {
 
 <style scoped>
 .hero {
+  position: relative;
+  overflow: hidden;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-end;
   justify-content: space-between;
   gap: 1.5rem;
-  padding: 1.5rem 1.75rem;
+  padding: 1.75rem 1.75rem;
   border-radius: 1rem;
   background: linear-gradient(135deg, var(--brand-800), var(--brand-700) 60%);
   color: var(--fg-on-brand);
+  /* Lifted, and lit along the top edge. The card below it is the same width and
+     the same corner radius, so without depth the two read as one block of page
+     furniture rather than as the headline and its supporting detail. */
+  box-shadow: var(--shadow-lg), var(--brand-sheen);
+}
+
+/*
+   A gold bloom in the trailing corner.
+
+   Decorative, and the only decorative thing on the screen — which is the point:
+   the hero is the one element allowed to be more than functional, because it is
+   what makes an owner opening this on a phone feel the cafe has a system rather
+   than a spreadsheet. Kept behind the content and at low opacity so it never
+   competes with the number.
+*/
+.hero::after {
+  content: '';
+  position: absolute;
+  inset-block-start: -40%;
+  inset-inline-end: -10%;
+  width: 22rem;
+  height: 22rem;
+  background: radial-gradient(circle, rgba(201, 162, 39, 0.28) 0%, transparent 68%);
+  pointer-events: none;
+}
+
+.hero > * {
+  position: relative;
 }
 
 .hero-label {
@@ -374,11 +404,13 @@ onMounted(async () => {
   font-size: 0.88rem;
   font-weight: 600;
 }
+/* Tokens, not literals. `--success` and `--danger` are tuned for cream and are
+   both unreadable here — the danger red is very nearly this background. */
 .hero-delta.is-up {
-  color: #a7e8bd;
+  color: var(--success-on-brand);
 }
 .hero-delta.is-down {
-  color: #f6b8b3;
+  color: var(--danger-on-brand);
 }
 .hero-delta.is-flat {
   opacity: 0.7;

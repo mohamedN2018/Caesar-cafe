@@ -88,6 +88,141 @@
   --table-ready: #cfe8da;
   --table-late: #f7d4d1;
   --shadow-room: rgba(42, 26, 22, 0.28);
+
+  /* ── depth ─────────────────────────────────────────────────────────────── */
+  /*
+     Warm shadows, not black ones.
+     Tailwind's default shadow is `rgb(0 0 0 / …)`, and pure black over a cream
+     surface (#fbf7f0) greys it: the card stops looking like paper on a warm
+     desk and starts looking like paper behind glass. These are tinted with the
+     ink colour instead, which is what a shadow on this palette actually is.
+
+     Two layers per step, deliberately. A single large blur reads as fog; a tight
+     contact shadow plus a wider ambient one reads as an object with an edge
+     sitting above a surface, which is the whole illusion.
+  */
+  --shadow-xs: 0 1px 2px rgba(42, 26, 22, 0.05);
+  --shadow-sm: 0 1px 2px rgba(42, 26, 22, 0.06), 0 2px 6px rgba(42, 26, 22, 0.04);
+  --shadow-md: 0 2px 4px rgba(42, 26, 22, 0.07), 0 6px 16px rgba(42, 26, 22, 0.06);
+  --shadow-lg: 0 4px 8px rgba(42, 26, 22, 0.08), 0 14px 32px rgba(42, 26, 22, 0.09);
+  --shadow-xl: 0 8px 16px rgba(42, 26, 22, 0.10), 0 28px 60px rgba(42, 26, 22, 0.13);
+
+  /* A brand-tinted glow, for the one element on a screen that is the action. */
+  --shadow-brand: 0 2px 4px rgba(123, 30, 40, 0.18), 0 10px 24px rgba(123, 30, 40, 0.20);
+
+  /* The scrim behind a modal. A token rather than `bg-black/40` at each call
+     site, because the ones written by hand drifted between 0.4 and 0.6 and a
+     dialog that dims the room differently each time reads as a different app. */
+  --scrim: rgba(38, 22, 18, 0.52);
+
+  /* ── surface treatments ────────────────────────────────────────────────── */
+  /*
+     Gradients, not flat fills, on the two places that carry the brand: the
+     sidebar and a primary button. A flat #7b1e28 panel the height of a screen
+     is a large area of one value, and large flat areas are what make an
+     interface look unfinished — the eye expects a surface to catch light
+     unevenly. These stay within one hue, so it still reads as the brand rather
+     than as decoration.
+  */
+  --brand-gradient: linear-gradient(160deg, var(--brand-700) 0%, var(--brand-900) 100%);
+  --brand-gradient-soft: linear-gradient(160deg, var(--brand-600) 0%, var(--brand-800) 100%);
+  --gold-gradient: linear-gradient(135deg, var(--gold-400) 0%, var(--gold-600) 100%);
+  /* The page behind the cards. Barely there — it stops a full-width layout
+     reading as one undifferentiated sheet. */
+  --page-wash: radial-gradient(
+      1200px 600px at 100% -10%,
+      rgba(123, 30, 40, 0.05) 0%,
+      transparent 60%
+    ),
+    radial-gradient(900px 500px at -10% 110%, rgba(201, 162, 39, 0.07) 0%, transparent 60%);
+
+  /* ── motion ────────────────────────────────────────────────────────────── */
+  /*
+     One easing curve and three durations, so that everything in the product
+     accelerates the same way. Mixed easings are the difference between an
+     interface that feels designed and one that feels assembled.
+
+     `--ease-out` is the standard for anything entering; nothing here uses a
+     bounce, because a cashier tapping through forty orders an hour does not
+     want personality, they want the screen to keep up.
+  */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* ── on a brand surface ────────────────────────────────────────────────── */
+  /*
+     The sidebar and the POS header are deep burgundy, and text on them needs a
+     scale of its own — `--ink-muted` is a warm brown that vanishes on brand-800.
+
+     White at 72% rather than a lighter burgundy: a tint of the background reads
+     as a *disabled* item, and most of the sidebar is not disabled, it is simply
+     not the current page. Kept above 70% so it still clears AA on brand-800 at
+     14px, which is the size these labels actually are.
+  */
+  /*
+     The alphas are checked, not chosen by eye.
+
+     Composited over `--brand-700` (#7b1e28) — the LIGHTEST point of the sidebar
+     gradient, so the worst case — against a #7b1e28 ground:
+
+       0.74 → #dcc4c7, contrast 6.3:1  ✓
+       0.62 → #cba9ad, contrast 4.8:1  ✓
+       0.48 → #ba8a8f, contrast 3.5:1  ✗
+
+     `faint` started at 0.48 and had to come up. It carries the group headings and
+     the login footnote, both 12px, where AA wants 4.5:1 — and the header of this
+     file promises every on-brand pairing clears AA at body size, which makes a
+     token that does not a broken promise rather than a debatable choice.
+  */
+  --fg-on-brand-muted: rgba(255, 255, 255, 0.74);
+  --fg-on-brand-faint: rgba(255, 255, 255, 0.62);
+  --on-brand-hover: rgba(255, 255, 255, 0.09);
+  --on-brand-active: rgba(255, 255, 255, 0.14);
+  --on-brand-line: rgba(255, 255, 255, 0.12);
+
+  /*
+     Up and down, on a burgundy ground.
+
+     `--success` (#2e7d4f) and `--danger` (#b3261e) are tuned for cream and are
+     both unreadable on brand-700 — the danger red in particular is very nearly
+     the background. These two were literal hex in the dashboard's scoped CSS,
+     which is exactly the drift the token file exists to prevent: the token guard
+     bans Tailwind's palette by class name and cannot see a raw `#a7e8bd`.
+  */
+  --success-on-brand: #a7e8bd;
+  --danger-on-brand: #f6b8b3;
+
+  /* A one-pixel highlight along the top of a brand panel, where a real surface
+     would catch the light. This is most of what separates a gradient that looks
+     like a considered surface from one that looks like a coloured div. */
+  --brand-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+/*
+   Motion is a preference, and it is one the product must honour.
+
+   Some people get motion sick from transitions; on the washed-out tablets in a
+   back office, animation also costs frames. `prefers-reduced-motion` is not an
+   accessibility checkbox here — the floor plan already degrades under it, and
+   this makes the rest of the interface agree.
+*/
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 /* ── printing ────────────────────────────────────────────────────────────── */

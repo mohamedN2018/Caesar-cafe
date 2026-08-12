@@ -321,7 +321,7 @@ onMounted(load)
 
     <!-- The amendment dialog. A reason is required by the server and by this
          form: an unexplained correction is indistinguishable from a mistake. -->
-    <div v-if="amending" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div v-if="amending" class="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-4">
       <UiCard class="w-full max-w-lg">
         <div class="flex items-start justify-between gap-4">
           <div>

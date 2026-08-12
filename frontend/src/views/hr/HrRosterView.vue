@@ -319,7 +319,7 @@ onMounted(load)
       </UiCard>
     </template>
 
-    <div v-if="assigning" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+    <div v-if="assigning" class="fixed inset-0 z-50 flex items-center justify-center bg-scrim p-4">
       <UiCard class="w-full max-w-sm">
         <h2 class="text-lg font-bold text-ink">
           {{ assigning.user.full_name_ar }}
