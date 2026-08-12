@@ -200,6 +200,8 @@ class LicenseEvent(SequentialBaseModel):
         KEY_REGENERATED = "KEY_REGENERATED", "KEY_REGENERATED"
         DEVICE_REVOKED = "DEVICE_REVOKED", "DEVICE_REVOKED"
         DEVICE_RESET = "DEVICE_RESET", "DEVICE_RESET"
+        DEVICE_UNLOCKED = "DEVICE_UNLOCKED", "DEVICE_UNLOCKED"
+        """A manager cleared the PIN lockout on a terminal."""
         HEARTBEAT_DENIED = "HEARTBEAT_DENIED", "HEARTBEAT_DENIED"
 
     license = models.ForeignKey(

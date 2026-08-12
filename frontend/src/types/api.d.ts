@@ -4765,6 +4765,16 @@ export interface components {
             readonly fingerprint_changed_count: number;
             /** Format: double */
             readonly minutes_since_seen: number | null;
+            /**
+             * @description Whether PIN sign-in is currently locked on this terminal.
+             *
+             *     Surfaced because the lockout was previously invisible: the till said
+             *     "رمز الدخول غير صحيح" to a correct PIN and the devices screen showed a
+             *     perfectly ACTIVE device, so the manager had no way to tell a locked
+             *     terminal from a cashier who had forgotten their PIN. A control with no
+             *     indicator beside it is a control nobody reaches for.
+             */
+            readonly pin_locked: boolean;
         };
         /**
          * @description * `POS` - POS
@@ -4827,10 +4837,11 @@ export interface components {
          *     * `KEY_REGENERATED` - KEY_REGENERATED
          *     * `DEVICE_REVOKED` - DEVICE_REVOKED
          *     * `DEVICE_RESET` - DEVICE_RESET
+         *     * `DEVICE_UNLOCKED` - DEVICE_UNLOCKED
          *     * `HEARTBEAT_DENIED` - HEARTBEAT_DENIED
          * @enum {string}
          */
-        EventEnum: "CREATED" | "ACTIVATED" | "ACTIVATION_FAILED" | "SUSPENDED" | "RESUMED" | "RENEWED" | "REVOKED" | "SEATS_CHANGED" | "KEY_REGENERATED" | "DEVICE_REVOKED" | "DEVICE_RESET" | "HEARTBEAT_DENIED";
+        EventEnum: "CREATED" | "ACTIVATED" | "ACTIVATION_FAILED" | "SUSPENDED" | "RESUMED" | "RENEWED" | "REVOKED" | "SEATS_CHANGED" | "KEY_REGENERATED" | "DEVICE_REVOKED" | "DEVICE_RESET" | "DEVICE_UNLOCKED" | "HEARTBEAT_DENIED";
         EventRequest: {
             /**
              * Format: uuid

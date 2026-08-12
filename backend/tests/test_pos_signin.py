@@ -412,3 +412,260 @@ class TestActivity:
         client = authed(cashier, branch=branch)
 
         assert client.get(f"/api/v1/staff/{cashier.id}/activity/").status_code == 403
+
+
+class TestOneCashierSigningInDoesNotLockOutTheBranch:
+    """
+    The bug that stopped the web till working, and it had two halves.
+
+    The candidate loop used to call `verify_pin` for every member of staff until
+    one matched. `verify_pin` counts a failure against its own (user, device)
+    scope, so:
+
+      1. A cashier signing in with her OWN correct PIN recorded a failed attempt
+         against every colleague the loop reached before her — and wrote an
+         `auth.login_failed` audit row for each of them, naming people who were
+         not in the building.
+
+      2. `verify_pin` opens with `assert_not_locked`, which RAISES. So once a
+         colleague was locked out, the loop aborted before reaching anybody, and
+         the till answered 429 to a correct PIN — citing somebody else's lockout.
+
+    A terminal that stops selling because a colleague mistyped is worse than the
+    brute-force risk the per-user counter covered, and `terminal:{device}` covers
+    that anyway. These tests pin both halves.
+    """
+
+    def _sign_in(self, terminal, pin: str):
+        return terminal.post("/api/v1/auth/pos-login/", {"pin": pin}, format="json")
+
+    def test_a_correct_pin_records_no_failure_against_anybody_else(
+        self, terminal, device, make_user, branch
+    ) -> None:
+        from apps.accounts.models import LoginAttempt
+
+        colleague = make_user(email="colleague@caesar.test", pin="1111", branch=branch)
+        mona = make_user(email="mona@caesar.test", role="CASHIER", pin="3333", branch=branch)
+
+        assert self._sign_in(terminal, "3333").status_code == 200
+
+        failures = LoginAttempt.objects.filter(succeeded=False)
+        assert not failures.exists(), (
+            "a correct PIN wrote failed attempts for other staff: "
+            f"{list(failures.values_list('identifier', flat=True))}"
+        )
+        # Exactly one attempt, and it belongs to the person who actually signed in.
+        assert list(LoginAttempt.objects.values_list("identifier", flat=True)) == [str(mona.id)]
+        assert colleague.id != mona.id
+
+    def test_a_locked_out_colleague_does_not_close_the_till(
+        self, terminal, device, make_user, branch
+    ) -> None:
+        """
+        The half that actually took the till down. A cashier with a valid PIN must
+        get in regardless of what any other staff member's counter holds.
+        """
+        from apps.accounts.services import LockoutPolicy, record_failure
+
+        colleague = make_user(email="colleague@caesar.test", pin="1111", branch=branch)
+        make_user(email="mona@caesar.test", role="CASHIER", pin="3333", branch=branch)
+
+        policy = LockoutPolicy.load(colleague.organization_id)
+        for _ in range(policy.max_attempts + 1):
+            record_failure(f"pin:{colleague.id}:{device.id}", policy)
+
+        response = self._sign_in(terminal, "3333")
+
+        assert response.status_code == 200, response.data
+
+    def test_the_terminal_itself_still_locks_after_repeated_wrong_pins(
+        self, terminal, device, make_user, branch
+    ) -> None:
+        """
+        The control that matters is kept. Without it a four-digit PIN on an
+        enrolled till is 10,000 guesses, which is an afternoon's work.
+        """
+        from apps.accounts.services import LockoutPolicy
+
+        make_user(email="mona@caesar.test", role="CASHIER", pin="3333", branch=branch)
+        policy = LockoutPolicy.load(branch.organization_id)
+
+        for _ in range(policy.max_attempts):
+            assert self._sign_in(terminal, "0000").status_code == 401
+
+        # Locked now — and a CORRECT pin is refused too, which is the point of a
+        # terminal-wide lock rather than a per-person one.
+        assert self._sign_in(terminal, "3333").status_code == 429
+
+    def test_a_wrong_pin_is_attributed_to_the_terminal_not_to_a_person(
+        self, terminal, device, make_user, branch
+    ) -> None:
+        """
+        Nobody has been identified by a wrong PIN, so putting the failure on a
+        staff record would be a failed login recorded on the strength of a guess.
+        """
+        from apps.accounts.models import LoginAttempt
+
+        make_user(email="mona@caesar.test", role="CASHIER", pin="3333", branch=branch)
+
+        self._sign_in(terminal, "0000")
+
+        attempt = LoginAttempt.objects.get(succeeded=False)
+        assert attempt.identifier == f"terminal:{device.id}"
+
+
+class TestUnlockingATerminalFromTheAdmin:
+    """
+    The way out of a lockout.
+
+    The fifteen-minute terminal lock is the control that makes a four-digit PIN
+    defensible, and it stays. What was missing was a remedy: until this existed
+    the only options were waiting out the window with a queue at the counter, or a
+    shell on the server. A control that only an engineer can reach is not a
+    control the cafe has.
+    """
+
+    def _admin(self, authed, make_user, branch):
+        """
+        Build this BEFORE locking anything.
+
+        `make_user` creates a RoleAssignment, which calls `invalidate_all()`. On
+        Redis that is a scoped `delete_pattern`, but LocMemCache has no such
+        method and the fallback is `cache.clear()` — so in tests creating any user
+        wipes every lockout key. Two of these tests were written the other way
+        round and reported the code as broken when the fixture had swept up after
+        itself.
+        """
+        owner = make_user(email="owner@caesar.test", role="SUPER_ADMIN")
+        return authed(owner, branch=branch)
+
+    def _lock(self, device, branch):
+        from apps.accounts.services import LockoutPolicy, record_failure
+
+        policy = LockoutPolicy.load(branch.organization_id)
+        for _ in range(policy.max_attempts + 1):
+            record_failure(f"terminal:{device.id}", policy)
+
+    def _row(self, client, device):
+        payload = client.get("/api/v1/licensing/devices/").data
+        rows = payload["results"] if isinstance(payload, dict) else payload
+        return next(row for row in rows if row["id"] == str(device.id))
+
+    def test_a_locked_terminal_is_visible_on_the_devices_screen(
+        self, authed, make_user, branch, device
+    ) -> None:
+        """
+        An ACTIVE device can be locked, and that combination was unreadable from
+        the admin — the till refused a correct PIN while this screen showed a
+        healthy terminal. A control with no indicator beside it is a control
+        nobody reaches for.
+        """
+        client = self._admin(authed, make_user, branch)
+        assert self._row(client, device)["pin_locked"] is False
+
+        self._lock(device, branch)
+
+        row = self._row(client, device)
+        assert row["status"] == DeviceStatus.ACTIVE, "an ACTIVE device can still be locked"
+        assert row["pin_locked"] is True
+
+    def test_unlocking_lets_a_correct_pin_back_in(
+        self, authed, make_user, branch, device, terminal
+    ) -> None:
+        make_user(email="mona@caesar.test", role="CASHIER", pin="3333", branch=branch)
+        client = self._admin(authed, make_user, branch)
+
+        self._lock(device, branch)
+        assert (
+            terminal.post("/api/v1/auth/pos-login/", {"pin": "3333"}, format="json").status_code
+            == 429
+        )
+
+        response = client.post(f"/api/v1/licensing/devices/{device.id}/unlock/")
+
+        assert response.status_code == 200, response.data
+        assert (
+            terminal.post("/api/v1/auth/pos-login/", {"pin": "3333"}, format="json").status_code
+            == 200
+        )
+
+    def test_unlocking_is_recorded_against_the_licence(
+        self, authed, make_user, branch, device
+    ) -> None:
+        """
+        Somebody cleared a security control, so who and when is part of the trail.
+        """
+        from apps.licensing.models import LicenseEvent
+
+        self._lock(device, branch)
+        self._admin(authed, make_user, branch).post(
+            f"/api/v1/licensing/devices/{device.id}/unlock/"
+        )
+
+        assert LicenseEvent.objects.filter(
+            event=LicenseEvent.Event.DEVICE_UNLOCKED, device=device
+        ).exists()
+
+    def test_a_cashier_cannot_unlock_a_terminal(self, authed, make_user, branch, device) -> None:
+        """
+        `devices.manage`. Otherwise the lockout is worth nothing: whoever is
+        working through 0000..9999 would clear their own counter every five tries.
+        """
+        cashier = make_user(email="c@caesar.test", role="CASHIER", branch=branch)
+
+        response = authed(cashier, branch=branch).post(
+            f"/api/v1/licensing/devices/{device.id}/unlock/"
+        )
+
+        assert response.status_code == 403
+
+    def test_unlocking_does_not_clear_anybody_else_s_step_up_counter(
+        self, authed, make_user, branch, device
+    ) -> None:
+        """
+        Per-user PIN counters belong to the step-up approval path, where a wrong
+        PIN really is that person's failed attempt. Clearing them here would turn
+        one button into a way to reset the whole branch's rate limit.
+        """
+        from apps.accounts.services import LockoutPolicy, is_locked, record_failure
+
+        # Every user created first, so no later `invalidate_all()` sweeps the
+        # locks this test is about.
+        manager = make_user(email="mgr@caesar.test", role="BRANCH_MANAGER", branch=branch)
+        client = self._admin(authed, make_user, branch)
+
+        policy = LockoutPolicy.load(branch.organization_id)
+        for _ in range(policy.max_attempts + 1):
+            record_failure(f"pin:{manager.id}:{device.id}", policy)
+        self._lock(device, branch)
+        assert is_locked(f"pin:{manager.id}:{device.id}"), "the setup did not lock the manager"
+
+        client.post(f"/api/v1/licensing/devices/{device.id}/unlock/")
+
+        assert not is_locked(f"terminal:{device.id}")
+        assert is_locked(f"pin:{manager.id}:{device.id}"), "the step-up counter was wiped too"
+
+    def test_the_lockout_names_the_remedy_and_is_distinguishable_from_the_throttle(
+        self, terminal, device, branch, make_user
+    ) -> None:
+        """
+        Two different 429s reach this endpoint and they need different reactions.
+
+        `ACCOUNT_LOCKED` is the fifteen-minute terminal lockout — a manager has to
+        clear it, and the message now says so, because until the unlock button
+        existed there was no remedy to name. `RATE_LIMITED` is the per-IP
+        `pos_login` throttle at 5/min, which heals itself and needs nobody.
+
+        Five wrong PINs trip BOTH, and unlocking clears only the lockout: for the
+        rest of that minute the till still answers 429. Distinct codes are what
+        let the client tell "wait a moment" from "fetch the manager" — which is
+        the difference between forty seconds and a phone call.
+        """
+        make_user(email="mona@caesar.test", role="CASHIER", pin="3333", branch=branch)
+        self._lock(device, branch)
+
+        response = terminal.post("/api/v1/auth/pos-login/", {"pin": "3333"}, format="json")
+
+        assert response.status_code == 429
+        assert response.data["code"] == "ACCOUNT_LOCKED"
+        assert "المدير" in response.data["message"], "the message does not name the remedy"

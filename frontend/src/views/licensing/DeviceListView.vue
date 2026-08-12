@@ -33,6 +33,16 @@ interface Device {
   last_seen_at: string | null
   fingerprint_changed_count: number
   minutes_since_seen: number | null
+  /**
+   * PIN sign-in is locked on this terminal right now.
+   *
+   * Five wrong PINs lock a till for fifteen minutes — the control that makes a
+   * four-digit PIN defensible. It used to be invisible from here: the till
+   * answered "رمز الدخول غير صحيح" to a correct PIN while this screen showed a
+   * perfectly ACTIVE device, so a manager had no way to tell a locked terminal
+   * from a cashier who had forgotten their code.
+   */
+  pin_locked: boolean
 }
 
 const auth = useAuthStore()
@@ -122,12 +132,24 @@ onMounted(load)
             {{ relativeMinutes(device.last_seen_at) }}
           </td>
           <td class="px-4 py-3">
-            <UiBadge :tone="device.status === 'ACTIVE' ? 'success' : 'danger'">
-              {{ device.status === 'ACTIVE' ? 'نشط' : device.status }}
-            </UiBadge>
+            <div class="flex flex-wrap items-center gap-1.5">
+              <UiBadge :tone="device.status === 'ACTIVE' ? 'success' : 'danger'">
+                {{ device.status === 'ACTIVE' ? 'نشط' : device.status }}
+              </UiBadge>
+              <!-- Separate from the status, because it IS separate: an ACTIVE
+                   terminal can be locked, and that combination is precisely the
+                   one that used to be unreadable from this screen. -->
+              <UiBadge v-if="device.pin_locked" tone="warning">مقفول مؤقتاً</UiBadge>
+            </div>
           </td>
           <td class="px-4 py-3">
             <div v-if="canManage" class="flex justify-end gap-2">
+              <!-- First, and `primary` rather than `ghost`: when a till is locked
+                   with a queue at the counter, this is the only thing on the row
+                   anybody wants. -->
+              <UiButton v-if="device.pin_locked" size="sm" @click="act(device, 'unlock')">
+                فتح القفل
+              </UiButton>
               <UiButton
                 v-if="device.status === 'ACTIVE'"
                 variant="ghost"

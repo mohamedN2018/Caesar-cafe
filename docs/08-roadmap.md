@@ -1885,6 +1885,82 @@ result is well-composed on a real screen.
 
 ---
 
+## One cashier signing in locked out the branch ✅ FIXED (2026-08-12)
+
+The web till stopped accepting PINs. The report was "مش شغال" and the cause was not in the till.
+
+### What was actually wrong
+
+`sign_in_at_terminal` does not know who is standing there — a PIN has no username beside it — so it
+loops every member of staff at the branch until one PIN matches. It did that by calling `verify_pin`,
+which is the step-up approval helper, and which **counts a failure against its own (user, device)
+scope every time the PIN is not that user's.**
+
+Two consequences, both observed live rather than reasoned about:
+
+1. **A cashier signing in with her own correct PIN recorded a failed attempt against every colleague
+   the loop reached before her** — and wrote an `auth.login_failed` audit row for each. Two ordinary
+   sign-ins during testing put two failures each on the owner and the branch manager, neither of whom
+   was in the building. Five would have locked them out.
+
+2. **`verify_pin` opens with `assert_not_locked`, which RAISES.** So once any colleague was locked
+   out, the loop aborted before reaching anybody: the till answered **429 to a correct PIN**, citing a
+   lockout belonging to somebody else. One person mistyping closed the till for the whole branch.
+
+The candidates are matched directly now, and the rate limit that matters — `terminal:{device}`, which
+is what actually stops somebody working through 0000..9999 — is kept exactly as it was. `verify_pin`
+keeps its per-user counter for the step-up path, where the caller *names* the approver and a wrong PIN
+really is that person's failed attempt. A wrong PIN at a till is now attributed to the terminal, not
+to a person: nobody has been identified, and putting a failed login on a staff record on the strength
+of a guess is how an innocent record acquires a history.
+
+### The remedy that did not exist
+
+The fifteen-minute lock is right and stays. What was missing was a way out of it: until now the only
+answers were waiting out the window with a queue at the counter, or a shell on the server. A control
+only an engineer can reach is not a control the cafe has.
+
+`POST /licensing/devices/{id}/unlock/` clears it, gated on `devices.manage` — because a lockout that
+the locked-out party can clear is worth nothing — and it writes a `DEVICE_UNLOCKED` licence event,
+since somebody just cleared a security control. It deliberately does **not** clear per-user step-up
+counters, which would turn one button into a way to reset the whole branch's rate limit.
+
+The devices screen shows `pin_locked` beside the status, separately, because **an ACTIVE device can be
+locked** and that combination was exactly the unreadable one: the till refused a correct PIN while the
+admin showed a healthy terminal. A control with no indicator beside it is a control nobody reaches for.
+
+### Two different 429s, and why the codes matter
+
+Verifying the fix on the live stack produced a 429 *after* unlocking, which looked like the fix
+failing. It was the DRF `pos_login` throttle at **5/min per IP** — a separate control with code
+`RATE_LIMITED` rather than `ACCOUNT_LOCKED`.
+
+Five wrong PINs trip **both**, and unlocking clears only the lockout: for the remainder of that minute
+the till still answers 429. That is worth knowing before somebody presses the unlock button twice and
+concludes it is broken. The throttle heals itself within the minute and needs nobody; the lockout
+needs a manager. The lockout message now names that remedy, which it could not honestly do before the
+button existed.
+
+The test suite could not have found this: `config/settings/test.py` raises every throttle rate to
+10000/min so that the IP throttle does not mask the account lockout under test. Correct for the suite,
+and the reason this only appears against a real server.
+
+### Two more things, found on the way
+
+**The Desktop brand parity guard had been failing since f14acc8** — before any of this batch.
+`brand-50` and `brand-100` were warmed on the Web (a neutral pink tint on a cream surface reads as a
+different palette rather than a lighter one) and `palette.py` was never updated. The guard did its job
+the moment somebody ran the Desktop suite; the point is how long that gap was, which is an argument
+for running it rather than for the guard.
+
+**The sidebar scrollbar.** A default browser scrollbar on a burgundy rail is a bright grey stripe
+belonging to no part of the design, and the nav had grown past thirty items. Fixed by tightening the
+rows enough to fit a 900px viewport, styling the bar to match the rail for the screens where it still
+appears, and painting it only while the pointer is over the nav — rather than removing the overflow,
+which would clip the last entries, and the last entries are Settings and Backups.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

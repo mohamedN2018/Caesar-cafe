@@ -122,6 +122,7 @@ class DeviceSerializer(serializers.ModelSerializer):
     branch_name = serializers.CharField(source="branch.name_ar", read_only=True)
     license_key = serializers.CharField(source="license.masked_key", read_only=True)
     minutes_since_seen = serializers.SerializerMethodField()
+    pin_locked = serializers.SerializerMethodField()
 
     class Meta:
         model = Device
@@ -141,11 +142,26 @@ class DeviceSerializer(serializers.ModelSerializer):
             "last_ip",
             "fingerprint_changed_count",
             "minutes_since_seen",
+            "pin_locked",
         ]
         read_only_fields = fields
 
     def get_minutes_since_seen(self, obj) -> float | None:
         return obj.minutes_since_seen()
+
+    def get_pin_locked(self, obj) -> bool:
+        """
+        Whether PIN sign-in is currently locked on this terminal.
+
+        Surfaced because the lockout was previously invisible: the till said
+        "رمز الدخول غير صحيح" to a correct PIN and the devices screen showed a
+        perfectly ACTIVE device, so the manager had no way to tell a locked
+        terminal from a cashier who had forgotten their PIN. A control with no
+        indicator beside it is a control nobody reaches for.
+        """
+        from apps.accounts.services import is_locked
+
+        return is_locked(f"terminal:{obj.id}")
 
 
 class LicenseEventSerializer(serializers.ModelSerializer):

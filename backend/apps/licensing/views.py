@@ -478,6 +478,30 @@ class DeviceActionView(APIView):
             device.status = DeviceStatus.ACTIVE
             device.save(update_fields=["status", "updated_at"])
             detail = "تم إعادة تفعيل الجهاز"
+        elif action == "unlock":
+            # Five wrong PINs lock the TERMINAL for fifteen minutes. That is the
+            # control which makes a four-digit PIN defensible, and it is staying.
+            #
+            # What was missing is a way out. Until this existed the only remedies
+            # were waiting out the window with a queue at the counter, or a shell
+            # on the server — so a mistyped PIN during a rush closed a till and
+            # the manager standing next to it could do nothing about it.
+            #
+            # Deliberately does NOT clear per-user PIN counters for the whole
+            # branch: those belong to the step-up approval path, where a wrong PIN
+            # really is that person's failed attempt, and wiping them here would
+            # turn one button into a way to reset everybody's rate limit.
+            from apps.accounts.services import clear_failures
+
+            clear_failures(f"terminal:{device.id}")
+            services._record(
+                device.license,
+                LicenseEvent.Event.DEVICE_UNLOCKED,
+                device=device,
+                actor=actor,
+                ip_address=ip,
+            )
+            detail = "تم فتح الجهاز — يمكن تسجيل الدخول بالرمز الآن"
         else:
             raise NotFoundError("إجراء غير معروف", code="UNKNOWN_ACTION")
 

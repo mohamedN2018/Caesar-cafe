@@ -14,8 +14,17 @@ that disagrees is always the one nobody is looking at.
 from __future__ import annotations
 
 # ── brand ────────────────────────────────────────────────────────────────────
-BRAND_50 = "#fdf4f4"
-BRAND_100 = "#fae4e5"
+# The two lightest steps are WARM, and were left behind when the Web warmed them
+# in f14acc8. They are the steps used as a tint behind something, sitting on the
+# cream surfaces (#fbf7f0, #f4ede1), and a neutral pink patch on cream reads as a
+# different palette rather than a lighter one. See the note in brand.css.
+#
+# The parity guard caught this the moment somebody ran the Desktop suite — which
+# is exactly what it is for, and also why it matters that it gets run: the drift
+# had been sitting in the branch since that commit, invisible on the Web side
+# because the Web was the half that was right.
+BRAND_50 = "#fbf2ee"
+BRAND_100 = "#f4dfd9"
 BRAND_200 = "#f3c4c7"
 BRAND_300 = "#e59aa0"
 BRAND_400 = "#d06a74"

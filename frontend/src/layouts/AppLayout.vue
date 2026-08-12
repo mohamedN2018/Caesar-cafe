@@ -162,7 +162,24 @@ async function signOut() {
         </div>
       </div>
 
-      <nav class="h-[calc(100vh-4rem)] space-y-6 overflow-y-auto px-3 py-5">
+      <!--
+        The scrollbar was the ugliest thing in the shell.
+
+        A default browser scrollbar is a light grey trough with a grey thumb, and
+        on a burgundy rail it lands as a bright vertical stripe that belongs to no
+        part of the design. It appeared because the sidebar had grown past thirty
+        items.
+
+        Fixed in three ways rather than by removing the overflow, because a nav
+        that cannot scroll simply clips its last entries on a laptop — and the
+        entries at the bottom are Settings and Backups, which is a bad place to
+        lose. So: the rows are tighter and the groups closer, which gets the list
+        inside a 900px viewport; `scrollbar-width: thin` with a translucent white
+        thumb makes the bar part of the rail on the screens where it still shows;
+        and it is only painted while the pointer is over the nav, so a stationary
+        sidebar has no stripe at all.
+      -->
+      <nav class="nav-scroll h-[calc(100vh-4rem)] space-y-4 overflow-y-auto px-3 py-4">
         <div v-for="group in visibleGroups" :key="group.label">
           <p
             v-if="group.label"
@@ -185,7 +202,7 @@ async function signOut() {
               -->
               <RouterLink
                 :to="item.to"
-                class="nav-item flex items-center gap-3 rounded-lg border-s-[3px] px-3 py-2.5 text-sm"
+                class="nav-item flex items-center gap-3 rounded-lg border-s-[3px] px-3 py-2 text-sm"
                 :class="isActive(item.to) ? 'nav-item--active font-semibold' : 'font-medium'"
                 @click="sidebarOpen = false"
               >
@@ -281,6 +298,41 @@ async function signOut() {
   /* Wider than the default, because an uppercase Latin label at 12px on a dark
      ground closes up and reads as a smudge. */
   letter-spacing: 0.08em;
+}
+
+/* The scrollbar, made part of the rail.
+
+   `scrollbar-color` is the standard property and Firefox honours only that;
+   `::-webkit-scrollbar` is what Chrome and Safari read. Both are declared
+   because this runs on whatever browser the cafe has.
+
+   Transparent until the pointer is over the nav: a stationary sidebar shows no
+   stripe, and the bar appears exactly when somebody is in a position to use it. */
+.nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color var(--duration-base) var(--ease-out);
+}
+.nav-scroll:hover {
+  scrollbar-color: rgba(255, 255, 255, 0.28) transparent;
+}
+
+.nav-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.nav-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.nav-scroll::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 999px;
+  transition: background-color var(--duration-base) var(--ease-out);
+}
+.nav-scroll:hover::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.28);
+}
+.nav-scroll:hover::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.42);
 }
 
 .nav-item {
