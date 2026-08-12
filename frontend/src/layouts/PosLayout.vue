@@ -45,6 +45,26 @@ const time = computed(() =>
 
 const shiftOpen = computed(() => pos.shift !== null)
 
+/**
+ * What this person is allowed to do at the till.
+ *
+ * Ordered by how often it is touched, not by importance: the till first because
+ * it is where the shift is spent, then the day's orders, then the room, then the
+ * things somebody walks over to. The drawer is last because it is opened twice a
+ * shift and a tab nobody presses does not belong at the front.
+ *
+ * `permission: undefined` means everybody signed in at a till sees it.
+ */
+const TABS: { to: string; label: string; permission?: string; exact?: boolean }[] = [
+  { to: '/pos', label: 'نقطة البيع', permission: 'orders.create', exact: true },
+  { to: '/pos/orders', label: 'الطلبات', permission: 'orders.view' },
+  { to: '/pos/shift', label: 'الوردية' },
+]
+
+const visibleTabs = computed(() =>
+  TABS.filter((tab) => !tab.permission || auth.can(tab.permission)),
+)
+
 onMounted(() => {
   ticking = window.setInterval(() => (clock.value = new Date()), 30_000)
 })
@@ -80,10 +100,30 @@ async function leave() {
         <span class="pos-clock tabular-nums">{{ time }}</span>
       </div>
 
-      <div class="flex items-center gap-2">
-        <RouterLink to="/pos" class="pos-tab" active-class="is-active" exact>نقطة البيع</RouterLink>
-        <RouterLink to="/pos/shift" class="pos-tab" active-class="is-active">الوردية</RouterLink>
-      </div>
+      <!--
+        Permission-driven, not two hardcoded links.
+
+        A cashier holds more than the till and the drawer — `orders.view`,
+        `floor.view`, `kitchen.view`, `kids.view`, `inventory.waste` — and had no
+        way to reach any of it from the till. The admin shell was the only door,
+        and that shell is not built for somebody standing up with a queue.
+
+        A list means the screens that are still to come are one entry each rather
+        than a markup change, and the same filter that hides a tab is the one the
+        route guard applies, so a tab can never appear that the guard would bounce.
+      -->
+      <nav class="flex items-center gap-2">
+        <RouterLink
+          v-for="tab in visibleTabs"
+          :key="tab.to"
+          :to="tab.to"
+          class="pos-tab"
+          active-class="is-active"
+          :exact="tab.exact"
+        >
+          {{ tab.label }}
+        </RouterLink>
+      </nav>
 
       <div class="flex items-center gap-2">
         <!--

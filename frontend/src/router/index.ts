@@ -260,6 +260,14 @@ const router = createRouter({
           component: () => import('@/views/pos/PosBoardView.vue'),
         },
         {
+          // Today by default, with a day filter. A cashier holds `orders.view`
+          // and had no way to reach their own order list from the till.
+          path: 'orders',
+          name: 'pos-orders',
+          component: () => import('@/views/pos/PosOrdersView.vue'),
+          meta: { permission: 'orders.view' },
+        },
+        {
           path: 'shift',
           name: 'pos-shift',
           component: () => import('@/views/pos/PosShiftView.vue'),
