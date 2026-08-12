@@ -115,10 +115,29 @@ git pull
 docker compose -f docker-compose.prod.yml exec api python manage.py backup_database --label pre-deploy
 docker compose -f docker-compose.prod.yml build api
 docker compose -f docker-compose.prod.yml up -d api worker beat
+
+# Grant permission codes this release introduced. Safe to run every deploy.
+docker compose -f docker-compose.prod.yml exec api python manage.py sync_roles
 ```
 
 The backup before the build is not ceremony. A migration that fails halfway is
 the one deployment failure that a rollback of the images does not fix.
+
+**`sync_roles` is not optional on a release that adds a permission code.** The
+codes live in `apps/authz/catalog.py` and the roles live in the database, and
+nothing reconciles the two on its own: `ensure_system_roles` was only ever called
+by `bootstrap` (once, for a new cafe) and by `seed_demo`. Skip it and the release
+lands with the code in the catalogue, the routes enforcing it, and no role
+holding it — the symptom is a manager who upgraded on Tuesday and cannot open a
+screen the release notes say is theirs, answered by a 403 naming a permission
+nobody can find a way to grant.
+
+It is safe on a cafe that has customised its roles, and that is the reason it can
+be run unconditionally. `ensure_system_roles` compares against
+`synced_permissions` — the shipped spec as of the last sync — rather than against
+what a role currently holds, so it adds what this release newly introduced and
+leaves alone anything an operator deliberately took away. `--dry-run` reports
+what would change and writes nothing.
 
 ### Migration checklist
 

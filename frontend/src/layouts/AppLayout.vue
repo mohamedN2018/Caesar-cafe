@@ -87,6 +87,9 @@ const groups: NavGroup[] = [
     items: [
       { label: 'الإشعارات', to: '/notifications', icon: 'bell' },
       { label: 'الموظفون', to: '/staff', icon: 'users', permission: 'staff.view' },
+      { label: 'الحضور', to: '/hr/attendance', icon: 'clock', permission: 'hr.view' },
+      { label: 'جدول الورديات', to: '/hr/roster', icon: 'clipboard', permission: 'hr.view' },
+      { label: 'كشف الحضور', to: '/hr/timesheet', icon: 'chart', permission: 'hr.view' },
       { label: 'التراخيص', to: '/licensing', icon: 'key', permission: 'licenses.view' },
       { label: 'الأجهزة', to: '/devices', icon: 'monitor', permission: 'devices.view' },
       { label: 'المزامنة', to: '/sync', icon: 'sync', permission: 'sync.view' },

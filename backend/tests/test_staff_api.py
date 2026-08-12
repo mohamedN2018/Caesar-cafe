@@ -437,3 +437,72 @@ class TestCrossTenantIsolation:
         foreign = Role.objects.create(organization=other_organization, code="OTHER", name_ar="آخر")
         ids = [row["id"] for row in client.get("/api/v1/roles/").json()["data"]]
         assert str(foreign.id) not in ids
+
+
+class TestSyncRolesCommand:
+    """
+    `sync_roles` — the command that was missing.
+
+    `ensure_system_roles` was only ever called from `bootstrap` (once, for a new
+    cafe) and `seed_demo` (a demo). So a release that added a permission code
+    reached a live cafe with the code in the catalogue, the routes enforcing it,
+    and no role holding it — a manager who upgraded on Tuesday and cannot open a
+    screen the release notes say is theirs.
+
+    Found the ordinary way: the HR codes were added and the API refused a
+    SUPER_ADMIN.
+    """
+
+    def _run(self, **kwargs) -> str:
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        out = StringIO()
+        call_command("sync_roles", stdout=out, **kwargs)
+        return out.getvalue()
+
+    def test_a_newly_shipped_code_reaches_the_system_roles(self, organization, roles) -> None:
+        manager = roles["BRANCH_MANAGER"]
+        manager.set_permissions(sorted(set(manager.permission_codes) - {"hr.view"}))
+        # Pretend the last shipped spec did not have it, which is what an upgrade
+        # actually looks like.
+        manager.synced_permissions = sorted(set(manager.synced_permissions) - {"hr.view"})
+        manager.save(update_fields=["synced_permissions"])
+
+        self._run()
+
+        manager.refresh_from_db()
+        assert "hr.view" in manager.permission_codes
+
+    def test_a_permission_an_operator_removed_stays_removed(self, organization, roles) -> None:
+        """
+        The distinction `synced_permissions` exists for. An owner who does not
+        want cashiers voiding items said so on purpose, and a deploy that
+        restored it every time would be the product overruling them silently.
+        """
+        cashier = roles["CASHIER"]
+        assert "orders.view" in cashier.permission_codes
+        cashier.set_permissions(sorted(set(cashier.permission_codes) - {"orders.view"}))
+
+        self._run()
+
+        cashier.refresh_from_db()
+        assert "orders.view" not in cashier.permission_codes
+
+    def test_a_dry_run_writes_nothing(self, organization, roles) -> None:
+        """
+        A "dry run" that writes is the kind of thing an operator only discovers
+        afterwards, so it reads the catalogue directly rather than calling the
+        service and rolling back.
+        """
+        manager = roles["BRANCH_MANAGER"]
+        manager.set_permissions(sorted(set(manager.permission_codes) - {"hr.view"}))
+        manager.synced_permissions = sorted(set(manager.synced_permissions) - {"hr.view"})
+        manager.save(update_fields=["synced_permissions"])
+
+        output = self._run(dry_run=True)
+
+        manager.refresh_from_db()
+        assert "hr.view" not in manager.permission_codes, "the dry run wrote"
+        assert "hr.view" in output, "the dry run did not report what it would do"

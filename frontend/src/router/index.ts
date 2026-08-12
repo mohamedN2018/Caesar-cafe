@@ -153,6 +153,27 @@ const router = createRouter({
           component: () => import('@/views/staff/StaffListView.vue'),
           meta: { permission: 'staff.view' },
         },
+        // `hr.view`, not `staff.view`. They answer different questions: staff is
+        // "who works here and what may they do", hr is "when were they here". A
+        // shift leader needs the second and has no business reading roles.
+        {
+          path: 'hr/attendance',
+          name: 'hr-attendance',
+          component: () => import('@/views/hr/HrAttendanceView.vue'),
+          meta: { permission: 'hr.view' },
+        },
+        {
+          path: 'hr/roster',
+          name: 'hr-roster',
+          component: () => import('@/views/hr/HrRosterView.vue'),
+          meta: { permission: 'hr.view' },
+        },
+        {
+          path: 'hr/timesheet',
+          name: 'hr-timesheet',
+          component: () => import('@/views/hr/HrTimesheetView.vue'),
+          meta: { permission: 'hr.view' },
+        },
         {
           path: 'licensing',
           name: 'licensing',

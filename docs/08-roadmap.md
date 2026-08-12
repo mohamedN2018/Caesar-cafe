@@ -1763,12 +1763,46 @@ date out by comparing the hour against the boundary, which reads as clever and i
 05:00" silently became a seven-hour shift that ran backwards. It takes an explicit `next_day` now. A
 test helper that quietly disagrees with the clock is worse than a parameter.
 
-### Still outstanding on this increment
+### The screens ✅ COMPLETE (2026-08-12)
 
-The Web Admin screens — the attendance board, the rota editor and the monthly timesheet. The API and
-its rules are complete and tested; nothing renders them yet, which is the same gap Phase 4 and
-Phase 5 each had between a domain and its surface, and it is named here rather than left to be
-discovered.
+Three, and each answers one question. **الحضور** is the board a shift leader keeps open: who is here,
+who was late, who was rostered and has not appeared. **جدول الورديات** is the rota, a week at a time,
+Saturday to Friday — the working week this cafe actually plans in, and seven columns fit on a phone
+where thirty-one do not. **كشف الحضور** is the monthly totals, the screen a wage is calculated from.
+
+Decisions worth keeping:
+
+- **Absence is only shown for somebody who was rostered.** Computed against the rota rather than the
+  staff list, so a day off is simply not on the screen. A board that cried wolf about six people
+  would be a board nobody reads.
+- **The original punch stays visible beside a correction**, with the reason, on the row itself. A
+  screen showing only the corrected time would make the correction invisible — the one thing an
+  amendment must never be, and the whole reason the server stores them side by side.
+- **An open punch is called out above the timesheet, not silently excluded.** Its hours are missing
+  from the totals, and somebody reading a wage off that page needs to know why.
+- Patterns are edited on the rota screen rather than a page of their own: a rota is assembled by
+  choosing shapes, and sending somebody elsewhere the moment they need a shape that does not exist
+  yet loses the week they were halfway through building.
+- The date range is built from local parts, never `toISOString()` — the same UTC bug the reports page
+  had, where from midnight until 03:00 in Egypt "this month" silently started a day early.
+
+### `sync_roles` — the command that was missing, and why this feature found it
+
+Adding the four `hr.*` codes and then calling the API as a **SUPER_ADMIN** produced
+`ليس لديك صلاحية: hr.manage_roster`. The role whose spec is literally "everything" did not have it.
+
+`ensure_system_roles` does the right thing and always did — it grants what the build newly shipped
+while leaving alone anything an operator deliberately removed, which is exactly what
+`synced_permissions` exists to distinguish. The gap was that **nothing called it on a deploy.** Its
+only callers were `bootstrap`, which runs once for a new cafe, and `seed_demo`. So any release adding
+a permission code would land on a live cafe with the code in the catalogue, the routes enforcing it,
+and no role holding it: a manager who upgraded on Tuesday, a screen the release notes promise, and a
+403 naming a permission nobody can find a way to grant.
+
+`python manage.py sync_roles` closes it, `--dry-run` reports without writing, and
+[13 — Operations](13-operations.md) now carries it in the deploy sequence with the reason attached.
+This was not a defect in the HR work; the HR work is simply the first release since the catalogue was
+completed that added a code, so it is the first one that could have hit it.
 
 ---
 
