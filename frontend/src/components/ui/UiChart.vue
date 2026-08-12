@@ -35,6 +35,7 @@ import {
   Tooltip,
 } from 'chart.js'
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { ARABIC_LATIN_DIGITS } from '@/lib/format'
 
 Chart.register(
   BarController,
@@ -113,7 +114,7 @@ function build() {
       responsive: true,
       maintainAspectRatio: false,
       // Arabic UI: Chart.js mirrors its own layout from this.
-      locale: 'ar-EG',
+      locale: ARABIC_LATIN_DIGITS,
       plugins: {
         // One series — the card's title already says what is plotted.
         legend: { display: false },

@@ -46,13 +46,26 @@ const scanner = ref<HTMLInputElement | null>(null)
 
 const enrolment = ref({ license_key: '', email: '', device_name: '' })
 
-const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'clear', '0', 'enter']
+/**
+ * `back` rather than only `clear`.
+ *
+ * A four-digit PIN with one wrong digit used to mean retyping all four, because
+ * the only correction available wiped the lot. At a counter, forty times a day,
+ * that is the difference between a mistake costing one tap and costing five.
+ */
+const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', 'back', '0', 'enter']
 
 const canSubmit = computed(() => pin.value.length >= 4 && !terminal.busy)
 
 function press(key: string) {
+  if (key === 'back') {
+    pin.value = pin.value.slice(0, -1)
+    keepScannerReady()
+    return
+  }
   if (key === 'clear') {
     pin.value = ''
+    keepScannerReady()
     return
   }
   if (key === 'enter') {
@@ -60,6 +73,59 @@ function press(key: string) {
     return
   }
   if (pin.value.length < PIN_MAX) pin.value += key
+  keepScannerReady()
+}
+
+/**
+ * Put focus back on the invisible badge field.
+ *
+ * **This is the scan bug.** The docstring at the top of this file says the badge
+ * field is "invisible and always focused", and a QR scanner is a keyboard that
+ * types into whatever has focus. But focus was set once, in `onMounted` — and the
+ * first tap on any pad key moves it to that button. So scanning worked only if
+ * the cashier had not touched the pad since the screen appeared, which is almost
+ * never: they try the PIN, it is the wrong one, they reach for the badge, and
+ * nothing happens.
+ *
+ * Called after every pad interaction, so the invariant the comment claims is
+ * actually maintained.
+ */
+function keepScannerReady() {
+  scanner.value?.focus()
+}
+
+/**
+ * One keystroke sink, two credentials.
+ *
+ * A badge always begins `QSRB1.` (`accounts/badges.py`), so the two are trivially
+ * separable and a single field can accept both. That also gives PIN entry from a
+ * physical keyboard, which was previously impossible: the pad was the only way in,
+ * so a terminal with a keyboard and no touchscreen could not be signed in to at
+ * all.
+ */
+const BADGE_PREFIX = 'QSRB1.'
+
+async function submitScanned() {
+  const scanned = badge.value.trim()
+  badge.value = ''
+  if (!scanned) {
+    // Enter on an empty field means the cashier is submitting the PIN they just
+    // typed on the pad.
+    await submitPin()
+    return
+  }
+  if (scanned.startsWith(BADGE_PREFIX)) {
+    await finish(await terminal.signIn({ badge: scanned }))
+    return
+  }
+  if (/^\d{4,8}$/.test(scanned)) {
+    pin.value = scanned
+    await submitPin()
+    return
+  }
+  // Some other QR in the room — a product barcode, a WiFi card. The server says
+  // the same thing about one, and saying it here saves a round trip.
+  terminal.error = 'هذا الرمز ليس بطاقة موظف.'
 }
 
 async function finish(ok: boolean) {
@@ -76,13 +142,6 @@ async function finish(ok: boolean) {
 async function submitPin() {
   if (!canSubmit.value) return
   await finish(await terminal.signIn({ pin: pin.value }))
-}
-
-async function submitBadge() {
-  const scanned = badge.value.trim()
-  badge.value = ''
-  if (!scanned) return
-  await finish(await terminal.signIn({ badge: scanned }))
 }
 
 async function submitEnrolment() {
@@ -153,13 +212,13 @@ onMounted(() => {
             type="button"
             class="key"
             :class="{
-              'is-action': key === 'clear',
+              'is-action': key === 'back',
               'is-go': key === 'enter',
             }"
             :disabled="key === 'enter' && !canSubmit"
             @click="press(key)"
           >
-            <template v-if="key === 'clear'">مسح</template>
+            <template v-if="key === 'back'">مسح خانة</template>
             <template v-else-if="key === 'enter'">دخول</template>
             <template v-else>{{ key }}</template>
           </button>
@@ -178,7 +237,8 @@ onMounted(() => {
             class="scan-input"
             autocomplete="off"
             aria-label="امسح بطاقة الموظف"
-            @keyup.enter="submitBadge"
+            @keyup.enter="submitScanned"
+            @blur="keepScannerReady"
           />
         </label>
       </template>

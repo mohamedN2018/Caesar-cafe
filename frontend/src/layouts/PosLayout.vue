@@ -25,6 +25,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import logoSmall from '@/assets/brand/logo-64.png'
+import { ARABIC_LATIN_DIGITS } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
 import { usePosStore } from '@/stores/pos'
 import { useTerminalStore } from '@/stores/terminal'
@@ -39,7 +40,7 @@ let ticking: number | undefined
 
 /** Seconds matter to nobody here; the minute is what a cashier reads. */
 const time = computed(() =>
-  clock.value.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+  clock.value.toLocaleTimeString(ARABIC_LATIN_DIGITS, { hour: '2-digit', minute: '2-digit' }),
 )
 
 const shiftOpen = computed(() => pos.shift !== null)
@@ -104,7 +105,29 @@ async function leave() {
     </header>
 
     <main class="pos-body">
-      <RouterView />
+      <!--
+        A till never shows a blank body.
+
+        This screen was reported as "nothing appears": the header rendered, the
+        area below it was empty, and there was no message, no error and no way
+        forward. The user strip beside it read `—`, which is this layout's fallback
+        for a missing principal — so the session was gone and the screen said
+        nothing about it.
+
+        Whatever the cause, an empty body is never the honest output. If there is
+        no person on this terminal, say so and offer the one action that helps.
+        Diagnosing a blank screen from a photograph is not something a cafe should
+        ever be asked to do.
+      -->
+      <div v-if="!auth.me" class="pos-lost">
+        <p class="pos-lost-title">انتهت جلسة الكاشير</p>
+        <p class="pos-lost-body">
+          الجهاز ما زال مفعّلاً — يلزم فقط تسجيل الدخول بالرمز أو البطاقة من جديد.
+        </p>
+        <RouterLink to="/pos/sign-in" class="pos-lost-go">تسجيل الدخول بالرمز</RouterLink>
+      </div>
+
+      <RouterView v-else />
     </main>
   </div>
 </template>
@@ -197,5 +220,38 @@ async function leave() {
   flex: 1 1 auto;
   min-height: 0; /* lets children scroll instead of stretching the shell */
   display: flex;
+}
+
+/* The state that used to be a blank rectangle. */
+.pos-lost {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  text-align: center;
+}
+.pos-lost-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pos-lost-body {
+  max-width: 26rem;
+  color: var(--ink-muted);
+}
+.pos-lost-go {
+  margin-top: 0.5rem;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 1.75rem;
+  border-radius: 0.6rem;
+  font-weight: 700;
+  color: var(--fg-on-brand);
+  background-image: var(--brand-gradient);
+  box-shadow: var(--shadow-brand);
 }
 </style>

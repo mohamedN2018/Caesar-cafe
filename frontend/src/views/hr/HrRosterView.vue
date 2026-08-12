@@ -26,6 +26,7 @@ import UiEmpty from '@/components/ui/UiEmpty.vue'
 import UiIcon from '@/components/ui/UiIcon.vue'
 import UiInput from '@/components/ui/UiInput.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
+import { ARABIC_LATIN_DIGITS } from '@/lib/format'
 import { useAuthStore } from '@/stores/auth'
 
 interface Pattern {
@@ -96,7 +97,7 @@ const days = computed(() => {
     d.setDate(d.getDate() + i)
     out.push({
       iso: isoDate(d),
-      label: d.toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric', month: 'short' }),
+      label: d.toLocaleDateString(ARABIC_LATIN_DIGITS, { weekday: 'short', day: 'numeric', month: 'short' }),
       isToday: isoDate(d) === today,
     })
   }
