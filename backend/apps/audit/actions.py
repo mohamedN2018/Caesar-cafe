@@ -82,6 +82,13 @@ ACTIONS: tuple[ActionDef, ...] = (
     # badge stop working" needs an answer.
     _a("staff.badge_issued", "staff", "إصدار بطاقة دخول", Severity.WARNING),
     _a("staff.user_deactivated", "staff", "إيقاف مستخدم", Severity.WARNING),
+    # ── HR ───────────────────────────────────────────────────────────────────
+    # An amendment is WARNING, a step above a late arrival: moving somebody's
+    # clock-in moves their wage, which puts it in the class of a price override
+    # rather than the class of routine edits. Lateness is NOTICE — routine, and
+    # the thing a pattern of complaints is eventually checked against.
+    _a("hr.attendance_late", "hr", "تأخير في الحضور", Severity.NOTICE),
+    _a("hr.attendance_amended", "hr", "تعديل سجل حضور", Severity.WARNING),
     # ── Licensing ────────────────────────────────────────────────────────────
     _a("license.created", "licensing", "إنشاء ترخيص", Severity.NOTICE),
     _a("license.activated", "licensing", "تفعيل جهاز", Severity.NOTICE),

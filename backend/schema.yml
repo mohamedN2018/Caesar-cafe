@@ -2432,6 +2432,805 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/hr/attendance/:
+    get:
+      operationId: hr_attendance_list
+      description: |-
+        The punches.
+
+        `http_method_names` has no `post`, `put`, `patch` or `delete`. Attendance is
+        created by a punch and corrected by an amendment, both of which are explicit
+        actions with their own permission — a generic writable endpoint would let a
+        row be edited with no reason recorded and nobody's name on it, which is the
+        one thing this model exists to prevent.
+      parameters:
+      - in: query
+        name: business_date
+        schema:
+          type: string
+          format: date
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - hr
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedAttendanceList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/hr/attendance/{id}/:
+    get:
+      operationId: hr_attendance_retrieve
+      description: |-
+        The punches.
+
+        `http_method_names` has no `post`, `put`, `patch` or `delete`. Attendance is
+        created by a punch and corrected by an amendment, both of which are explicit
+        actions with their own permission — a generic writable endpoint would let a
+        row be edited with no reason recorded and nobody's name on it, which is the
+        one thing this model exists to prevent.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا attendance.
+        required: true
+      tags:
+      - hr
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Attendance'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/hr/attendance/{id}/amend/:
+    post:
+      operationId: hr_attendance_amend_create
+      summary: Correct a punch, without erasing it
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - hr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmendRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AmendRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AmendRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Attendance'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/hr/attendance/{id}/events/:
+    get:
+      operationId: hr_attendance_events_retrieve
+      description: |-
+        How this row got to its current values.
+
+        Available to `hr.view` rather than `audit.view` on purpose: a shift leader
+        settling an argument about Tuesday needs this one person's history, and
+        granting them the organisation-wide audit trail to get it would be a much
+        larger permission than the question requires.
+      summary: A person's punch history
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا attendance.
+        required: true
+      tags:
+      - hr
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/AttendanceEvent'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/hr/patterns/:
+    get:
+      operationId: hr_patterns_list
+      description: Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠".
+      parameters:
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      tags:
+      - hr
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedWorkPatternList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: hr_patterns_create
+      description: Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠".
+      tags:
+      - hr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkPatternRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WorkPatternRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkPatternRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/WorkPattern'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/hr/patterns/{id}/:
+    get:
+      operationId: hr_patterns_retrieve
+      description: Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠".
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا work pattern.
+        required: true
+      tags:
+      - hr
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/WorkPattern'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: hr_patterns_update
+      description: Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠".
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا work pattern.
+        required: true
+      tags:
+      - hr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkPatternRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WorkPatternRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkPatternRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/WorkPattern'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: hr_patterns_partial_update
+      description: Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠".
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا work pattern.
+        required: true
+      tags:
+      - hr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkPatternRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkPatternRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkPatternRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/WorkPattern'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: hr_patterns_destroy
+      description: Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠".
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا work pattern.
+        required: true
+      tags:
+      - hr
+      responses:
+        '204':
+          description: No response body
+  /api/v1/hr/punch/{kind}/:
+    post:
+      operationId: hr_punch_create
+      description: |-
+        Recording arrivals and departures.
+
+        Separate from the read-only viewset above because these are actions rather
+        than writes to a row, and because they carry a different permission.
+      summary: Record an arrival
+      parameters:
+      - in: path
+        name: kind
+        schema:
+          type: string
+        required: true
+      tags:
+      - hr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PunchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PunchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PunchRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/Attendance'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/hr/roster/:
+    get:
+      operationId: hr_roster_list
+      description: 'The rota: one person, one business day, one pattern.'
+      parameters:
+      - in: query
+        name: business_date
+        schema:
+          type: string
+          format: date
+      - name: cursor
+        required: false
+        in: query
+        description: قيمة المؤشر للتقسيم.
+        schema:
+          type: string
+      - name: ordering
+        required: false
+        in: query
+        description: أي حقل يجب استخدامه عند ترتيب النتائج.
+        schema:
+          type: string
+      - name: page_size
+        required: false
+        in: query
+        description: عدد النتائج التي يجب إرجاعها في كل صفحة.
+        schema:
+          type: integer
+      - in: query
+        name: pattern
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: مصطلح البحث.
+        schema:
+          type: string
+      - in: query
+        name: user
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - hr
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/PaginatedWorkShiftList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: hr_roster_create
+      description: 'The rota: one person, one business day, one pattern.'
+      tags:
+      - hr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkShiftRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WorkShiftRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkShiftRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/WorkShift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/hr/roster/{id}/:
+    get:
+      operationId: hr_roster_retrieve
+      description: 'The rota: one person, one business day, one pattern.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا work shift.
+        required: true
+      tags:
+      - hr
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/WorkShift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    put:
+      operationId: hr_roster_update
+      description: 'The rota: one person, one business day, one pattern.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا work shift.
+        required: true
+      tags:
+      - hr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkShiftRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WorkShiftRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WorkShiftRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/WorkShift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: hr_roster_partial_update
+      description: 'The rota: one person, one business day, one pattern.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا work shift.
+        required: true
+      tags:
+      - hr
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkShiftRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkShiftRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedWorkShiftRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/WorkShift'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: hr_roster_destroy
+      description: 'The rota: one person, one business day, one pattern.'
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا work shift.
+        required: true
+      tags:
+      - hr
+      responses:
+        '204':
+          description: No response body
+  /api/v1/hr/timesheet/:
+    get:
+      operationId: hr_timesheet_list
+      description: |-
+        Hours per person over a range, computed on every read.
+
+        `reports.employees` as well as `hr.view`: this is the screen a wage is
+        calculated from, and it is the same class of information as the employee
+        performance report that permission already guards.
+      summary: Attendance totals per person
+      tags:
+      - hr
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TimesheetRow'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/inventory/adjustments/:
     post:
       operationId: inventory_adjustments_create
@@ -9204,6 +10003,117 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - ar
+          - en
+      tags:
+      - schema
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/yaml:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/settings/:
     get:
       operationId: settings_retrieve
@@ -10996,6 +11906,23 @@ components:
       - item
       - new_quantity
       - reason
+    AmendRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 200
+        checked_in_at:
+          type: string
+          format: date-time
+          nullable: true
+        checked_out_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - reason
     ApplyResult:
       type: object
       properties:
@@ -11066,6 +11993,139 @@ components:
           type: boolean
       required:
       - name_ar
+    Attendance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+          readOnly: true
+        user_name:
+          type: string
+          readOnly: true
+        business_date:
+          type: string
+          format: date
+          readOnly: true
+        shift:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        pattern_name:
+          type: string
+          readOnly: true
+        checked_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+        checked_out_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        amended_in_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        amended_out_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        amendment_reason:
+          type: string
+          readOnly: true
+        effective_in:
+          type: string
+          format: date-time
+          readOnly: true
+        effective_out:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        worked_minutes:
+          type: integer
+          readOnly: true
+          nullable: true
+        late_minutes:
+          type: integer
+          readOnly: true
+        is_open:
+          type: boolean
+          readOnly: true
+        is_amended:
+          type: boolean
+          readOnly: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+      required:
+      - amended_in_at
+      - amended_out_at
+      - amendment_reason
+      - business_date
+      - checked_in_at
+      - checked_out_at
+      - effective_in
+      - effective_out
+      - id
+      - is_amended
+      - is_open
+      - late_minutes
+      - note
+      - pattern_name
+      - shift
+      - source
+      - user
+      - user_name
+      - worked_minutes
+    AttendanceEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/AttendanceEventKindEnum'
+          readOnly: true
+        at:
+          type: string
+          format: date-time
+          readOnly: true
+        actor_name:
+          type: string
+          readOnly: true
+        detail:
+          readOnly: true
+      required:
+      - actor_name
+      - at
+      - detail
+      - id
+      - kind
+    AttendanceEventKindEnum:
+      enum:
+      - CHECK_IN
+      - CHECK_OUT
+      - AMENDED
+      type: string
+      description: |-
+        * `CHECK_IN` - CHECK_IN
+        * `CHECK_OUT` - CHECK_OUT
+        * `AMENDED` - AMENDED
     AuditAction:
       type: object
       description: The catalogue, so the UI can build its filter without hardcoding
@@ -13771,6 +14831,25 @@ components:
         * `PARTIAL` - PARTIAL
         * `RECEIVED` - RECEIVED
         * `CANCELLED` - CANCELLED
+    PaginatedAttendanceList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Attendance'
     PaginatedChildList:
       type: object
       required:
@@ -13999,6 +15078,44 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Supplier'
+    PaginatedWorkPatternList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkPattern'
+    PaginatedWorkShiftList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkShift'
     PatchedAreaRequest:
       type: object
       properties:
@@ -14614,6 +15731,41 @@ components:
           minimum: 0
         is_active:
           type: boolean
+    PatchedWorkPatternRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        starts_at:
+          type: string
+          format: time
+        ends_at:
+          type: string
+          format: time
+        grace_minutes:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        is_active:
+          type: boolean
+    PatchedWorkShiftRequest:
+      type: object
+      properties:
+        user:
+          type: string
+          format: uuid
+        pattern:
+          type: string
+          format: uuid
+        business_date:
+          type: string
+          format: date
+        note:
+          type: string
+          maxLength: 200
     Payment:
       type: object
       properties:
@@ -15546,6 +16698,27 @@ components:
       - cursor
       - has_more
       - stream
+    PunchRequest:
+      type: object
+      description: |-
+        A manager recording somebody else's punch.
+
+        `user` is required and `at` is optional: the common case is "she is standing
+        here now", and making the manager type a timestamp for it would be a step
+        that exists only because the API wanted one.
+      properties:
+        user:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+          nullable: true
+        note:
+          type: string
+          maxLength: 200
+      required:
+      - user
     PurchaseOrder:
       type: object
       properties:
@@ -16746,6 +17919,16 @@ components:
         * `OPEN` - OPEN
         * `CLOSING` - CLOSING
         * `CLOSED` - CLOSED
+    SourceEnum:
+      enum:
+      - TERMINAL
+      - MANAGER
+      - AMENDED
+      type: string
+      description: |-
+        * `TERMINAL` - TERMINAL
+        * `MANAGER` - MANAGER
+        * `AMENDED` - AMENDED
     Staff:
       type: object
       properties:
@@ -17766,6 +18949,41 @@ components:
       - note
       - quantity
       - ready_at
+    TimesheetRow:
+      type: object
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        name_ar:
+          type: string
+        scheduled_days:
+          type: integer
+        present_days:
+          type: integer
+        absent_days:
+          type: integer
+        late_days:
+          type: integer
+        late_minutes:
+          type: integer
+        worked_minutes:
+          type: integer
+        overtime_minutes:
+          type: integer
+        open_punches:
+          type: integer
+      required:
+      - absent_days
+      - late_days
+      - late_minutes
+      - name_ar
+      - open_punches
+      - overtime_minutes
+      - present_days
+      - scheduled_days
+      - user_id
+      - worked_minutes
     TokenPair:
       type: object
       properties:
@@ -17939,6 +19157,127 @@ components:
       - average_ticket
       - net_sales
       - order_count
+    WorkPattern:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name_ar:
+          type: string
+          maxLength: 100
+        starts_at:
+          type: string
+          format: time
+        ends_at:
+          type: string
+          format: time
+        grace_minutes:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        crosses_midnight:
+          type: boolean
+          readOnly: true
+        scheduled_minutes:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+      required:
+      - crosses_midnight
+      - ends_at
+      - id
+      - name_ar
+      - scheduled_minutes
+      - starts_at
+    WorkPatternRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          minLength: 1
+          maxLength: 100
+        starts_at:
+          type: string
+          format: time
+        ends_at:
+          type: string
+          format: time
+        grace_minutes:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+          nullable: true
+        is_active:
+          type: boolean
+      required:
+      - ends_at
+      - name_ar
+      - starts_at
+    WorkShift:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        user:
+          type: string
+          format: uuid
+        user_name:
+          type: string
+          readOnly: true
+        pattern:
+          type: string
+          format: uuid
+        pattern_name:
+          type: string
+          readOnly: true
+        starts_at:
+          type: string
+          format: time
+          readOnly: true
+        ends_at:
+          type: string
+          format: time
+          readOnly: true
+        business_date:
+          type: string
+          format: date
+        note:
+          type: string
+          maxLength: 200
+      required:
+      - business_date
+      - ends_at
+      - id
+      - pattern
+      - pattern_name
+      - starts_at
+      - user
+      - user_name
+    WorkShiftRequest:
+      type: object
+      properties:
+        user:
+          type: string
+          format: uuid
+        pattern:
+          type: string
+          format: uuid
+        business_date:
+          type: string
+          format: date
+        note:
+          type: string
+          maxLength: 200
+      required:
+      - business_date
+      - pattern
+      - user
     ErrorEnvelope:
       type: object
       properties:

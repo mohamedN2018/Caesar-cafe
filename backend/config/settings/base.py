@@ -89,6 +89,7 @@ INSTALLED_APPS = [
     "apps.ops",
     "apps.notifications",
     "apps.printing",
+    "apps.hr",
 ]
 
 AUTH_USER_MODEL = "accounts.User"

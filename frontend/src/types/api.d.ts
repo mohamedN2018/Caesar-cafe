@@ -838,6 +838,221 @@ export interface paths {
         patch: operations["floor_tables_partial_update"];
         trace?: never;
     };
+    "/api/v1/hr/attendance/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The punches.
+         *
+         *     `http_method_names` has no `post`, `put`, `patch` or `delete`. Attendance is
+         *     created by a punch and corrected by an amendment, both of which are explicit
+         *     actions with their own permission — a generic writable endpoint would let a
+         *     row be edited with no reason recorded and nobody's name on it, which is the
+         *     one thing this model exists to prevent.
+         */
+        get: operations["hr_attendance_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/attendance/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description The punches.
+         *
+         *     `http_method_names` has no `post`, `put`, `patch` or `delete`. Attendance is
+         *     created by a punch and corrected by an amendment, both of which are explicit
+         *     actions with their own permission — a generic writable endpoint would let a
+         *     row be edited with no reason recorded and nobody's name on it, which is the
+         *     one thing this model exists to prevent.
+         */
+        get: operations["hr_attendance_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/attendance/{id}/amend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Correct a punch, without erasing it */
+        post: operations["hr_attendance_amend_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/attendance/{id}/events/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * A person's punch history
+         * @description How this row got to its current values.
+         *
+         *     Available to `hr.view` rather than `audit.view` on purpose: a shift leader
+         *     settling an argument about Tuesday needs this one person's history, and
+         *     granting them the organisation-wide audit trail to get it would be a much
+         *     larger permission than the question requires.
+         */
+        get: operations["hr_attendance_events_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/patterns/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠". */
+        get: operations["hr_patterns_list"];
+        put?: never;
+        /** @description Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠". */
+        post: operations["hr_patterns_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/patterns/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠". */
+        get: operations["hr_patterns_retrieve"];
+        /** @description Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠". */
+        put: operations["hr_patterns_update"];
+        post?: never;
+        /** @description Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠". */
+        delete: operations["hr_patterns_destroy"];
+        options?: never;
+        head?: never;
+        /** @description Named sets of hours — "صباحي ٨:٠٠–١٦:٠٠". */
+        patch: operations["hr_patterns_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/hr/punch/{kind}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Record an arrival
+         * @description Recording arrivals and departures.
+         *
+         *     Separate from the read-only viewset above because these are actions rather
+         *     than writes to a row, and because they carry a different permission.
+         */
+        post: operations["hr_punch_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/roster/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The rota: one person, one business day, one pattern. */
+        get: operations["hr_roster_list"];
+        put?: never;
+        /** @description The rota: one person, one business day, one pattern. */
+        post: operations["hr_roster_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/hr/roster/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The rota: one person, one business day, one pattern. */
+        get: operations["hr_roster_retrieve"];
+        /** @description The rota: one person, one business day, one pattern. */
+        put: operations["hr_roster_update"];
+        post?: never;
+        /** @description The rota: one person, one business day, one pattern. */
+        delete: operations["hr_roster_destroy"];
+        options?: never;
+        head?: never;
+        /** @description The rota: one person, one business day, one pattern. */
+        patch: operations["hr_roster_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/hr/timesheet/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Attendance totals per person
+         * @description Hours per person over a range, computed on every read.
+         *
+         *     `reports.employees` as well as `hr.view`: this is the screen a wage is
+         *     calculated from, and it is the same class of information as the employee
+         *     performance report that permission already guards.
+         */
+        get: operations["hr_timesheet_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/inventory/adjustments/": {
         parameters: {
             query?: never;
@@ -3394,6 +3609,28 @@ export interface paths {
         patch: operations["roles_partial_update"];
         trace?: never;
     };
+    "/api/v1/schema/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description OpenApi3 schema for this API. Format can be selected via content negotiation.
+         *
+         *     - YAML: application/vnd.oai.openapi
+         *     - JSON: application/vnd.oai.openapi+json
+         */
+        get: operations["schema_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/settings/": {
         parameters: {
             query?: never;
@@ -4119,6 +4356,13 @@ export interface components {
             new_quantity: string;
             reason: string;
         };
+        AmendRequest: {
+            reason: string;
+            /** Format: date-time */
+            checked_in_at?: string | null;
+            /** Format: date-time */
+            checked_out_at?: string | null;
+        };
         ApplyResult: {
             applied: string[];
             /** @description Already recorded — a replay, not an error. */
@@ -4145,6 +4389,53 @@ export interface components {
             sort_order?: number;
             is_active?: boolean;
         };
+        Attendance: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly user: string;
+            readonly user_name: string;
+            /** Format: date */
+            readonly business_date: string;
+            /** Format: uuid */
+            readonly shift: string | null;
+            readonly pattern_name: string;
+            /** Format: date-time */
+            readonly checked_in_at: string;
+            /** Format: date-time */
+            readonly checked_out_at: string | null;
+            /** Format: date-time */
+            readonly amended_in_at: string | null;
+            /** Format: date-time */
+            readonly amended_out_at: string | null;
+            readonly amendment_reason: string;
+            /** Format: date-time */
+            readonly effective_in: string;
+            /** Format: date-time */
+            readonly effective_out: string | null;
+            readonly worked_minutes: number | null;
+            readonly late_minutes: number;
+            readonly is_open: boolean;
+            readonly is_amended: boolean;
+            readonly source: components["schemas"]["SourceEnum"];
+            readonly note: string;
+        };
+        AttendanceEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["AttendanceEventKindEnum"];
+            /** Format: date-time */
+            readonly at: string;
+            readonly actor_name: string;
+            readonly detail: unknown;
+        };
+        /**
+         * @description * `CHECK_IN` - CHECK_IN
+         *     * `CHECK_OUT` - CHECK_OUT
+         *     * `AMENDED` - AMENDED
+         * @enum {string}
+         */
+        AttendanceEventKindEnum: "CHECK_IN" | "CHECK_OUT" | "AMENDED";
         /** @description The catalogue, so the UI can build its filter without hardcoding codes. */
         AuditAction: {
             code: string;
@@ -5283,6 +5574,19 @@ export interface components {
          * @enum {string}
          */
         POStatusEnum: "DRAFT" | "SUBMITTED" | "PARTIAL" | "RECEIVED" | "CANCELLED";
+        PaginatedAttendanceList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["Attendance"][];
+        };
         PaginatedChildList: {
             /**
              * Format: uri
@@ -5438,6 +5742,32 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Supplier"][];
+        };
+        PaginatedWorkPatternList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["WorkPattern"][];
+        };
+        PaginatedWorkShiftList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["WorkShift"][];
         };
         PatchedAreaRequest: {
             /** @description الصالة / التراس / صالة الأطفال */
@@ -5712,6 +6042,24 @@ export interface components {
             span_y?: number;
             rotation?: number;
             is_active?: boolean;
+        };
+        PatchedWorkPatternRequest: {
+            name_ar?: string;
+            /** Format: time */
+            starts_at?: string;
+            /** Format: time */
+            ends_at?: string;
+            grace_minutes?: number | null;
+            is_active?: boolean;
+        };
+        PatchedWorkShiftRequest: {
+            /** Format: uuid */
+            user?: string;
+            /** Format: uuid */
+            pattern?: string;
+            /** Format: date */
+            business_date?: string;
+            note?: string;
         };
         Payment: {
             /** Format: uuid */
@@ -6118,6 +6466,20 @@ export interface components {
             cursor: number;
             has_more: boolean;
             changes: components["schemas"]["Change"][];
+        };
+        /**
+         * @description A manager recording somebody else's punch.
+         *
+         *     `user` is required and `at` is optional: the common case is "she is standing
+         *     here now", and making the manager type a timestamp for it would be a step
+         *     that exists only because the API wanted one.
+         */
+        PunchRequest: {
+            /** Format: uuid */
+            user: string;
+            /** Format: date-time */
+            at?: string | null;
+            note?: string;
         };
         PurchaseOrder: {
             /** Format: uuid */
@@ -6624,6 +6986,13 @@ export interface components {
          * @enum {string}
          */
         ShiftStatusEnum: "OPEN" | "CLOSING" | "CLOSED";
+        /**
+         * @description * `TERMINAL` - TERMINAL
+         *     * `MANAGER` - MANAGER
+         *     * `AMENDED` - AMENDED
+         * @enum {string}
+         */
+        SourceEnum: "TERMINAL" | "MANAGER" | "AMENDED";
         Staff: {
             /** Format: uuid */
             readonly id: string;
@@ -7035,6 +7404,19 @@ export interface components {
             /** Format: date-time */
             ready_at: string | null;
         };
+        TimesheetRow: {
+            /** Format: uuid */
+            user_id: string;
+            name_ar: string;
+            scheduled_days: number;
+            present_days: number;
+            absent_days: number;
+            late_days: number;
+            late_minutes: number;
+            worked_minutes: number;
+            overtime_minutes: number;
+            open_punches: number;
+        };
         TokenPair: {
             access: string;
             refresh: string;
@@ -7105,6 +7487,54 @@ export interface components {
             net_sales: string;
             order_count: number;
             average_ticket: string;
+        };
+        WorkPattern: {
+            /** Format: uuid */
+            readonly id: string;
+            name_ar: string;
+            /** Format: time */
+            starts_at: string;
+            /** Format: time */
+            ends_at: string;
+            grace_minutes?: number | null;
+            readonly crosses_midnight: boolean;
+            readonly scheduled_minutes: number;
+            is_active?: boolean;
+        };
+        WorkPatternRequest: {
+            name_ar: string;
+            /** Format: time */
+            starts_at: string;
+            /** Format: time */
+            ends_at: string;
+            grace_minutes?: number | null;
+            is_active?: boolean;
+        };
+        WorkShift: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            user: string;
+            readonly user_name: string;
+            /** Format: uuid */
+            pattern: string;
+            readonly pattern_name: string;
+            /** Format: time */
+            readonly starts_at: string;
+            /** Format: time */
+            readonly ends_at: string;
+            /** Format: date */
+            business_date: string;
+            note?: string;
+        };
+        WorkShiftRequest: {
+            /** Format: uuid */
+            user: string;
+            /** Format: uuid */
+            pattern: string;
+            /** Format: date */
+            business_date: string;
+            note?: string;
         };
         ErrorEnvelope: {
             /** @enum {boolean} */
@@ -8907,6 +9337,589 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["Table"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_attendance_list: {
+        parameters: {
+            query?: {
+                business_date?: string;
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+                user?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedAttendanceList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_attendance_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا attendance. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Attendance"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_attendance_amend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AmendRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AmendRequest"];
+                "multipart/form-data": components["schemas"]["AmendRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Attendance"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_attendance_events_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا attendance. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["AttendanceEvent"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_patterns_list: {
+        parameters: {
+            query?: {
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                is_active?: boolean;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                /** @description مصطلح البحث. */
+                search?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedWorkPatternList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_patterns_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkPatternRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["WorkPatternRequest"];
+                "multipart/form-data": components["schemas"]["WorkPatternRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["WorkPattern"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_patterns_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا work pattern. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["WorkPattern"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_patterns_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا work pattern. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkPatternRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["WorkPatternRequest"];
+                "multipart/form-data": components["schemas"]["WorkPatternRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["WorkPattern"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_patterns_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا work pattern. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    hr_patterns_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا work pattern. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedWorkPatternRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedWorkPatternRequest"];
+                "multipart/form-data": components["schemas"]["PatchedWorkPatternRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["WorkPattern"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_punch_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                kind: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PunchRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PunchRequest"];
+                "multipart/form-data": components["schemas"]["PunchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Attendance"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_roster_list: {
+        parameters: {
+            query?: {
+                business_date?: string;
+                /** @description قيمة المؤشر للتقسيم. */
+                cursor?: string;
+                /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
+                ordering?: string;
+                /** @description عدد النتائج التي يجب إرجاعها في كل صفحة. */
+                page_size?: number;
+                pattern?: string;
+                /** @description مصطلح البحث. */
+                search?: string;
+                user?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["PaginatedWorkShiftList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_roster_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkShiftRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["WorkShiftRequest"];
+                "multipart/form-data": components["schemas"]["WorkShiftRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["WorkShift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_roster_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا work shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["WorkShift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_roster_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا work shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["WorkShiftRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["WorkShiftRequest"];
+                "multipart/form-data": components["schemas"]["WorkShiftRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["WorkShift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_roster_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا work shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    hr_roster_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا work shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedWorkShiftRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedWorkShiftRequest"];
+                "multipart/form-data": components["schemas"]["PatchedWorkShiftRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["WorkShift"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    hr_timesheet_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["TimesheetRow"][];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;
@@ -13946,6 +14959,71 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["Role"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    schema_retrieve: {
+        parameters: {
+            query?: {
+                format?: "json" | "yaml";
+                lang?: "ar" | "en";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/vnd.oai.openapi": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: {
+                            [key: string]: unknown;
+                        };
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                    "application/yaml": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: {
+                            [key: string]: unknown;
+                        };
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                    "application/vnd.oai.openapi+json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: {
+                            [key: string]: unknown;
+                        };
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: {
+                            [key: string]: unknown;
+                        };
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

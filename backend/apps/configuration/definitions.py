@@ -1257,3 +1257,59 @@ register(
     label_en="Quiet hours",
     help_ar="مثل 02:00-09:00. التنبيهات تُسجَّل ولا تُرسَل خلالها — عدا فشل النسخ الاحتياطي.",
 )
+
+# ── HR ───────────────────────────────────────────────────────────────────────
+# Every threshold here is a setting rather than a constant for the reason C10
+# exists: "late" is a different number in a cafe with a 6am bakery shift than in
+# one that opens at noon, and a hardcoded fifteen minutes would be wrong in one
+# of them with no way to say so.
+
+register(
+    key="hr.grace_minutes",
+    type=SettingType.INTEGER,
+    default=10,
+    scope=Scope.BRANCH,
+    group="hr",
+    label_ar="سماح التأخير (دقيقة)",
+    label_en="Lateness grace period",
+    help_ar=(
+        "التأخير داخل هذه المدة لا يُحسب تأخيراً. نمط الوردية يمكنه تجاوزها — "
+        "وردية توصيل تبدأ بوصول السيارة ليست كوردية كاشير أمامها طابور."
+    ),
+)
+register(
+    key="hr.overtime_after_minutes",
+    type=SettingType.INTEGER,
+    default=540,
+    scope=Scope.BRANCH,
+    group="hr",
+    label_ar="بداية الوقت الإضافي (دقيقة)",
+    label_en="Overtime threshold",
+    help_ar="ما زاد عن ذلك في اليوم الواحد يُحسب إضافياً. ٥٤٠ = تسع ساعات.",
+)
+register(
+    key="hr.missing_checkout_hours",
+    type=SettingType.INTEGER,
+    default=14,
+    scope=Scope.BRANCH,
+    group="hr",
+    label_ar="تنبيه انصراف غير مسجَّل (ساعة)",
+    label_en="Missing check-out alert",
+    help_ar=(
+        "حضور مفتوح أطول من ذلك يرفع تنبيهاً لشخص يسأل. لا شيء يُقفل تلقائياً: "
+        "الإقفال التلقائي يسجّل أن أحداً انصرف ولم يره أحد."
+    ),
+)
+register(
+    key="hr.allow_punch_without_shift",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="hr",
+    label_ar="السماح بالحضور بدون وردية مسجلة",
+    label_en="Allow attendance with no rostered shift",
+    help_ar=(
+        "الافتراضي مسموح: من جاء ليغطي غياب زميل يجب أن يُسجَّل حضوره، ورفض "
+        "التسجيل لا يمنع الحضور — يمنع الأثر فقط."
+    ),
+)

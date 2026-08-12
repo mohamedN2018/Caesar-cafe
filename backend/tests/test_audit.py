@@ -37,6 +37,29 @@ pytestmark = pytest.mark.django_db
 _sequence = itertools.count(1)
 
 
+def _at(branch, business_date, *, hour: int, minute: int = 0):
+    """
+    An aware instant on a business date, at a wall-clock hour.
+
+    Built through the branch's own boundary rather than with `combine` alone: a
+    cafe whose day starts at 06:00 has an 02:00 belonging to the previous
+    business date, and a test that ignored that would assert against a day the
+    product does not agree with.
+    """
+    from datetime import datetime, timedelta
+
+    from apps.reporting import business_day
+
+    boundary = business_day.boundary_for(branch)
+    calendar_date = business_date
+    if hour < boundary.hour:
+        calendar_date = business_date + timedelta(days=1)
+    return timezone.make_aware(
+        datetime.combine(calendar_date, datetime.min.time()).replace(hour=hour, minute=minute),
+        timezone.get_current_timezone(),
+    )
+
+
 # ── fixtures ─────────────────────────────────────────────────────────────────
 
 
@@ -797,6 +820,54 @@ class TestCatalogueCoverage:
         with pytest.raises(backups.BackupFailed):
             backups.restore(record.filename, confirmed=True)
         self._assert("system.restore_performed")
+
+    def test_hr(self, branch, make_user) -> None:
+        """
+        Lateness and an amendment, through the real services.
+
+        Both matter to a wage, which is why they are audited at all. The
+        amendment is WARNING rather than NOTICE: a manager who can move a
+        clock-in can move what somebody gets paid, and the reason they gave has
+        to be in the trail beside it.
+        """
+        from datetime import timedelta
+
+        from apps.hr import services as hr
+        from apps.hr.models import WorkPattern, WorkShift
+        from apps.reporting import business_day
+
+        user = make_user(email="late@caesar.test", full_name_ar="منى سعيد")
+        pattern = WorkPattern.objects.create(
+            organization=branch.organization,
+            branch=branch,
+            name_ar="صباحي",
+            starts_at="08:00",
+            ends_at="16:00",
+            grace_minutes=0,
+        )
+        today = business_day.today(branch)
+        WorkShift.objects.create(
+            organization=branch.organization,
+            branch=branch,
+            user=user,
+            pattern=pattern,
+            business_date=today,
+        )
+
+        # An hour late against a zero-grace pattern.
+        attendance = hr.check_in(user=user, branch=branch, at=_at(branch, today, hour=9))
+        self._assert("hr.attendance_late")
+
+        hr.amend(
+            attendance=attendance,
+            reason="عطل في الباب الإلكتروني",
+            actor=make_user(email="mgr@caesar.test", role="BRANCH_MANAGER"),
+            new_in=attendance.checked_in_at - timedelta(hours=1),
+        )
+        row = self._assert("hr.attendance_amended")
+        assert row.severity == Severity.WARNING
+        # The original punch survives in the diff, or the correction is invisible.
+        assert row.before["in"] != row.after["in"]
 
     def test_zz_every_catalogued_action_was_produced(self) -> None:
         """

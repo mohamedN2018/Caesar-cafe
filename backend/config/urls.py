@@ -38,6 +38,7 @@ api_v1 = [
     path("ops/", include("apps.ops.urls")),
     path("notifications/", include("apps.notifications.urls")),
     path("printers/", include("apps.printing.urls")),
+    path("hr/", include("apps.hr.urls")),
     path("settings/", include("apps.configuration.urls")),
 ]
 

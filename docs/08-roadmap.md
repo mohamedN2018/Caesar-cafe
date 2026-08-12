@@ -1693,6 +1693,85 @@ closing up and pulling a report — "last 7 days" silently started a day early.
 
 ---
 
+## HR, part 1 — الحضور والانصراف ✅ BACKEND COMPLETE (2026-08-12)
+
+**Verified:** ruff + `format --check` clean · **33 new attendance tests** · mypy at the documented
+86-error baseline with none new · `makemigrations --check` clean · `spectacular --fail-on-warn`
+clean · `vue-tsc`, `eslint`, 34 frontend tests and the production build clean against the
+regenerated types.
+
+The first of three HR increments. Payroll and advances come next, then leave; attendance is first
+because the other two read from it — a payslip needs hours before it can be anything but a typed
+number.
+
+### `WorkShift` is not `shifts.Shift`, and this paragraph is why
+
+`shifts.Shift` is a **cash drawer**: it opens with a float, closes with a count, produces a variance.
+`hr.WorkShift` is a **rota slot**: a person, a business date, and the hours they were expected. A
+waiter has a work shift and never touches a drawer; a manager may open three drawers inside one work
+shift. Merging them would put a cash variance against a waiter and leave the kitchen off the rota
+entirely, so they are separate tables and the module docstring says so at the top.
+
+### The governing rule, borrowed from inventory
+
+**`Attendance` is what happened; the timesheet is a projection.** Hours, lateness and overtime are
+computed from the punches on every read and never stored as columns. A cafe argues about wages, and
+"the system says 8 hours but the punches say 7:12" is an argument nobody can win. The cost is a
+recomputation per request; the benefit is that an amendment is reflected the moment it is made, with
+nothing to rebuild and nothing that can drift.
+
+### Three decisions that went against the convenient option
+
+1. **Nothing closes an open punch.** The kids area settled the same question the same way: an
+   automatic close records somebody as having gone home when nobody saw them leave, and a wage
+   computed from an invented departure is worse than a gap a human is asked about.
+   `hr.missing_checkout_hours` surfaces it for a person to go and look.
+
+2. **A correction never overwrites a punch.** `amended_in_at` sits *beside* `checked_in_at`, with a
+   required reason and the amender's name, so "he clocked in at 09:40 and the manager made it 09:00"
+   is still answerable a month later when the manager has left. Audited at WARNING — a step above a
+   late arrival, because moving a clock-in moves a wage, which is the same class as a price override
+   rather than a routine edit.
+
+3. **`Attendance` has no writable endpoint at all.** `http_method_names` omits POST, PATCH and
+   DELETE rather than catching them in a handler. A row is created by a punch and corrected by an
+   amendment, both explicit actions carrying their own permission; a generic writable resource would
+   let a wage be changed with no reason recorded and nobody's name on it, which is the one thing the
+   model exists to prevent.
+
+`hr.amend_attendance` is split from `hr.manage_roster` for the reason the purchasing codes are
+split: the person who writes next week's rota is very often not the person who should be able to
+rewrite last week's hours. The accountant holds `hr.view` and nothing else — they compute wages from
+these hours and must not be able to change the hours they are computing from.
+
+### The bug the tests found, which was real
+
+A 22:00–06:00 night shift. `check_out` looked the punch up by the business date of the moment it was
+called — and with the default `finance.business_day_start` of **04:00**, the arrival is filed under
+Tuesday while the departure happens during Wednesday. So the night staff could not clock out at all:
+the row was under yesterday and the query asked about today. It closes the **open** punch regardless
+of date now. You clock out of whatever you clocked into.
+
+A punch left open longer than `hr.missing_checkout_hours` is refused rather than closed, because
+closing it would write a twenty-hour shift into somebody's wage silently. That case is a forgotten
+check-out from a previous day, the alert has already raised it, and the remedy is an amendment with
+a reason on it — not a departure time that happens to be when the next person remembered.
+
+And a test-design bug worth recording beside it. The helper that built instants worked the calendar
+date out by comparing the hour against the boundary, which reads as clever and is wrong: with a
+04:00 boundary an 05:00 belongs to the *same* calendar day as a 22:00, so "in at 22:00, out at
+05:00" silently became a seven-hour shift that ran backwards. It takes an explicit `next_day` now. A
+test helper that quietly disagrees with the clock is worse than a parameter.
+
+### Still outstanding on this increment
+
+The Web Admin screens — the attendance board, the rota editor and the monthly timesheet. The API and
+its rules are complete and tested; nothing renders them yet, which is the same gap Phase 4 and
+Phase 5 each had between a domain and its surface, and it is named here rather than left to be
+discovered.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

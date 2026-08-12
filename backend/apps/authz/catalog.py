@@ -122,6 +122,20 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     _p("staff.manage_users", "staff", "إدارة المستخدمين", sensitive=True),
     _p("staff.manage_roles", "staff", "إدارة الأدوار والصلاحيات", sensitive=True),
     _p("staff.reset_pin", "staff", "إعادة تعيين رمز الدخول", sensitive=True),
+    # ── HR ───────────────────────────────────────────────────────────────────
+    # `hr.view` is separate from `staff.view` because they answer different
+    # questions: staff.view is "who works here and what may they do", hr.view is
+    # "when were they here". A shift leader building next week's rota needs the
+    # second and has no business reading role assignments.
+    #
+    # `hr.amend_attendance` is split from `hr.manage_roster` deliberately. Moving
+    # somebody's clock-in changes what they get paid; moving them to Tuesday does
+    # not. The person who writes the rota is very often not the person who should
+    # be able to rewrite history.
+    _p("hr.view", "hr", "عرض الحضور والجدول"),
+    _p("hr.manage_roster", "hr", "إدارة جدول الورديات"),
+    _p("hr.record_attendance", "hr", "تسجيل حضور وانصراف"),
+    _p("hr.amend_attendance", "hr", "تعديل سجل الحضور", sensitive=True),
     # ── Branch & devices ─────────────────────────────────────────────────────
     _p("branch.view", "branch", "عرض بيانات الفرع"),
     _p("branch.edit_settings", "branch", "تعديل إعدادات الفرع", sensitive=True),
@@ -244,6 +258,10 @@ SYSTEM_ROLES: dict[str, dict] = {
             "staff.view",
             "staff.manage_users",
             "staff.reset_pin",
+            "hr.view",
+            "hr.manage_roster",
+            "hr.record_attendance",
+            "hr.amend_attendance",
             "branch.view",
             "branch.edit_settings",
             "branch.manage_tables",
@@ -379,6 +397,9 @@ SYSTEM_ROLES: dict[str, dict] = {
             "kitchen.view",
             "kids.view",
             "staff.view",
+            # Read-only. The accountant computes wages from the hours and must
+            # never be able to change the hours they are computing from.
+            "hr.view",
             "devices.view",
             "licenses.view",
             "sync.view",
