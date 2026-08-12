@@ -1961,6 +1961,104 @@ which would clip the last entries, and the last entries are Settings and Backups
 
 ---
 
+## Web-only: the Desktop is cancelled and the browser inherits its job 🟡 IN PROGRESS (2026-08-12)
+
+**The owner has cancelled the PySide6 Desktop client.** Everything is the Web app, and the Web app
+has to keep selling with the internet down.
+
+### This reverses a named commitment, and the reversal is correct
+
+`apps/accounts/services.py` states the old position plainly:
+
+> The Desktop matches against its own mirror so it keeps selling with the network down; **a browser
+> tab with no network is not a point of sale**, so it asks the server and gets a real answer instead
+> of a cached one.
+
+That was right *while the Desktop existed*. It was never an argument that browsers cannot sell
+offline — it was an argument that they did not need to, because something else did. Remove the
+Desktop and the premise goes with it: the choice is no longer "browser offline vs Desktop offline",
+it is "browser offline vs **the cafe stops taking money during an outage**". Egyptian mobile data
+being what it is, that is not a tolerable answer.
+
+So the browser becomes the offline client. What it inherits is not a blank page: the Desktop's
+offline engine is built, proven and has ~525 tests describing exactly how it must behave — the
+`m_`/`l_` mirror split, the single-transaction outbox write, jittered backoff, the four-state
+indicator, `SEQUENCE_GAP` self-healing while `ORDER_ALREADY_CLOSED` goes to a human. **That suite is
+the specification for this work**, and the server half of Phase 7 (`/sync/push`, `/sync/pull`,
+`/sync/state`, `ChangeLog`, the `SyncOperation` idempotency gate) is already complete and needs
+nothing.
+
+### The order, and why it is this order
+
+Phases are ordered by how expensive a mistake becomes later — the same principle §63 opens with.
+
+1. **Money.** ✅ done, below. Every later step writes financial records; if the arithmetic is wrong
+   the sync engine faithfully replicates wrong numbers, and that is a data-recovery project rather
+   than a bug fix.
+2. **The local store** — IndexedDB: a read-only mirror of catalog/prices/config, and an outbox. The
+   mirror must be unwritable by the application, for the reason the Desktop states: a terminal that
+   can edit its own copy of a price can charge whatever it likes, and the drift is invisible until a
+   customer complains.
+3. **The outbox contract** — a sale and its outbox row commit in ONE IndexedDB transaction. The
+   Desktop proved this by crashing between the two; without it the sale sits on the machine and the
+   server never hears about it, which reconciles to nothing.
+4. **Push and pull** against the endpoints that already exist, with the jittered backoff. Four
+   terminals sharing one router lose wifi together.
+5. **The app shell** — a service worker that serves the SPA and the mirror offline. Deliberately
+   last of the engine work, because an app that *loads* offline and then loses a sale is worse than
+   one that will not load.
+6. **The till on local state** — the board reads the mirror and folds locally.
+
+Two things that do **not** move: the service worker still never caches an API response (a cached
+`/reports/dashboard/` is yesterday's takings presented as today's), and the server remains the
+authority on every number that matters — the terminal's totals are checked on sync and a
+disagreement lands in `sync_conflicts` where somebody sees it.
+
+### Step 1 — money in the browser ✅ COMPLETE
+
+**Verified:** 25 tests, including all 21 cases of the server's golden file · `vue-tsc`, `eslint`,
+81 frontend tests and `vite build` clean.
+
+`frontend/src/lib/money.ts` is a port of `apps/core/money.py`, operation for operation.
+
+**It is a port and not a vendored copy, and that distinction is the whole risk.** `money.py` is
+copied verbatim into the Desktop and `scripts/vendor_shared.py --check` fails CI on drift. There is
+no artefact to vendor between Python and a browser, so this follows the precedent the floor geometry
+already set — the seat arithmetic exists twice, in TypeScript for CSS and Python for QPainter, "and
+so it is tested twice, and `test_floor_geometry.py` reads the Web's source across the monorepo to
+prove the two still describe the same layouts".
+
+The safeguard here is the same shape: **`money.test.ts` reads
+`backend/tests/fixtures/money_cases.json` across the monorepo** — the server's own file, the one
+`test_money_golden.py` runs. Not a copy in the frontend tree, and there is a test asserting the path
+still points into `backend/` so a well-meaning refactor cannot quietly localise it. A copy of a
+fixture drifts; a shared read does not.
+
+Two details that decide piasters:
+
+- **`decimal.js`, not `number`.** float never touches money. The dependency is justified rather than
+  avoided with integer piasters because the inclusive-VAT path divides by `1 + rate`, and expressing
+  that in integers either loses precision or reimplements a decimal library badly.
+- **Precision is set to 28 digits to match Python's default Decimal context.** decimal.js defaults
+  to 20. That is not cosmetic: the inclusive-VAT division's intermediate precision can put a result
+  either side of a half-piaster boundary, so a fixture case would agree at one setting and disagree
+  at the other. Set once and globally, because a per-call precision is one call site away from being
+  forgotten.
+
+The documented example — 2× cappuccino + 1× turkish, 12% service, 14% VAT — comes to **204.29** in
+the browser: the same figure as docs/04, the Phase 1 fixture, the server and the Desktop's fold.
+
+### Not started, and not to be assumed
+
+Steps 2–6. Also outstanding from the same conversation: a printable badge for every cashier by
+default, a camera fallback for terminals with no scanner, seeded product photos, the cashier's order
+list scoped to today, and the Dokploy deployment. And **the Desktop tree still exists** — its suite,
+its vendoring check and `test_brand_parity.py` are all still wired into CI. Deleting it is a separate
+decision from cancelling it, and the tests are worth more as a specification than as a directory
+nobody runs.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the
