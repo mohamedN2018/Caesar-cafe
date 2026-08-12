@@ -77,7 +77,20 @@ async function mountBoard() {
       // The board pulls in the order panel, the item sheet and the payment sheet.
       // Stubbed so a failure in one of them cannot be mistaken for the board
       // failing — this test is about the board.
-      stubs: { OrderPanel: true, ItemSheet: true, PaymentSheet: true, UiIcon: true },
+      stubs: {
+        OrderPanel: true,
+        ItemSheet: true,
+        PaymentSheet: true,
+        UiIcon: true,
+        // A real anchor, not `true`. RouterLink needs a router installed and
+        // this mount has none — the same lesson the main.ts bug taught, arriving
+        // here as a stub. Rendering an `<a href>` keeps the assertion about the
+        // destination meaningful instead of asserting on a placeholder tag.
+        RouterLink: {
+          props: ['to'],
+          template: '<a :href="to"><slot /></a>',
+        },
+      },
     },
   })
   await new Promise((resolve) => setTimeout(resolve, 0))
@@ -92,7 +105,8 @@ beforeEach(() => {
     if (url.includes('/catalog/categories/')) return Promise.resolve([CATEGORY])
     if (url.includes('/catalog/products/')) return Promise.resolve([PRODUCT])
     if (url.includes('/payments/methods/')) return Promise.resolve([])
-    if (url.includes('/shifts/current/')) return Promise.resolve({ shift: null })
+    if (url.includes('/shifts/current/'))
+      return Promise.resolve({ shift: { id: 's1', opening_cash: '500.00', status: 'OPEN' } })
     return Promise.resolve([])
   })
 })
@@ -126,7 +140,8 @@ describe('the till board', () => {
     // The failure mode this replaces: a cashier looking at nothing with no way to
     // tell an empty category from a broken screen.
     get.mockImplementation((url: string) => {
-      if (url.includes('/shifts/current/')) return Promise.resolve({ shift: null })
+      if (url.includes('/shifts/current/'))
+        return Promise.resolve({ shift: { id: 's1', opening_cash: '500.00', status: 'OPEN' } })
       return Promise.resolve([])
     })
 
@@ -144,7 +159,8 @@ describe('the till board', () => {
      * the controls knows the screen is alive and can retry.
      */
     get.mockImplementation((url: string) => {
-      if (url.includes('/shifts/current/')) return Promise.resolve({ shift: null })
+      if (url.includes('/shifts/current/'))
+        return Promise.resolve({ shift: { id: 's1', opening_cash: '500.00', status: 'OPEN' } })
       return Promise.reject(new Error('network'))
     })
 
@@ -152,5 +168,54 @@ describe('the till board', () => {
 
     expect(wrapper.find('input[type="search"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('الكل')
+  })
+})
+
+describe('no shift open', () => {
+  beforeEach(() => {
+    // Overrides the suite default, which keeps a shift open so the menu renders.
+    get.mockImplementation((url: string) => {
+      if (url.includes('/catalog/categories/')) return Promise.resolve([CATEGORY])
+      if (url.includes('/catalog/products/')) return Promise.resolve([PRODUCT])
+      if (url.includes('/shifts/current/')) return Promise.resolve({ shift: null })
+      return Promise.resolve([])
+    })
+  })
+
+  /**
+   * The reported "POS does not work".
+   *
+   * The server refuses a sale without a shift and says so — SHIFT_REQUIRED,
+   * "يجب فتح وردية قبل البيع". The till threw that away: `tap()` called
+   * `openOrder`, it failed, `if (!pos.order) return` gave up, and the message
+   * landed in an alert at the foot of a scrolling menu. A cashier tapped a
+   * product, nothing happened, and reported the till as broken.
+   */
+  it('offers the one action that fixes it instead of a menu that cannot work', async () => {
+    const wrapper = await mountBoard()
+
+    expect(wrapper.text()).toContain('لازم تفتح وردية قبل البيع')
+    expect(wrapper.find('a[href="/pos/shift"]').exists()).toBe(true)
+  })
+
+  it('does not draw product tiles that could only fail', async () => {
+    const wrapper = await mountBoard()
+
+    expect(wrapper.findAll('.tile').length).toBe(0)
+  })
+
+  it('draws the menu again once a shift is open', async () => {
+    get.mockImplementation((url: string) => {
+      if (url.includes('/catalog/categories/')) return Promise.resolve([CATEGORY])
+      if (url.includes('/catalog/products/')) return Promise.resolve([PRODUCT])
+      if (url.includes('/shifts/current/'))
+        return Promise.resolve({ shift: { id: 's1', opening_cash: '500.00', status: 'OPEN' } })
+      return Promise.resolve([])
+    })
+
+    const wrapper = await mountBoard()
+
+    expect(wrapper.text()).not.toContain('لازم تفتح وردية')
+    expect(wrapper.findAll('.tile').length).toBeGreaterThan(0)
   })
 })

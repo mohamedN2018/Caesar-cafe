@@ -19,6 +19,7 @@
  *     wet one. A mis-tap on a till is a wrong item on a bill.
  */
 import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
@@ -177,7 +178,30 @@ onMounted(async () => {
       </div>
 
       <div class="grid-scroll">
-        <UiSkeleton v-if="pos.catalogLoading" :rows="6" />
+        <!--
+          No shift is a STATE, not an error to bury in a banner.
+
+          The server refuses a sale without one and says so clearly —
+          `SHIFT_REQUIRED`, "يجب فتح وردية قبل البيع". The till was throwing that
+          away: `tap()` called `openOrder`, it failed, `if (!pos.order) return`
+          gave up, and the message landed in an alert at the bottom of a scrolling
+          menu where nobody looks. So a cashier tapped a product, nothing
+          happened, and the till was reported as broken.
+
+          A tap that can only fail should not be offered. This replaces the grid
+          rather than sitting above it, because the grid is the thing that does
+          not work yet, and it names the one action that fixes it.
+        -->
+        <div v-if="!pos.catalogLoading && !pos.shift" class="needs-shift">
+          <p class="needs-shift-title">لازم تفتح وردية قبل البيع</p>
+          <p class="needs-shift-body">
+            الوردية هي اللي الفلوس تتحسب عليها عند الإغلاق. بدونها البيعة مش
+            بتنتمي لحد ولا فيه رصيد يتراجع.
+          </p>
+          <RouterLink to="/pos/shift" class="needs-shift-go">افتح وردية</RouterLink>
+        </div>
+
+        <UiSkeleton v-else-if="pos.catalogLoading" :rows="6" />
 
         <p v-else-if="!shown.length" class="empty">
           {{ search ? 'لا يوجد صنف بهذا الاسم.' : 'لا توجد أصناف في هذا القسم.' }}
@@ -490,6 +514,40 @@ onMounted(async () => {
 .tile-hint {
   font-size: 0.7rem;
   color: var(--ink-faint);
+}
+
+/* The blocking state: no shift, so no sale. */
+.needs-shift {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  min-height: 16rem;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+.needs-shift-title {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--ink);
+}
+.needs-shift-body {
+  max-width: 26rem;
+  font-size: 0.9rem;
+  color: var(--ink-muted);
+}
+.needs-shift-go {
+  margin-top: 0.5rem;
+  min-height: 52px;
+  display: inline-flex;
+  align-items: center;
+  padding: 0 2rem;
+  border-radius: 0.65rem;
+  font-weight: 800;
+  color: var(--fg-on-brand);
+  background-image: var(--brand-gradient);
+  box-shadow: var(--shadow-brand);
 }
 
 .empty {
