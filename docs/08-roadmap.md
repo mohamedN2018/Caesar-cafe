@@ -2263,8 +2263,8 @@ security headers, reachable on `http://127.0.0.1:8080` only because Caddy sends
 `X-Forwarded-Proto: https`, exactly as Traefik will. A CSP or header mistake now surfaces on a
 laptop rather than on the domain.
 
-`.env.production` is written and ready to paste into Dokploy, with real generated secrets. It is
-gitignored (`.env.*`), so the secrets are not in this repo — and it is therefore the only copy.
+`.env` is written and ready to paste into Dokploy, with real generated secrets. It is gitignored, so
+the secrets are not in this repo — and it is therefore the only copy.
 Rotating `JWT_SIGNING_KEY` logs everyone out; rotating `LICENSE_PEPPER` bricks every activated
 terminal, because the stored licence hashes stop matching.
 
@@ -2375,7 +2375,7 @@ updates, so that is what makes the login reliably present rather than present on
 
 It is a switch, defaulting to **off**, and not simply unconditional. The command writes a known
 password and relaxes MFA, so a repository whose default start-up creates `admin`/`admin` would ship a
-back door to everyone who cloned it. `.env.production` sets it to `1` — that decision belongs to the
+back door to everyone who cloned it. `.env` sets it to `1` — that decision belongs to the
 person deploying, recorded in their environment, not to a file in the repo.
 
 The consequence worth knowing: `demo_admin --rotate` is undone by the next restart unless
@@ -2387,7 +2387,7 @@ The consequence worth knowing: `demo_admin --rotate` is undone by the next resta
 `admin@caesar.deplois.net` with the password `admin`, MFA off. This was asked for explicitly and it
 is deployed. `admin`/`admin` on a public domain is guessed, not cracked — it is the first pair a
 scanner tries, and the account reads every sale, every staff record and every cost.
-`demo_admin --rotate` is the remedy and it is documented at the point of use, in `.env.production`
+`demo_admin --rotate` is the remedy and it is documented at the point of use, in `.env`
 and in [15 — Dokploy](15-dokploy.md), rather than only here.
 
 ---

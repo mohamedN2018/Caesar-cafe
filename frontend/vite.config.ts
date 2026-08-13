@@ -48,5 +48,24 @@ export default defineConfig({
      * reported as not working.
      */
     hmr: { clientPort: Number(process.env.FRONTEND_PORT ?? 5173) },
+    /*
+     * `/api` and `/media` are proxied to the api container, so the browser only
+     * ever talks to this origin.
+     *
+     * This used to be an absolute `VITE_API_BASE_URL=http://localhost:8010/api/v1`,
+     * which meant the API had to be published on a known host port. That is what
+     * broke the Dokploy deploy: a fixed host port collides on a shared server, and
+     * with one `.env` for both environments there is no value that is guaranteed
+     * free in both. Nothing needs a published API port now — Vite reaches
+     * `api:8000` over the compose network, server-side.
+     *
+     * It is also closer to production, which serves the SPA and the API from one
+     * origin through Caddy. Same-origin in development means a CORS or cookie
+     * problem shows up here rather than after a deploy.
+     */
+    proxy: {
+      '/api': { target: 'http://api:8000', changeOrigin: true },
+      '/media': { target: 'http://api:8000', changeOrigin: true },
+    },
   },
 })

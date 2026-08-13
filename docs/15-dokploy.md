@@ -26,12 +26,26 @@ rehearsal.
 - **Postgres and Redis publish no ports, in either mode.** They are on an `internal: true` network
   the host cannot reach. Use `make shell-db`, not a client on localhost — a stack that works locally
   only because a port is exposed fails in production, long after you stopped looking for that.
-- **Every published port binds `127.0.0.1`.** This is the trick that lets one file serve both.
-  Locally it is how you reach the app; on a public VPS the mapping exists and the internet cannot
-  use it, because Traefik reaches the container over the proxy network instead. Written as
-  `8080:80` the same line publishes an unencrypted app to the world — and it behaves identically in
-  every local test, which is why `scripts/check_compose_ports.py` checks it in CI rather than a
-  reviewer checking it by eye.
+- **Every published port binds `127.0.0.1`, and none of them is a fixed number.** Two separate
+  rules, and the second was learned the hard way.
+
+  `127.0.0.1`, because written as `8080:80` the same line publishes an unencrypted app to the
+  world — and it behaves identically in every local test, which is why
+  `scripts/check_compose_ports.py` checks it in CI rather than a reviewer checking it by eye.
+
+  **No fixed number**, because the first Dokploy deploy died on
+  `failed to bind port 127.0.0.1:8080/tcp: address already in use`. A server runs other things, and
+  with one `.env` for both environments there is no port guaranteed free in both. Unset, Docker
+  picks a free one. Nothing needs it predictable — Traefik reaches the web container over the proxy
+  network, and Vite proxies `/api` to `api:8000` over the compose network. Ask Docker what it chose:
+
+  ```sh
+  docker compose port web 80
+  docker compose port api 8000
+  ```
+
+  Set `HTTP_PORT` only when you want a fixed local URL, and remember the same file goes to the
+  server.
 - **Everything is reached through Caddy**, so `/api/*` is same-origin in both modes. That is what
   makes `connect-src 'self'` in the CSP a real constraint rather than a decoration.
 - The security headers, the memory limits, the log rotation, the statement timeouts and the
@@ -68,10 +82,12 @@ would route. Locally the variable is unset and it falls back to `bridge`, which 
    - Repository: this repo, branch `main`
    - Compose file: `docker-compose.yml`
    - Domain: `caesar.deplois.net`, HTTPS on, Let's Encrypt
-3. **Environment.** Paste `.env.production` into Dokploy's Environment panel. The secrets in it are
-   real and generated — it is ready as it stands. It is gitignored, so it is the only copy: keep it
-   somewhere safe. Rotating `JWT_SIGNING_KEY` logs everyone out; rotating `LICENSE_PEPPER` bricks
-   every activated terminal, because the stored licence hashes stop matching.
+3. **Environment.** Paste `.env` into Dokploy's Environment panel. There is one env file and it
+   works unchanged in both places — two env files is how a variable gets fixed in one and stays
+   broken in the other. The secrets in it are real and generated. It is gitignored, so it is the
+   only copy: keep it somewhere safe. Rotating `JWT_SIGNING_KEY` logs everyone out; rotating
+   `LICENSE_PEPPER` bricks every activated terminal, because the stored licence hashes stop
+   matching.
 4. **Deploy.** The api container migrates, runs `sync_roles`, collects static files and starts
    gunicorn. `sync_roles` is in the start command rather than a runbook step because a release that
    adds a permission code otherwise lands with the code in the catalogue, the routes enforcing it,
@@ -80,7 +96,7 @@ would route. Locally the variable is unset and it falls back to `bridge`, which 
 
 ## Demo data, and the admin login
 
-Three switches, all in `.env.production`, all deliberately separate. They answer different questions
+Three switches, all in `.env`, all deliberately separate. They answer different questions
 and they stop being true at different times.
 
 | | what it does | when to turn it off |
@@ -123,17 +139,16 @@ crash-loop the container either.
 Worth doing before any deploy — it is the same containers, the same gunicorn, the same headers:
 
 ```sh
-docker network create dokploy-network   # once, so the production .env works unchanged
-cp .env.production .env
-docker compose up -d --build            # → http://127.0.0.1:8080
+docker network create dokploy-network   # once — PROXY_NETWORK names it
+docker compose up -d --build
+docker compose port web 80              # → 127.0.0.1:PORT, open it
 ```
 
 It works over plain `http://127.0.0.1:8080` only because Caddy sends `X-Forwarded-Proto: https`,
 which is exactly what Traefik does in production. A CSP or header mistake surfaces here, on your
 machine, instead of on the domain.
 
-For day-to-day work on the code, change two lines in `.env` (`DJANGO_ENV=dev`, drop
-`PROXY_NETWORK`) and:
+For day-to-day work on the code, change one line in `.env` (`DJANGO_ENV=dev`) and:
 
 ```sh
 docker compose up -d --build            # runserver + built SPA

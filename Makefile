@@ -92,7 +92,7 @@ clean:  ## Remove containers and volumes — DESTROYS LOCAL DATA
 # file with `DJANGO_ENV=prod` in `.env` — which is why `make prod-check` below is
 # worth running locally: it brings up the real production shape on your machine.
 
-.PHONY: prod-config prod-check prod-logs prod-migrate backup backup-list backup-verify
+.PHONY: prod-config prod-check urls prod-logs prod-migrate backup backup-list backup-verify
 
 prod-config:  ## Validate the compose file in both modes, the ports, and the Caddyfile (CI runs this)
 	DJANGO_ENV=prod $(COMPOSE) config --quiet && echo "compose (prod) OK"
@@ -102,7 +102,12 @@ prod-config:  ## Validate the compose file in both modes, the ports, and the Cad
 
 prod-check:  ## Run the PRODUCTION shape locally — gunicorn, prod settings, real headers
 	DJANGO_ENV=prod $(COMPOSE) up -d --build
-	@echo "→ http://127.0.0.1:$${HTTP_PORT:-8080}   (same stack Dokploy runs)"
+	@$(MAKE) --no-print-directory urls
+
+urls:  ## Print the loopback ports Docker assigned
+	@echo "web → http://$$($(COMPOSE) port web 80)"
+	@echo "api → http://$$($(COMPOSE) port api 8000)"
+	@echo "(unset by default so a fixed port cannot collide — see the note on api.ports)"
 
 prod-logs:  ## Tail API logs
 	$(COMPOSE) logs -f api
