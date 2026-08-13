@@ -26,26 +26,27 @@ rehearsal.
 - **Postgres and Redis publish no ports, in either mode.** They are on an `internal: true` network
   the host cannot reach. Use `make shell-db`, not a client on localhost — a stack that works locally
   only because a port is exposed fails in production, long after you stopped looking for that.
-- **Every published port binds `127.0.0.1`, and none of them is a fixed number.** Two separate
-  rules, and the second was learned the hard way.
+- **The app publishes no host port at all.** This took two failed deploys to get right, and the
+  lesson is worth the space.
 
-  `127.0.0.1`, because written as `8080:80` the same line publishes an unencrypted app to the
-  world — and it behaves identically in every local test, which is why
-  `scripts/check_compose_ports.py` checks it in CI rather than a reviewer checking it by eye.
+  The first attempt used `127.0.0.1:8080:80`. It died on
+  `failed to bind port 127.0.0.1:8080/tcp: address already in use` — a server runs other things.
 
-  **No fixed number**, because the first Dokploy deploy died on
-  `failed to bind port 127.0.0.1:8080/tcp: address already in use`. A server runs other things, and
-  with one `.env` for both environments there is no port guaranteed free in both. Unset, Docker
-  picks a free one. Nothing needs it predictable — Traefik reaches the web container over the proxy
-  network, and Vite proxies `/api` to `api:8000` over the compose network. Ask Docker what it chose:
+  The second made the host port an empty-by-default variable, so Docker would pick a free one. It
+  died the same way, because **this file's contents get pasted into Dokploy's environment panel and
+  live on there after the file changes**. A stale `HTTP_PORT=8080` in that panel still reached the
+  compose file. A variable is a value somebody else can set.
 
-  ```sh
-  docker compose port web 80
-  docker compose port api 8000
-  ```
+  The only binding that cannot collide is the one that does not exist. Nothing needs it: Traefik
+  routes to the `web` container over the proxy network, and `docker compose exec api …` needs no
+  port. To browse the production build locally, `docker compose --profile local up -d` starts a
+  second container from the same image that does publish one — and a profile cannot be switched on
+  by a leftover entry in a deployment panel.
 
-  Set `HTTP_PORT` only when you want a fixed local URL, and remember the same file goes to the
-  server.
+  The loopback rule still applies to everything that does publish (the dev Vite server, the `local`
+  profile), and `scripts/check_compose_ports.py` enforces it in CI: written as `8080:80` the same
+  line publishes an unencrypted app to the world, and it behaves identically in every local test.
+
 - **Everything is reached through Caddy**, so `/api/*` is same-origin in both modes. That is what
   makes `connect-src 'self'` in the CSP a real constraint rather than a decoration.
 - The security headers, the memory limits, the log rotation, the statement timeouts and the
@@ -102,7 +103,7 @@ and they stop being true at different times.
 | | what it does | when to turn it off |
 |---|---|---|
 | `DEMO_SEED=1` | Seeds the café on first boot: one branch — catalogue, stock, suppliers, floor plan, kitchen stations, kids area, licence and two weeks of trading | once you have your own data |
-| `DEMO_ADMIN=1` | Creates/refreshes `admin@caesar.deplois.net` / `admin` on **every** boot, MFA off | after `--rotate`, or it undoes the rotation |
+| `DEMO_ADMIN=1` | Creates/refreshes the administrator on **every** boot, MFA off. Address and password come from `DEMO_ADMIN_EMAIL` / `DEMO_ADMIN_PASSWORD` | after `--rotate`, or it undoes the rotation |
 | `DEMO_MODE=1` | Puts the ten demo staff logins **on the sign-in screen** as buttons | anywhere with real staff or real takings |
 
 `DEMO_ADMIN` is separate from `DEMO_SEED` because seeding is a first-boot job: tying the admin to it
@@ -140,8 +141,8 @@ Worth doing before any deploy — it is the same containers, the same gunicorn, 
 
 ```sh
 docker network create dokploy-network   # once — PROXY_NETWORK names it
-docker compose up -d --build
-docker compose port web 80              # → 127.0.0.1:PORT, open it
+docker compose --profile local up -d --build
+# → http://127.0.0.1:8080   (HTTP_PORT changes it, and affects nothing else)
 ```
 
 It works over plain `http://127.0.0.1:8080` only because Caddy sends `X-Forwarded-Proto: https`,

@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import secrets
 
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
@@ -34,6 +35,10 @@ from apps.authz.models import Role, RoleAssignment
 from apps.authz.services import ensure_system_roles
 from apps.organizations.models import Branch, Organization
 
+#: Fallbacks only. The real values come from `DEMO_ADMIN_EMAIL` and
+#: `DEMO_ADMIN_PASSWORD` in the environment, so the address and password can be
+#: changed where the rest of the deployment is configured rather than here. These
+#: keep the command working on a bare checkout with no `.env` at all.
 DEFAULT_EMAIL = "admin@caesar.deplois.net"
 DEFAULT_PASSWORD = "admin"  # noqa: S105 — a demo credential, printed on stdout
 
@@ -42,8 +47,12 @@ class Command(BaseCommand):
     help = "Create or reset the demo administrator (SUPER_ADMIN)."
 
     def add_arguments(self, parser) -> None:
-        parser.add_argument("--email", default=DEFAULT_EMAIL)
-        parser.add_argument("--password", default=DEFAULT_PASSWORD)
+        # `getattr` rather than a direct read: a settings module that predates
+        # these keys should fall back, not crash a deploy on start-up.
+        parser.add_argument("--email", default=getattr(settings, "DEMO_ADMIN_EMAIL", DEFAULT_EMAIL))
+        parser.add_argument(
+            "--password", default=getattr(settings, "DEMO_ADMIN_PASSWORD", DEFAULT_PASSWORD)
+        )
         parser.add_argument(
             "--rotate",
             action="store_true",

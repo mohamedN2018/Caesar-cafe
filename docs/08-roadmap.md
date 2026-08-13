@@ -2392,6 +2392,58 @@ and in [15 — Dokploy](15-dokploy.md), rather than only here.
 
 ---
 
+## Two deploys died on one port ✅ FIXED (2026-08-13)
+
+```
+failed to bind port 127.0.0.1:8080/tcp: address already in use
+```
+
+### The second attempt is the interesting one
+
+The first fix was obvious: `127.0.0.1:8080:80` is a fixed number and a server runs other things.
+Replaced with `127.0.0.1:${HTTP_PORT-}:80` — empty by default, so Docker picks a free port. Verified
+locally with 8080 deliberately held by another stack; it came up on 65244.
+
+It failed again, identically. **The env file's contents get pasted into Dokploy's environment panel,
+and they live on there after the file changes.** A stale `HTTP_PORT=8080` in that panel still reached
+the compose file, and no default in the repo can out-vote it.
+
+That is the general lesson: **a variable is a value somebody else can set.** Making the default safe
+protects the case where nobody has an opinion, which was not this case.
+
+### The only binding that cannot collide is the one that does not exist
+
+`api` and `web` publish nothing now. Neither needed to:
+
+- Traefik reaches `web` over the proxy network — that is the entire routing path in production.
+- Caddy reaches `api:8000` over `edge`.
+- `docker compose exec api …` needs no port.
+- The one thing that did depend on a known API port — the Vite dev server, through an absolute
+  `VITE_API_BASE_URL` — now proxies `/api` and `/media` to `api:8000` over the compose network. That
+  is also closer to production, where Caddy serves the SPA and the API from one origin, so a CORS or
+  cookie problem surfaces before a deploy rather than after.
+
+Browsing the production build locally would have been the casualty, and that check is worth keeping:
+same gunicorn, same headers, same CSP. So the port moved to a **`local` profile** — a second
+container from the same image that does publish one. A profile cannot be switched on by a leftover
+entry in a deployment panel; it only exists when somebody types `--profile local`.
+
+### One env file, and the drift it had already caused
+
+`.env.production` is gone. `.env` works unchanged in both places.
+
+This was not tidying. The duplication had already produced a real bug: `DEMO_MODE` was added to one
+file while the running stack read the other, so the flag was set and the endpoint reported it off.
+Two env files is how a variable gets fixed in one and stays broken in the other.
+
+The demo credentials now live in that file too — the ten staff accounts with their PINs as a
+comment block, and the administrator as **`DEMO_ADMIN_EMAIL` / `DEMO_ADMIN_PASSWORD`** rather than
+constants in a management command. The account list is explicitly marked as documentation that
+nothing reads, because a comment that looks like configuration is a comment somebody will edit and
+expect to take effect.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

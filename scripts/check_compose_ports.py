@@ -35,10 +35,17 @@ def load(argv: list[str]) -> dict:
     if len(argv) > 1:
         return json.loads(open(argv[1], encoding="utf-8").read())
 
-    # `--profile dev` so the dev-only services are included. A guard that skips
-    # the services it was not looking at is not a guard.
+    # EVERY profile, because a guard that skips the services it was not looking at
+    # is not a guard — and the profiles are exactly where the published ports now
+    # live. `web-local` (profile `local`) is the only thing that publishes the app
+    # at all; enabling only `dev` would have checked nothing that matters.
     result = subprocess.run(
-        ["docker", "compose", "--profile", "dev", "config", "--format", "json"],
+        [
+            "docker", "compose",
+            "--profile", "dev",
+            "--profile", "local",
+            "config", "--format", "json",
+        ],
         capture_output=True,
         text=True,
         check=False,

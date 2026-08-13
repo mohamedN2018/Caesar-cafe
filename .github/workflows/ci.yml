@@ -214,7 +214,7 @@ jobs:
         run: |
           docker network create dokploy-network || true
           DJANGO_ENV=prod docker compose config --quiet
-          DJANGO_ENV=dev docker compose --profile dev config --quiet
+          DJANGO_ENV=dev docker compose --profile dev --profile local config --quiet
 
       - name: The compose file publishes nothing beyond loopback
         # The one property that lets a single file serve local and production, so

@@ -384,5 +384,13 @@ LOGGING = {
 #: not, and the accounts still need to be findable.
 DEMO_MODE = env_bool("DEMO_MODE", False)
 
+#: The demo administrator `demo_admin` creates, configurable from `.env`.
+#:
+#: Defaults are kept so the command still works with no environment at all, but
+#: the deployment sets both — an operator changing the admin address should not
+#: have to edit a management command to do it.
+DEMO_ADMIN_EMAIL = env("DEMO_ADMIN_EMAIL", "admin@caesar.deplois.net")
+DEMO_ADMIN_PASSWORD = env("DEMO_ADMIN_PASSWORD", "admin")
+
 APP_VERSION = "0.1.0"
 MIN_SUPPORTED_CLIENT_VERSION = "0.1.0"
