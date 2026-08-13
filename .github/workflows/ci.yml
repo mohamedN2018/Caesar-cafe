@@ -213,3 +213,32 @@ jobs:
           docker run --rm -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
             -e DOMAIN=ci.example -e ACME_EMAIL=ci@example \
             caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+
+      - name: Dokploy compose is valid
+        # The same reason the production one is checked here: a typo in a compose
+        # file surfaces during a deploy, and a deploy is the worst place to find it.
+        # `dokploy-network` is declared external, so it is created for the check —
+        # without it `config` fails on a network the CI host has never seen.
+        env:
+          DOMAIN: ci.example
+          POSTGRES_DB: caesar
+          POSTGRES_USER: caesar
+          POSTGRES_PASSWORD: ci
+        run: |
+          docker network create dokploy-network || true
+          docker compose -f docker-compose.dokploy.yml config --quiet
+
+      - name: Dokploy Caddyfile is valid
+        # Validated separately from the bare-host one because it is a DIFFERENT
+        # file with one deliberate difference — `auto_https off`, because Traefik
+        # holds the certificate — and the rest of it must not drift from its
+        # sibling unnoticed.
+        run: |
+          docker run --rm -v "$PWD/deploy/Caddyfile.dokploy:/etc/caddy/Caddyfile:ro" \
+            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
+
+      - name: The web image builds, and the SPA type-checks inside it
+        # `npm run build` is `vue-tsc --noEmit && vite build`, so this also proves
+        # the bundle Dokploy will serve was type-checked — not just that the
+        # Dockerfile parses.
+        run: docker build -f deploy/Dockerfile.web -t caesar-web:ci .

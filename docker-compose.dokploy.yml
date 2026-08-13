@@ -1,0 +1,176 @@
+# Caesar Cafe on Dokploy — caesar.deplois.net
+#
+# Read docs/15-dokploy.md before the first deploy. It is short.
+#
+# How this differs from `docker-compose.prod.yml`, and why:
+#
+#   * **No Caddy on the host ports.** Dokploy runs Traefik; Traefik holds the
+#     certificate and routes the domain to the `web` service over the internal
+#     network. Two things trying to obtain a certificate for one hostname is how
+#     you get an ACME rate-limit and an outage.
+#   * **The SPA is built inside its image** (`deploy/Dockerfile.web`). The bare-host
+#     runbook builds it with a one-off `docker run node` and mounts `dist`; Dokploy
+#     clones the repo and brings the compose up, so there is no host step to do it.
+#   * **Postgres and Redis publish nothing.** Same as production, and the same
+#     reason: they sit on an internal network the internet cannot reach.
+#
+# Everything else — resource limits, log rotation, statement timeouts, the
+# unprivileged user, the health checks — is carried over unchanged.
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+x-api-base: &api-base
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  image: caesar-api:${IMAGE_TAG:-latest}
+  env_file: [.env]
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.prod
+  restart: unless-stopped
+  logging: *logging
+  depends_on:
+    postgres: {condition: service_healthy}
+    redis: {condition: service_healthy}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-caesar}
+      POSTGRES_USER: ${POSTGRES_USER:-caesar}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    # A statement timeout, so one pathological query cannot hold a connection all
+    # night. 30s is far above any request this app makes and far below "forever".
+    command:
+      - postgres
+      - -c
+      - statement_timeout=30000
+      - -c
+      - idle_in_transaction_session_timeout=60000
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-caesar} -d ${POSTGRES_DB:-caesar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *logging
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    logging: *logging
+    networks: [internal]
+
+  api:
+    <<: *api-base
+    # Migrations and collectstatic on every start, so a config change that affects
+    # static files cannot leave a stale copy behind. `sync_roles` is here too: a
+    # release that adds a permission code otherwise lands with the code in the
+    # catalogue, the routes enforcing it, and no role holding it.
+    command: >
+      sh -c "python manage.py migrate --noinput &&
+             python manage.py collectstatic --noinput &&
+             python manage.py sync_roles &&
+             gunicorn config.wsgi:application
+               --bind 0.0.0.0:8000
+               --workers ${GUNICORN_WORKERS:-3}
+               --timeout 60
+               --graceful-timeout 30
+               --max-requests 1000
+               --max-requests-jitter 100
+               --access-logfile -
+               --error-logfile -"
+    volumes:
+      - static:/app/staticfiles
+      - media:/app/media
+      - backups:/backups
+    networks: [internal, edge]
+    deploy:
+      resources:
+        limits: {memory: 1G}
+
+  worker:
+    <<: *api-base
+    command: celery -A config worker -l info --concurrency=${CELERY_CONCURRENCY:-2} --max-tasks-per-child=200
+    volumes:
+      - media:/app/media
+      - backups:/backups
+    networks: [internal]
+    deploy:
+      resources:
+        limits: {memory: 768M}
+
+  beat:
+    <<: *api-base
+    command: celery -A config beat -l info
+    networks: [internal]
+    deploy:
+      resources:
+        limits: {memory: 256M}
+
+  web:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.web
+    image: caesar-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    logging: *logging
+    volumes:
+      # Read-only: this container serves these, it never writes them.
+      - static:/srv/static:ro
+      - media:/srv/media:ro
+    networks: [internal, edge, dokploy-network]
+    depends_on: [api]
+    deploy:
+      resources:
+        limits: {memory: 128M}
+    labels:
+      # Traefik does TLS and routing. Dokploy reads these off the container.
+      traefik.enable: "true"
+      traefik.docker.network: dokploy-network
+      traefik.http.routers.caesar.rule: Host(`${DOMAIN:?DOMAIN is required}`)
+      traefik.http.routers.caesar.entrypoints: websecure
+      traefik.http.routers.caesar.tls.certresolver: letsencrypt
+      traefik.http.services.caesar.loadbalancer.server.port: "80"
+      # Plain HTTP is redirected rather than served. A POS that can be reached
+      # over http:// is a POS whose session token can be read off the wire.
+      traefik.http.routers.caesar-insecure.rule: Host(`${DOMAIN}`)
+      traefik.http.routers.caesar-insecure.entrypoints: web
+      traefik.http.routers.caesar-insecure.middlewares: caesar-https
+      traefik.http.middlewares.caesar-https.redirectscheme.scheme: https
+      traefik.http.middlewares.caesar-https.redirectscheme.permanent: "true"
+
+volumes:
+  pgdata:
+  redisdata:
+  static:
+  media:
+  backups:
+
+networks:
+  # Postgres and Redis live here and nothing else can reach them.
+  internal:
+    internal: true
+  # api ↔ web only.
+  edge:
+  # Created by Dokploy. `external` because this compose must not try to own it —
+  # Dokploy's Traefik is already attached, and a second definition would make a
+  # separate network with the same name and nothing would route.
+  dokploy-network:
+    external: true

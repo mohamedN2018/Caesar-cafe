@@ -506,3 +506,97 @@ class TestSyncRolesCommand:
         manager.refresh_from_db()
         assert "hr.view" not in manager.permission_codes, "the dry run wrote"
         assert "hr.view" in output, "the dry run did not report what it would do"
+
+
+class TestDemoAdminCommand:
+    """
+    The demo administrator.
+
+    A convenience for looking at a running system, and a liability if it outlives
+    the demo. What matters in tests is that it produces a login that WORKS (a demo
+    account nobody can sign in with is worse than none) and that `--rotate` really
+    closes it.
+    """
+
+    def _run(self, **kwargs) -> str:
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        out = StringIO()
+        call_command("demo_admin", stdout=out, **kwargs)
+        return out.getvalue()
+
+    def test_it_creates_a_superuser_who_can_actually_sign_in(self, db, api) -> None:
+        self._run()
+
+        response = api.post(
+            "/api/v1/auth/login/",
+            {"email": "admin@caesar.deplois.net", "password": "admin"},
+            format="json",
+        )
+
+        assert response.status_code == 200, response.data
+
+    def test_it_holds_the_role_and_not_only_the_flag(self, db) -> None:
+        """
+        `is_superuser` short-circuits `can()`, but the ROLE is what the permission
+        cache and the audit trail read. An account with only the flag looks
+        permission-less on every screen that lists what somebody may do.
+        """
+        from apps.accounts.models import User
+        from apps.authz.models import RoleAssignment
+
+        self._run()
+        user = User.objects.get(email="admin@caesar.deplois.net")
+
+        assert user.is_superuser
+        assert RoleAssignment.objects.filter(user=user, role__code="SUPER_ADMIN").exists()
+
+    def test_running_it_twice_resets_rather_than_duplicating(self, db) -> None:
+        from apps.accounts.models import User
+
+        self._run()
+        self._run()
+
+        assert User.objects.filter(email="admin@caesar.deplois.net").count() == 1
+
+    def test_it_warns_that_the_password_is_guessable(self, db) -> None:
+        # The warning is the feature. A weak credential on an internet-facing host
+        # with nothing saying so is how a demo becomes an incident.
+        output = self._run()
+
+        assert "demo_admin --rotate" in output
+
+    def test_rotate_replaces_the_weak_password(self, db, api) -> None:
+        self._run()
+        output = self._run(rotate=True)
+
+        refused = api.post(
+            "/api/v1/auth/login/",
+            {"email": "admin@caesar.deplois.net", "password": "admin"},
+            format="json",
+        )
+        assert refused.status_code == 401, "the guessable password still works after --rotate"
+        assert "Shown once" in output
+
+    def test_rotate_prints_a_password_that_works(self, db, api) -> None:
+        """
+        A rotation that locked everybody out would be worse than the weak password
+        it replaced, so the new one is proven rather than assumed.
+        """
+        self._run()
+        output = self._run(rotate=True)
+
+        password = next(
+            line.split("password", 1)[1].strip()
+            for line in output.splitlines()
+            if line.strip().startswith("password")
+        )
+        response = api.post(
+            "/api/v1/auth/login/",
+            {"email": "admin@caesar.deplois.net", "password": password},
+            format="json",
+        )
+
+        assert response.status_code == 200, response.data
