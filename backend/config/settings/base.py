@@ -12,6 +12,7 @@ import os
 from pathlib import Path
 
 import dj_database_url
+from celery.schedules import crontab
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -70,6 +71,25 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.authz",
     "apps.configuration",
+    "apps.licensing",
+    "apps.kitchen",
+    "apps.inventory",
+    "apps.catalog",
+    "apps.recipes",
+    "apps.suppliers",
+    "apps.purchasing",
+    "apps.floor",
+    "apps.shifts",
+    "apps.orders",
+    "apps.payments",
+    "apps.kids",
+    "apps.sync",
+    "apps.reporting",
+    "apps.audit",
+    "apps.ops",
+    "apps.notifications",
+    "apps.printing",
+    "apps.hr",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
@@ -85,6 +105,10 @@ MIDDLEWARE = [
     # Resolves the principal before any view builds a queryset, so there is no
     # window in which data could be read before we know who is asking.
     "apps.authz.middleware.AuthContextMiddleware",
+    # After AuthContextMiddleware: it reads the resolved principal. A reorder
+    # would produce audit rows with no actor — the shape you notice only during
+    # a dispute. tests/test_audit.py asserts the order.
+    "apps.audit.middleware.AuditContextMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -136,6 +160,51 @@ CELERY_RESULT_BACKEND = env("CELERY_RESULT_BACKEND", REDIS_URL)
 CELERY_TASK_ALWAYS_EAGER = False
 CELERY_TASK_TIME_LIMIT = 600
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# Nightly rollups. 05:00 local, comfortably after the default 04:00 business-day
+# boundary — a job that ran at the boundary itself would race the last order of
+# the night. `days=2` re-does the day before yesterday too, which is the cheap
+# self-healing: a worker that was down overnight catches up without anyone
+# noticing, because rebuilding an existing day costs the same as building it.
+CELERY_BEAT_SCHEDULE = {
+    # 03:00, BEFORE the 04:00 business-day boundary, so a dump lands while the
+    # previous trading day is complete and nothing is half-written into the next.
+    "nightly-backup": {
+        "task": "ops.nightly_backup",
+        "schedule": crontab(hour=3, minute=0),
+    },
+    "verify-last-backup": {
+        "task": "ops.verify_last_backup",
+        "schedule": crontab(hour=4, minute=0),
+    },
+    "nightly-rollups": {
+        "task": "reporting.build_rollups",
+        "schedule": crontab(hour=5, minute=15),
+        "kwargs": {"days": 2},
+    },
+    # Every five minutes. A late ticket noticed a minute sooner rarely changes
+    # the outcome, and a job running every thirty seconds would spend its life
+    # re-reading conditions that had not moved. Deduplication in `SentAlert` is
+    # what makes a repeating sweep safe.
+    "alert-sweep": {
+        "task": "notifications.sweep",
+        "schedule": crontab(minute="*/5"),
+    },
+}
+
+# ── Web Push (C11) ───────────────────────────────────────────────────────────
+# Generated once per deployment with `manage.py generate_vapid_keys`. Rotating
+# the pair invalidates every existing subscription, because a push service
+# validates each assertion against the key the subscription was made with.
+VAPID_PRIVATE_KEY = env("VAPID_PRIVATE_KEY", "")
+VAPID_PUBLIC_KEY = env("VAPID_PUBLIC_KEY", "")
+#: How a push service reaches the operator when deliveries start failing. Read
+#: exactly once, on the bad day — so it should be a real address.
+VAPID_SUBJECT = env("VAPID_SUBJECT", "")
+
+# Where `pg_dump` writes. A volume in production; a temp path in dev, because a
+# dev machine should not accumulate database dumps nobody asked for.
+BACKUP_DIR = env("BACKUP_DIR", "/backups")
 
 # ── Auth ─────────────────────────────────────────────────────────────────────
 # Argon2id first: memory-hard, and the current recommendation for password storage.
@@ -213,6 +282,32 @@ SPECTACULAR_SETTINGS = {
     "SCHEMA_PATH_PREFIX": "/api/v1",
     "COMPONENT_SPLIT_REQUEST": True,
     "SORT_OPERATIONS": True,
+    # Several models have a `status` field with different choice sets. Without
+    # these, generated TypeScript gets meaningless names like `Status7c0Enum`.
+    "ENUM_NAME_OVERRIDES": {
+        "LicenseStatusEnum": "apps.licensing.models.LicenseStatus.choices",
+        "DeviceStatusEnum": "apps.licensing.models.DeviceStatus.choices",
+        "LicenseTypeEnum": "apps.licensing.models.LicenseType.choices",
+        "DeviceModeEnum": "apps.licensing.models.DeviceMode.choices",
+        "OrderStatusEnum": "apps.orders.models.OrderStatus.choices",
+        "OrderTypeEnum": "apps.orders.models.OrderType.choices",
+        "OrderEventTypeEnum": "apps.orders.models.EventType.choices",
+        "OrderItemStatusEnum": "apps.orders.models.ItemStatus.choices",
+        "StockMovementTypeEnum": "apps.inventory.models.MovementType.choices",
+        "ItemTypeEnum": "apps.inventory.models.ItemType.choices",
+        "CostingMethodEnum": "apps.inventory.models.CostingMethod.choices",
+        "CountStatusEnum": "apps.inventory.models.CountStatus.choices",
+        "CashMovementTypeEnum": "apps.shifts.models.CashMovementType.choices",
+        "ShiftStatusEnum": "apps.shifts.models.ShiftStatus.choices",
+        "TableStatusEnum": "apps.floor.models.TableStatus.choices",
+        "POStatusEnum": "apps.purchasing.models.POStatus.choices",
+        "LedgerEntryTypeEnum": "apps.suppliers.models.LedgerEntryType.choices",
+        "PlaySessionStatusEnum": "apps.kids.models.SessionStatus.choices",
+        "PlayTariffModeEnum": "apps.kids.models.TariffMode.choices",
+        "PlayIncidentTypeEnum": "apps.kids.models.IncidentType.choices",
+        "SyncStreamEnum": "apps.sync.models.Stream.choices",
+        "SyncOperationStatusEnum": "apps.sync.models.OperationStatus.choices",
+    },
     # Every response is enveloped by the renderer, so the schema must say so —
     # otherwise the generated TypeScript types describe a payload that never
     # arrives. See apps/core/schema.py.
@@ -278,6 +373,16 @@ LOGGING = {
         "apps": {"level": LOG_LEVEL, "propagate": True},
     },
 }
+
+#: Publish the demo credentials on the public system-info endpoint.
+#:
+#: OFF by default and it must stay that way: this endpoint needs no authentication,
+#: so switching it on anywhere with real staff or real takings hands the login list
+#: to whoever asks for it. It is a switch for a demonstration deployment, not a
+#: convenience toggle — which is why it is separate from `DEMO_SEED` (seed on boot)
+#: rather than derived from it. Seeding stops after the first boot; the demo does
+#: not, and the accounts still need to be findable.
+DEMO_MODE = env_bool("DEMO_MODE", False)
 
 APP_VERSION = "0.1.0"
 MIN_SUPPORTED_CLIENT_VERSION = "0.1.0"

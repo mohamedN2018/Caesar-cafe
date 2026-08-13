@@ -1,0 +1,296 @@
+/*
+ * The brand, in one place.
+ *
+ * كافيه القيصر — Al-Salaha St, Shibin al-Qanatir. Burgundy and gold: the name
+ * is imperial and so is the room, and gold on deep red survives a washed-out
+ * screen far better than a mid-tone does.
+ *
+ * Every colour in the product resolves through a token here. That is not tidiness
+ * — §62 says nothing about the business is a code constant, and a brand is a
+ * business fact. When the owner repaints the cafe, this file changes and nothing
+ * else does. The Desktop reads the same values from `ui/theme.py`, which is
+ * generated from this list and checked against it in CI.
+ *
+ * Contrast: every `--fg-on-*` pairing below clears WCAG AA at body size. Staff
+ * read these screens in daylight through a window, so that is a floor, not a
+ * target.
+ */
+
+:root {
+  /* ── brand ─────────────────────────────────────────────────────────────── */
+  /* The two lightest steps are WARM.
+     They were #fdf4f4 and #fae4e5 — neutral pinks with no yellow in them — and
+     they are the steps that get used as a tint behind something, sitting on
+     cream surfaces (#fbf7f0, #f4ede1). A pink patch on cream is the single
+     thing that made the sidebar look wrong: it reads as a different palette
+     rather than a lighter one. Warmed to share the surfaces' hue. */
+  --brand-50: #fbf2ee;
+  --brand-100: #f4dfd9;
+  --brand-200: #f3c4c7;
+  --brand-300: #e59aa0;
+  --brand-400: #d06a74;
+  --brand-500: #b3454f;
+  --brand-600: #94303a;
+  --brand-700: #7b1e28; /* the brand colour */
+  --brand-800: #611720;
+  --brand-900: #4a121a;
+
+  /* Gold. Used for emphasis and never for a whole surface: a gold background
+     with dark text is legible, but gold text on white is not, at any weight. */
+  --gold-100: #f7edcf;
+  --gold-200: #eeda9f;
+  --gold-300: #e0c268;
+  --gold-400: #d3ae3f;
+  --gold-500: #c9a227; /* the accent */
+  --gold-600: #a8851d;
+  --gold-700: #866818;
+
+  /* ── surfaces ──────────────────────────────────────────────────────────── */
+  /* Warm rather than blue-grey. Beside burgundy and gold, a cool grey reads as
+     dirty; the ivory keeps the room feeling like the room. */
+  --surface: #ffffff;
+  --surface-muted: #fbf7f0;
+  --surface-sunken: #f4ede1;
+  --border: #e7ddcc;
+  --border-strong: #d3c4ab;
+
+  --ink: #2a1a16;
+  --ink-muted: #6b5a52;
+  --ink-faint: #9a8b83;
+  --fg-on-brand: #ffffff;
+  --fg-on-gold: #2a1a16;
+
+  /* ── state ─────────────────────────────────────────────────────────────── */
+  /* Deliberately NOT brand-derived. A burgundy "danger" beside a burgundy
+     header is a warning nobody sees, and these three have to be unmistakable
+     from across a room. */
+  --success: #2e7d4f;
+  --success-bg: #eaf5ee;
+  --warning: #c77700;
+  --warning-bg: #fdf3e2;
+  --danger: #b3261e;
+  --danger-bg: #fceceb;
+  --info: #1f6f8b;
+  --info-bg: #e8f2f6;
+
+  /* ── the room ──────────────────────────────────────────────────────────── */
+  /* The floor view paints real materials: wood tables, a tiled floor, a rug on
+     the terrace. Tokens so the 3D view and the flat editor cannot drift. */
+  --floor-tile: #efe6d6;
+  --floor-tile-alt: #e8ddc9;
+  --wood: #a9713f;
+  --wood-dark: #7d5029;
+  --wood-edge: #6a421f;
+  --chair: #8a5a33;
+  --chair-occupied: #7b1e28;
+  --table-free: #ffffff;
+  --table-busy: #f3c4c7;
+  --table-ready: #cfe8da;
+  --table-late: #f7d4d1;
+  --shadow-room: rgba(42, 26, 22, 0.28);
+
+  /* ── depth ─────────────────────────────────────────────────────────────── */
+  /*
+     Warm shadows, not black ones.
+     Tailwind's default shadow is `rgb(0 0 0 / …)`, and pure black over a cream
+     surface (#fbf7f0) greys it: the card stops looking like paper on a warm
+     desk and starts looking like paper behind glass. These are tinted with the
+     ink colour instead, which is what a shadow on this palette actually is.
+
+     Two layers per step, deliberately. A single large blur reads as fog; a tight
+     contact shadow plus a wider ambient one reads as an object with an edge
+     sitting above a surface, which is the whole illusion.
+  */
+  --shadow-xs: 0 1px 2px rgba(42, 26, 22, 0.05);
+  --shadow-sm: 0 1px 2px rgba(42, 26, 22, 0.06), 0 2px 6px rgba(42, 26, 22, 0.04);
+  --shadow-md: 0 2px 4px rgba(42, 26, 22, 0.07), 0 6px 16px rgba(42, 26, 22, 0.06);
+  --shadow-lg: 0 4px 8px rgba(42, 26, 22, 0.08), 0 14px 32px rgba(42, 26, 22, 0.09);
+  --shadow-xl: 0 8px 16px rgba(42, 26, 22, 0.10), 0 28px 60px rgba(42, 26, 22, 0.13);
+
+  /* A brand-tinted glow, for the one element on a screen that is the action. */
+  --shadow-brand: 0 2px 4px rgba(123, 30, 40, 0.18), 0 10px 24px rgba(123, 30, 40, 0.20);
+
+  /* The scrim behind a modal. A token rather than `bg-black/40` at each call
+     site, because the ones written by hand drifted between 0.4 and 0.6 and a
+     dialog that dims the room differently each time reads as a different app. */
+  --scrim: rgba(38, 22, 18, 0.52);
+
+  /* ── surface treatments ────────────────────────────────────────────────── */
+  /*
+     Gradients, not flat fills, on the two places that carry the brand: the
+     sidebar and a primary button. A flat #7b1e28 panel the height of a screen
+     is a large area of one value, and large flat areas are what make an
+     interface look unfinished — the eye expects a surface to catch light
+     unevenly. These stay within one hue, so it still reads as the brand rather
+     than as decoration.
+  */
+  --brand-gradient: linear-gradient(160deg, var(--brand-700) 0%, var(--brand-900) 100%);
+  --brand-gradient-soft: linear-gradient(160deg, var(--brand-600) 0%, var(--brand-800) 100%);
+  --gold-gradient: linear-gradient(135deg, var(--gold-400) 0%, var(--gold-600) 100%);
+  /* The page behind the cards. Barely there — it stops a full-width layout
+     reading as one undifferentiated sheet. */
+  --page-wash: radial-gradient(
+      1200px 600px at 100% -10%,
+      rgba(123, 30, 40, 0.05) 0%,
+      transparent 60%
+    ),
+    radial-gradient(900px 500px at -10% 110%, rgba(201, 162, 39, 0.07) 0%, transparent 60%);
+
+  /* ── motion ────────────────────────────────────────────────────────────── */
+  /*
+     One easing curve and three durations, so that everything in the product
+     accelerates the same way. Mixed easings are the difference between an
+     interface that feels designed and one that feels assembled.
+
+     `--ease-out` is the standard for anything entering; nothing here uses a
+     bounce, because a cashier tapping through forty orders an hour does not
+     want personality, they want the screen to keep up.
+  */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+
+  /* ── on a brand surface ────────────────────────────────────────────────── */
+  /*
+     The sidebar and the POS header are deep burgundy, and text on them needs a
+     scale of its own — `--ink-muted` is a warm brown that vanishes on brand-800.
+
+     White at 72% rather than a lighter burgundy: a tint of the background reads
+     as a *disabled* item, and most of the sidebar is not disabled, it is simply
+     not the current page. Kept above 70% so it still clears AA on brand-800 at
+     14px, which is the size these labels actually are.
+  */
+  /*
+     The alphas are checked, not chosen by eye.
+
+     Composited over `--brand-700` (#7b1e28) — the LIGHTEST point of the sidebar
+     gradient, so the worst case — against a #7b1e28 ground:
+
+       0.74 → #dcc4c7, contrast 6.3:1  ✓
+       0.62 → #cba9ad, contrast 4.8:1  ✓
+       0.48 → #ba8a8f, contrast 3.5:1  ✗
+
+     `faint` started at 0.48 and had to come up. It carries the group headings and
+     the login footnote, both 12px, where AA wants 4.5:1 — and the header of this
+     file promises every on-brand pairing clears AA at body size, which makes a
+     token that does not a broken promise rather than a debatable choice.
+  */
+  --fg-on-brand-muted: rgba(255, 255, 255, 0.74);
+  --fg-on-brand-faint: rgba(255, 255, 255, 0.62);
+  --on-brand-hover: rgba(255, 255, 255, 0.09);
+  --on-brand-active: rgba(255, 255, 255, 0.14);
+  --on-brand-line: rgba(255, 255, 255, 0.12);
+
+  /*
+     Up and down, on a burgundy ground.
+
+     `--success` (#2e7d4f) and `--danger` (#b3261e) are tuned for cream and are
+     both unreadable on brand-700 — the danger red in particular is very nearly
+     the background. These two were literal hex in the dashboard's scoped CSS,
+     which is exactly the drift the token file exists to prevent: the token guard
+     bans Tailwind's palette by class name and cannot see a raw `#a7e8bd`.
+  */
+  --success-on-brand: #a7e8bd;
+  --danger-on-brand: #f6b8b3;
+
+  /* A one-pixel highlight along the top of a brand panel, where a real surface
+     would catch the light. This is most of what separates a gradient that looks
+     like a considered surface from one that looks like a coloured div. */
+  --brand-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  /* ── charts ────────────────────────────────────────────────────────────────
+     The categorical series colours, in FIXED ORDER. Never cycled: a ninth series
+     is not a generated hue, it folds into "أخرى".
+
+     **These are computed, not chosen by eye.** The obvious palette — brand-700,
+     gold-500, info, success — fails four checks:
+
+       brand-700 #7b1e28   L 0.391, below the lightness band (too dark to read as
+                           a series colour against cream)
+       info      #1f6f8b   chroma 0.086, reads grey
+       success ↔ info      ΔE 11.6 in NORMAL vision — under 15, so full-colour
+                           readers cannot reliably tell them apart
+       ink-muted ↔ success ΔE 4.9 under deuteranopia — indistinguishable
+
+     Snapped to the nearest passing steps and re-run until clean. The set below
+     scores: lightness band PASS · chroma floor PASS · CVD separation worst
+     adjacent ΔE 16.7 (deuteranopia) · normal-vision floor worst adjacent ΔE 20.8.
+
+     The one remaining warning is honest and relieved rather than ignored: the gold
+     sits at 2.47:1 against the surface, under 3:1. That obligates a visible label
+     or a table view — and every chart in the reports is drawn directly above the
+     table of the same numbers, so the relief is real rather than asserted. */
+  --chart-1: #c44553; /* burgundy — the brand hue, lightened into the band */
+  --chart-2: #cf9a1c; /* gold */
+  --chart-3: #0b87ad; /* teal */
+  --chart-4: #57a02a; /* green */
+
+  /* Magnitude, not identity: ONE hue, light to dark. A rainbow ramp implies
+     categories where the data has only "more" and "less". */
+  --chart-seq-1: #f4dfd9;
+  --chart-seq-2: #e59aa0;
+  --chart-seq-3: #c44553;
+  --chart-seq-4: #94303a;
+  --chart-seq-5: #611720;
+
+  /* Chart furniture. Recessive on purpose — a gridline that competes with the
+     data is a gridline that hides it. */
+  --chart-grid: rgba(42, 26, 22, 0.08);
+  --chart-axis: #9a8b83;
+}
+
+/*
+   Motion is a preference, and it is one the product must honour.
+
+   Some people get motion sick from transitions; on the washed-out tablets in a
+   back office, animation also costs frames. `prefers-reduced-motion` is not an
+   accessibility checkbox here — the floor plan already degrades under it, and
+   this makes the rest of the interface agree.
+*/
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-base: 0ms;
+    --duration-slow: 0ms;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── printing ────────────────────────────────────────────────────────────── */
+/*
+   One thing on a page at a time.
+
+   The only things this product prints are a staff badge and, in a browser
+   without a thermal printer, a receipt. Both are small cards inside a full
+   admin layout, so an unguarded `window.print()` produces a sheet of paper with
+   a sidebar down one side and the card somewhere in the middle.
+
+   `.print-only-target` marks the element that IS the printout; everything else
+   in the body is hidden and the target is lifted to the top of the page. Scoped
+   component styles cannot do this — the sidebar lives outside the component
+   that knows it is being printed.
+*/
+@media print {
+  body:has(.print-only-target) > *:not(:has(.print-only-target)) {
+    display: none !important;
+  }
+
+  .print-only-target {
+    position: absolute !important;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

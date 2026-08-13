@@ -1,0 +1,242 @@
+"""
+Play-session pricing — the single authority on what a child's visit costs.
+
+Like `money.py`, this module is deliberately free of Django imports: the PySide6
+Desktop vendors it verbatim so a session checked out during an outage produces
+the same figure the server computes on sync. Both sides are validated against
+tests/fixtures/play_tariff_cases.json. If they ever disagree by one piaster, CI
+fails.
+
+The shape of the calculation (docs/12-kids-area.md):
+
+    TIMED     entry_fee covers `included_minutes`; every `block_minutes`
+              thereafter costs `block_rate`; `grace_minutes` of free overrun
+              before the next block starts; `daily_cap` bounds the total.
+    PACKAGE   identical arithmetic with `package_minutes` as the included
+              period — the common Egyptian model, "ساعة ٥٠ جنيه".
+    OPEN_DAY  flat fee, unlimited duration. No blocks, no cap.
+
+Two rules that look like details and are not:
+
+  * The grace period exists to prevent the argument that otherwise happens at
+    the counter every single day — a parent two minutes late being charged for a
+    full block. It costs the cafe almost nothing and removes a recurring dispute.
+
+  * The charge is computed from the two timestamps, never accumulated as the
+    meter runs. A device that slept, a clock that drifted, or a sync that
+    arrived late all produce the same answer, because the answer is a function
+    of check-in and check-out and nothing else.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime, time
+from decimal import ROUND_CEILING, ROUND_HALF_UP, Decimal
+
+__all__ = [
+    "MODE_OPEN_DAY",
+    "MODE_PACKAGE",
+    "MODE_TIMED",
+    "ROUNDING_MODES",
+    "PlayCharge",
+    "Tariff",
+    "compute_charge",
+    "elapsed_minutes",
+    "expected_end",
+    "tariff_applies_at",
+]
+
+ZERO = Decimal("0.00")
+CENT = Decimal("0.01")
+ONE = Decimal("1")
+
+MODE_TIMED = "TIMED"
+MODE_PACKAGE = "PACKAGE"
+MODE_OPEN_DAY = "OPEN_DAY"
+
+ROUNDING_UP = "up_to_block"
+ROUNDING_NEAREST = "nearest_block"
+ROUNDING_EXACT = "exact_minutes"
+ROUNDING_MODES = (ROUNDING_UP, ROUNDING_NEAREST, ROUNDING_EXACT)
+
+
+def _money(value: Decimal) -> Decimal:
+    return value.quantize(CENT, rounding=ROUND_HALF_UP)
+
+
+@dataclass(frozen=True)
+class Tariff:
+    """
+    A pricing rule, flattened out of the ORM so the Desktop can hold one too.
+
+    No defaults on the money fields, for the same reason `TaxRules` has none: a
+    tariff that constructed itself with a zero entry fee by mistake would give a
+    child a free visit and nobody would notice until the month-end report.
+    """
+
+    mode: str
+    entry_fee: Decimal
+    included_minutes: int = 0
+    """TIMED only. PACKAGE uses `package_minutes`; OPEN_DAY uses neither."""
+    package_minutes: int = 0
+    block_minutes: int = 0
+    block_rate: Decimal = ZERO
+    grace_minutes: int = 0
+    daily_cap: Decimal = ZERO
+    """0 means uncapped."""
+
+    @property
+    def covered_minutes(self) -> int:
+        """How long the entry fee buys, whatever the mode calls that field."""
+        if self.mode == MODE_PACKAGE:
+            return self.package_minutes
+        if self.mode == MODE_OPEN_DAY:
+            return 0
+        return self.included_minutes
+
+
+@dataclass(frozen=True)
+class PlayCharge:
+    charge: Decimal
+    billable_minutes: int
+    """The minutes the charge is based on — what the receipt line explains."""
+    elapsed_minutes: int
+    overrun_minutes: int
+    """Minutes past the covered period, before grace is applied."""
+    blocks: int
+    capped: bool
+    """True when `daily_cap` bound the total. Shown to staff, never hidden."""
+
+
+def elapsed_minutes(start: datetime, end: datetime) -> int:
+    """
+    Whole minutes between two instants, floored, never negative.
+
+    Crossing midnight needs no special case — these are instants, not clock
+    faces. A clock that went backwards yields zero rather than a credit.
+    """
+    seconds = (end - start).total_seconds()
+    return max(0, int(seconds // 60))
+
+
+def compute_charge(
+    tariff: Tariff,
+    minutes: int,
+    *,
+    rounding: str = ROUNDING_UP,
+    grace_minutes: int | None = None,
+) -> PlayCharge:
+    """
+    Price a session of `minutes`.
+
+    `grace_minutes` overrides the tariff's own grace — the branch-level
+    `kids.grace_minutes` setting is the default, and a tariff may narrow it.
+    """
+    if rounding not in ROUNDING_MODES:
+        raise ValueError(f"unknown rounding mode: {rounding}")
+
+    minutes = max(0, int(minutes))
+    grace = tariff.grace_minutes if grace_minutes is None else max(0, int(grace_minutes))
+
+    if tariff.mode == MODE_OPEN_DAY:
+        # Unlimited until closing. A cap on an already-flat fee would be noise.
+        return PlayCharge(
+            charge=_money(tariff.entry_fee),
+            billable_minutes=minutes,
+            elapsed_minutes=minutes,
+            overrun_minutes=0,
+            blocks=0,
+            capped=False,
+        )
+
+    covered = max(0, tariff.covered_minutes)
+    overrun = max(0, minutes - covered)
+
+    blocks = 0
+    extra = ZERO
+    billable = min(minutes, covered)
+
+    if overrun > grace and tariff.block_minutes > 0 and tariff.block_rate > ZERO:
+        units = Decimal(overrun) / Decimal(tariff.block_minutes)
+
+        if rounding == ROUNDING_EXACT:
+            # Pro-rata to the minute. Billable minutes are the real elapsed ones.
+            extra = _money(units * tariff.block_rate)
+            billable = minutes
+        else:
+            quantized = (
+                units.quantize(ONE, rounding=ROUND_CEILING)
+                if rounding == ROUNDING_UP
+                else units.quantize(ONE, rounding=ROUND_HALF_UP)
+            )
+            # Grace has already been exceeded, so a block has started. Without
+            # this floor, `nearest_block` would silently un-charge an overrun
+            # the grace period had explicitly declined to forgive.
+            blocks = max(1, int(quantized))
+            extra = _money(Decimal(blocks) * tariff.block_rate)
+            billable = covered + blocks * tariff.block_minutes
+    elif overrun > 0:
+        # Inside grace: the time happened, it simply is not charged for.
+        billable = minutes
+
+    charge = _money(tariff.entry_fee + extra)
+    capped = False
+
+    if tariff.daily_cap > ZERO and charge > tariff.daily_cap:
+        charge = _money(tariff.daily_cap)
+        capped = True
+
+    return PlayCharge(
+        charge=charge,
+        billable_minutes=billable,
+        elapsed_minutes=minutes,
+        overrun_minutes=overrun,
+        blocks=blocks,
+        capped=capped,
+    )
+
+
+def expected_end(tariff: Tariff, start: datetime) -> datetime | None:
+    """
+    When the session is due to finish, for the live board's countdown.
+
+    `None` for OPEN_DAY — the caller substitutes the branch's closing time,
+    which this module has no business knowing.
+    """
+    from datetime import timedelta
+
+    covered = tariff.covered_minutes
+    if tariff.mode == MODE_OPEN_DAY or covered <= 0:
+        return None
+    return start + timedelta(minutes=covered)
+
+
+def tariff_applies_at(
+    moment: datetime,
+    *,
+    applies_days: list[int] | tuple[int, ...] | None,
+    applies_from: time | None,
+    applies_to: time | None,
+) -> bool:
+    """
+    Whether a tariff's window contains `moment`.
+
+    `applies_days` uses Python's weekday numbering (Monday = 0). An empty or
+    missing list means every day; empty times mean all day.
+
+    A window whose end is before its start wraps past midnight — a late-night
+    rate of 22:00–02:00 is a real thing a cafe sells, and reading it as an empty
+    window would silently drop it out of selection.
+    """
+    if applies_days:
+        if moment.weekday() not in set(applies_days):
+            return False
+
+    if applies_from is None or applies_to is None or applies_from == applies_to:
+        return True
+
+    clock = moment.time()
+    if applies_from < applies_to:
+        return applies_from <= clock < applies_to
+    return clock >= applies_from or clock < applies_to

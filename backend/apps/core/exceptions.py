@@ -39,12 +39,19 @@ class AppError(APIException):
         detail: str | None = None,
         *,
         code: str | None = None,
+        status_code: int | None = None,
         errors: dict[str, Any] | None = None,
         extra: dict[str, Any] | None = None,
     ) -> None:
         super().__init__(detail or self.default_detail)
         if code:
             self.code = code
+        # Accepted per-instance because four call sites already read naturally
+        # this way, and without it they raised TypeError — turning an intended
+        # 403 DEVICE_REVOKED into a 500 with no code, which is exactly the
+        # signal the Desktop bootstrap branches on to clear its credentials.
+        if status_code is not None:
+            self.status_code = status_code
         self.errors = errors or {}
         self.extra = extra or {}
 

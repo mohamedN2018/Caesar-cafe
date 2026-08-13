@@ -1,0 +1,55 @@
+{
+  "name": "كافيه القيصر — الإدارة",
+  "short_name": "القيصر",
+  "description": "متابعة المبيعات والمطبخ وصالة الأطفال من أي مكان.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "lang": "ar",
+  "dir": "rtl",
+  "background_color": "#fbf7f0",
+  "theme_color": "#7b1e28",
+  "categories": ["business", "productivity"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "الصالة",
+      "short_name": "الصالة",
+      "url": "/floor",
+      "description": "من يجلس أين، وكم كرسي فاضي."
+    },
+    {
+      "name": "المطبخ",
+      "short_name": "المطبخ",
+      "url": "/kitchen",
+      "description": "التذاكر المفتوحة والمتأخرة."
+    },
+    {
+      "name": "التقارير",
+      "short_name": "التقارير",
+      "url": "/reports",
+      "description": "مبيعات اليوم والأسبوع."
+    }
+  ]
+}

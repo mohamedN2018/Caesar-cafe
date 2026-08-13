@@ -78,7 +78,7 @@ def _scope_context(request: Request) -> resolver.ScopeContext:
         from apps.organizations.models import Branch
 
         owns_branch = Branch.objects.filter(
-            id=branch_id, organization_id=principal.organization_id
+            id=branch_id, organization_id=principal.require_organization()
         ).exists()
         if not owns_branch:
             raise NotFoundError("الفرع غير موجود", code="BRANCH_NOT_FOUND")

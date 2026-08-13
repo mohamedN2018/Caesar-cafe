@@ -14,6 +14,7 @@ from uuid import UUID
 
 from django.contrib.auth.hashers import check_password, make_password
 from django.core.cache import cache
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.configuration import resolver
@@ -64,9 +65,21 @@ def _keys(scope: str) -> tuple[str, str]:
     return f"{ATTEMPT_PREFIX}:{scope}", f"{LOCKOUT_PREFIX}:{scope}"
 
 
-def assert_not_locked(scope: str) -> None:
+def is_locked(scope: str) -> bool:
+    """
+    Whether a scope is currently locked, without raising.
+
+    Beside `assert_not_locked` rather than reimplemented in the serializer that
+    needs it: a second copy of the key layout is how the reader and the writer of
+    a cache key eventually disagree, and a lock indicator that reads the wrong key
+    always says "not locked".
+    """
     _, lock_key = _keys(scope)
-    if cache.get(lock_key):
+    return bool(cache.get(lock_key))
+
+
+def assert_not_locked(scope: str) -> None:
+    if is_locked(scope):
         raise AccountLocked()
 
 
@@ -88,7 +101,43 @@ def record_failure(scope: str, policy: LockoutPolicy) -> int:
             "Authentication scope locked out",
             extra={"scope": scope, "attempts": attempts},
         )
+        _audit_auth(
+            "auth.lockout", scope, {"attempts": attempts, "seconds": policy.lockout_seconds}
+        )
+    elif attempts > 3:
+        # Below the threshold, repeated failures are still worth finding — a run
+        # of three across several accounts is the shape of credential stuffing,
+        # and each one on its own looks like somebody who forgot their password.
+        _audit_auth("auth.login_failed", scope, {"attempts": attempts})
+
     return attempts
+
+
+def _audit_auth(action: str, scope: str, detail: dict) -> None:
+    """
+    Audit an auth event.
+
+    The tenant has to be resolved from the scope, because a failed login happens
+    BEFORE authentication — there is no principal for the middleware to have
+    filled in. A known address resolves to its organization, so the branch
+    manager whose staff account is being stuffed can see it. An unknown address
+    resolves to nothing and the row stays org-less, visible to a superuser: that
+    attempt is a platform-level signal, not one tenant's business.
+    """
+    from apps.audit import services as audit
+
+    organization = None
+    if scope.startswith("email:"):
+        user = User.objects.filter(email__iexact=scope.removeprefix("email:")).first()
+        organization = user.organization if user else None
+
+    audit.record(
+        action,
+        organization=organization,
+        object_type="auth_scope",
+        object_id=scope[:64],
+        detail=detail,
+    )
 
 
 def clear_failures(scope: str) -> None:
@@ -227,3 +276,163 @@ def consume_recovery_code(user: User, code: str) -> bool:
             logger.warning("MFA recovery code used", extra={"user_id": str(user.id)})
             return True
     return False
+
+
+# ── POS sign-in ──────────────────────────────────────────────────────────────
+
+
+class BadgeRejected(AuthenticationFailed):
+    """A badge that is unknown, revoked, or belongs to another organization."""
+
+
+def sign_in_at_terminal(
+    *,
+    device,
+    pin: str = "",
+    badge_token: str = "",
+    ip_address: str | None = None,
+) -> User:
+    """
+    Identify which human is standing at an activated terminal.
+
+    This is the web till's equivalent of the Desktop's local PIN match, and it
+    exists because the two clients cannot make the same promise. The Desktop
+    matches against its own mirror so it keeps selling with the network down; a
+    browser tab with no network is not a point of sale, so it asks the server
+    and gets a real answer instead of a cached one.
+
+    **A cashier has no account to log into.** They have a PIN or a badge and a
+    terminal that the branch has enrolled, and that is the whole credential.
+    Giving every cashier an email and a password would mean a password typed on
+    a shared screen in front of a queue — which is a password written on the
+    till within a week.
+
+    Neither secret is ever accepted without `device`. That is not a formality:
+    a four-digit PIN on the open internet is guessable in an afternoon, and the
+    device binding is the entire reason it is allowed to be four digits.
+    """
+    from apps.accounts.badges import Badge, fingerprint, looks_like_a_badge
+
+    if badge_token:
+        if not looks_like_a_badge(badge_token):
+            # Some other QR in the room — a product barcode, a WiFi card. Not a
+            # failed sign-in against anybody, so it is not counted as one.
+            raise BadgeRejected("هذا الرمز ليس بطاقة موظف")
+
+        badge = (
+            Badge.objects.select_related("user")
+            .filter(token_hash=fingerprint(badge_token), revoked_at__isnull=True)
+            .first()
+        )
+        holder = badge.user if badge else None
+        ok = (
+            holder is not None
+            and holder.is_active
+            and holder.organization_id == device.license.organization_id
+        )
+
+        log_attempt(
+            identifier=str(holder.id) if holder else "unknown-badge",
+            kind="PIN",
+            succeeded=ok,
+            ip_address=ip_address,
+            device_id=device.id,
+        )
+        if not ok or badge is None:
+            raise BadgeRejected("البطاقة غير صالحة")
+
+        badge.last_used_at = timezone.now()
+        badge.save(update_fields=["last_used_at", "updated_at"])
+        return badge.user
+
+    if not pin:
+        raise AuthenticationFailed("أدخل رمز الدخول أو امسح البطاقة")
+
+    # The PIN identifies the person, so every candidate at this branch has to be
+    # tried. `terminal:{device}` is the rate limit that matters here — it is what
+    # stops somebody standing at the till working through 0000..9999 against the
+    # whole staff list.
+    #
+    # **The candidates are matched WITHOUT per-user rate limiting, and that is a
+    # correction.** This loop used to call `verify_pin`, which counts a failure
+    # against the (user, device) scope every time the PIN is not that user's. Two
+    # consequences, both real and both observed:
+    #
+    #   1. A cashier signing in with her OWN correct PIN recorded a failed
+    #      attempt against every colleague the loop reached first. Five ordinary
+    #      sign-ins locked out most of the branch and wrote nine
+    #      `auth.login_failed` audit rows for people who were not in the building.
+    #
+    #   2. `verify_pin` opens with `assert_not_locked`, which RAISES. So one
+    #      locked-out colleague aborted the loop for everybody: the till answered
+    #      429 to a correct PIN and named somebody else's lockout as the reason.
+    #      A terminal that stops selling because a colleague mistyped is worse
+    #      than the brute-force risk the per-user counter was there to cover —
+    #      and the terminal scope already covers it.
+    #
+    # `verify_pin` keeps its per-user limiting for the step-up approval path,
+    # where the caller NAMES the approver and a wrong PIN really is that person's
+    # failed attempt.
+    # Named remedy, because there now IS one. Until the admin gained an unlock
+    # button the only answer was to wait out fifteen minutes, so the generic
+    # "attempts temporarily stopped" was all anybody could honestly say. A cashier
+    # who knows a manager can clear it does not stand there re-typing.
+    #
+    # Note for whoever reads a support call about this: `pos_login` is ALSO
+    # throttled at 5/min per IP, and that is a separate 429 carrying
+    # `RATE_LIMITED` rather than `ACCOUNT_LOCKED`. Five wrong PINs trip both, and
+    # unlocking clears only the lockout — for the remainder of that minute the
+    # till still answers 429. The codes differ so the two can be told apart; the
+    # throttle heals itself within the minute and needs nobody.
+    try:
+        assert_not_locked(f"terminal:{device.id}")
+    except AccountLocked as exc:
+        raise AccountLocked(
+            "تم إيقاف الدخول بالرمز على هذا الجهاز مؤقتاً. المدير يفتحه من شاشة الأجهزة."
+        ) from exc
+
+    policy = LockoutPolicy.load(device.license.organization_id)
+
+    for candidate in _terminal_candidates(device):
+        if candidate.is_active and candidate.check_pin(pin):
+            log_attempt(
+                identifier=str(candidate.id),
+                kind="PIN",
+                succeeded=True,
+                ip_address=ip_address,
+                device_id=device.id,
+            )
+            clear_failures(f"terminal:{device.id}")
+            # The person is in, so whatever their own counter held is stale.
+            clear_failures(f"pin:{candidate.id}:{device.id}")
+            return candidate
+
+    # One attempt for one entry. The identifier is the terminal, not a person:
+    # nobody has been identified, and attributing it to a name would put a failed
+    # login on a staff record on the strength of a guess.
+    log_attempt(
+        identifier=f"terminal:{device.id}",
+        kind="PIN",
+        succeeded=False,
+        ip_address=ip_address,
+        device_id=device.id,
+    )
+    record_failure(f"terminal:{device.id}", policy)
+    raise AuthenticationFailed("رمز الدخول غير صحيح")
+
+
+def _terminal_candidates(device):
+    """
+    Everyone who could be standing at this terminal: active, with a PIN set,
+    holding a role at this device's branch or across the organization.
+    """
+    from apps.authz.models import RoleAssignment
+
+    user_ids = RoleAssignment.objects.filter(
+        Q(branch_id=device.branch_id) | Q(branch__isnull=True),
+        role__organization_id=device.license.organization_id,
+    ).values_list("user_id", flat=True)
+
+    return User.objects.filter(
+        id__in=user_ids, is_active=True, organization_id=device.license.organization_id
+    ).exclude(pin_hash="")

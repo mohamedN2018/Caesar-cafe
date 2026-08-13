@@ -121,7 +121,14 @@ class TokenFamily(BaseModel):
 
     KIND_CHOICES = [("WEB", "WEB"), ("DEVICE", "DEVICE"), ("POS", "POS")]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="token_families")
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name="token_families",
+        null=True,
+        blank=True,
+        help_text="Null for DEVICE sessions — a terminal is not a person.",
+    )
     current_jti = models.UUIDField(db_index=True)
     kind = models.CharField(max_length=10, choices=KIND_CHOICES, default="WEB")
     device_id = models.UUIDField(null=True, blank=True)
@@ -202,3 +209,9 @@ class LoginAttempt(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} {'ok' if self.succeeded else 'FAIL'} {self.identifier}"
+
+
+# `Badge` lives in `badges.py` beside the minting and hashing it belongs to.
+# Re-exported here so Django's app loader finds it and so `from
+# apps.accounts.models import Badge` reads the same as every other model.
+from .badges import Badge  # noqa: E402,F401  (import position is deliberate)

@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from apps.audit import services as audit
 from apps.authz.approval import issue_approval_token
 from apps.authz.catalog import is_valid as is_valid_permission
 from apps.authz.context import PrincipalKind
@@ -27,6 +28,7 @@ from apps.authz.services import effective_permissions
 from apps.configuration import resolver
 from apps.configuration.resolver import ScopeContext
 from apps.core.exceptions import AppError, PermissionDeniedError
+from apps.core.serializers import DetailSerializer as SimpleResultSerializer
 
 from . import services, tokens, totp
 from .models import User
@@ -38,9 +40,9 @@ from .serializers import (
     MeSerializer,
     MFAConfirmSerializer,
     MFASetupSerializer,
+    PosSignInSerializer,
     RefreshRequestSerializer,
     SetPinSerializer,
-    SimpleResultSerializer,
     TokenPairSerializer,
     VerifyPinRequestSerializer,
 )
@@ -196,7 +198,7 @@ class MeView(APIView):
     @extend_schema(summary="Current principal", responses={200: MeSerializer})
     def get(self, request: Request) -> Response:
         context = auth_context(request)
-        user = User.objects.get(id=context.user_id)
+        user = User.objects.get(id=context.require_user())
 
         roles = list(RoleAssignment.objects.filter(user=user).values_list("role__code", flat=True))
 
@@ -229,7 +231,7 @@ class ChangePasswordView(APIView):
     )
     def post(self, request: Request) -> Response:
         data = _validated(ChangePasswordSerializer, request)
-        user = User.objects.get(id=auth_context(request).user_id)
+        user = User.objects.get(id=auth_context(request).require_user())
 
         if not user.check_password(data["current_password"]):
             raise services.AuthenticationFailed("كلمة المرور الحالية غير صحيحة")
@@ -258,7 +260,7 @@ class SetPinView(APIView):
     )
     def post(self, request: Request) -> Response:
         data = _validated(SetPinSerializer, request)
-        user = User.objects.get(id=auth_context(request).user_id)
+        user = User.objects.get(id=auth_context(request).require_user())
 
         if not user.check_password(data["current_password"]):
             raise services.AuthenticationFailed("كلمة المرور غير صحيحة")
@@ -274,6 +276,16 @@ class SetPinView(APIView):
 
         user.set_pin(data["pin"])
         user.save(update_fields=["pin_hash", "pin_set_at"])
+
+        # The PIN itself is never in the record — only that it changed, and who
+        # changed it. That is the fact a dispute needs; the value is not.
+        audit.record(
+            "staff.pin_reset",
+            organization=user.organization,
+            actor=user,
+            obj=user,
+            object_label=user.full_name_ar or user.email,
+        )
         return Response({"detail": "تم تعيين رمز الدخول"})
 
 
@@ -310,7 +322,7 @@ class VerifyPinView(APIView):
             raise AppError("صلاحية غير معروفة", code="UNKNOWN_PERMISSION")
 
         approver = User.objects.filter(
-            id=data["user_id"], is_active=True, organization_id=context.organization_id
+            id=data["user_id"], is_active=True, organization_id=context.require_organization()
         ).first()
         if approver is None:
             raise services.AuthenticationFailed()
@@ -345,6 +357,17 @@ class VerifyPinView(APIView):
             ttl_seconds=ttl,
         )
 
+        # BOTH identities, so neither can later disclaim it: the cashier
+        # performed the action, the manager authorized it (docs/09, R2).
+        audit.record(
+            "auth.step_up_approved",
+            organization=approver.organization,
+            approved_by=approver,
+            object_type="permission",
+            object_id=permission,
+            object_label=permission,
+            detail={"target": data.get("target"), "amount": data.get("amount")},
+        )
         logger.info(
             "Step-up approval issued",
             extra={
@@ -376,7 +399,7 @@ class MFASetupView(APIView):
         responses={200: MFASetupSerializer},
     )
     def post(self, request: Request) -> Response:
-        user = User.objects.get(id=auth_context(request).user_id)
+        user = User.objects.get(id=auth_context(request).require_user())
 
         if user.mfa_enabled:
             raise AppError("التحقق بخطوتين مفعّل بالفعل", code="MFA_ALREADY_ENABLED")
@@ -411,7 +434,7 @@ class MFAConfirmView(APIView):
     @transaction.atomic
     def post(self, request: Request) -> Response:
         data = _validated(MFAConfirmSerializer, request)
-        user = User.objects.select_for_update().get(id=auth_context(request).user_id)
+        user = User.objects.select_for_update().get(id=auth_context(request).require_user())
 
         if not user.mfa_secret:
             raise AppError("ابدأ التفعيل أولاً", code="MFA_NOT_STARTED")
@@ -422,6 +445,14 @@ class MFAConfirmView(APIView):
         user.mfa_enabled = True
         user.mfa_confirmed_at = timezone.now()
         user.save(update_fields=["mfa_enabled", "mfa_confirmed_at"])
+
+        audit.record(
+            "auth.mfa_enrolled",
+            organization=user.organization,
+            actor=user,
+            obj=user,
+            object_label=user.full_name_ar or user.email,
+        )
         return Response({"detail": "تم تفعيل التحقق بخطوتين"})
 
 
@@ -435,7 +466,7 @@ class MFADisableView(APIView):
         responses={200: SimpleResultSerializer, 403: None},
     )
     def post(self, request: Request) -> Response:
-        user = User.objects.get(id=auth_context(request).user_id)
+        user = User.objects.get(id=auth_context(request).require_user())
         password = request.data.get("current_password", "")
 
         if not user.check_password(password):
@@ -467,7 +498,7 @@ class SessionListView(APIView):
         from .models import TokenFamily
 
         families = TokenFamily.objects.filter(
-            user_id=auth_context(request).user_id, revoked_at__isnull=True
+            user_id=auth_context(request).require_user(), revoked_at__isnull=True
         ).order_by("-created_at")[:50]
 
         return Response(
@@ -497,3 +528,74 @@ class SessionListView(APIView):
             auth_context(request).user_id, reason="USER_REVOKED_ALL"
         )
         return Response({"detail": f"تم إنهاء {count} جلسة"}, status=status.HTTP_200_OK)
+
+
+class PosSignInView(APIView):
+    """
+    Sign a cashier in at an enrolled terminal, with a PIN or a badge.
+
+    The permission is `""` — explicitly public *within* an otherwise-guarded
+    view — because the caller is not a person yet. What guards this endpoint is
+    the DEVICE token: the request must already come from a terminal the branch
+    enrolled, and that requirement is what makes a four-digit PIN acceptable at
+    all. A PIN on the open internet is guessable in an afternoon.
+
+    A cashier therefore has **no account to log into**. Giving every one of them
+    an email and a password would mean a password typed on a shared screen in
+    front of a queue, which is a password written on the till within a week. The
+    admin still signs in with an email, from a different screen, because an
+    admin is doing a different job in a different place.
+    """
+
+    permission_classes = [IsAuthenticatedPrincipal]
+    required_permission = ""
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "pos_login"
+
+    @extend_schema(
+        summary="Sign in at a terminal with a PIN or badge",
+        request=PosSignInSerializer,
+        responses={200: TokenPairSerializer},
+    )
+    def post(self, request: Request) -> Response:
+        data = _validated(PosSignInSerializer, request)
+        context = auth_context(request)
+
+        if context.device_id is None:
+            raise PermissionDeniedError("الدخول بالرمز من جهاز مفعّل فقط", code="DEVICE_REQUIRED")
+
+        from apps.licensing.models import Device
+
+        # No status re-check here: `AuthzMiddleware._device_context` already
+        # refuses a revoked or suspended device on EVERY request and hands back
+        # an anonymous context, so a revoked till fails at the door with a 401
+        # rather than reaching this line. Re-checking would be a branch that can
+        # never run, and a guard that cannot fire is a guard nobody maintains.
+        device = Device.objects.select_related("license").filter(id=context.device_id).first()
+        if device is None:
+            raise PermissionDeniedError("هذا الجهاز غير مفعّل", code="DEVICE_REVOKED")
+
+        user = services.sign_in_at_terminal(
+            device=device,
+            pin=data.get("pin", ""),
+            badge_token=data.get("badge", ""),
+            ip_address=_client_ip(request),
+        )
+
+        # POS, not WEB: a person AND a device. Both land in the audit log, which
+        # is what makes "who rang this, on which till" answerable later.
+        pair = tokens.issue_pair(
+            user=user,
+            kind=PrincipalKind.POS,
+            organization_id=device.license.organization_id,
+            branch_id=device.branch_id,
+            device_id=device.id,
+            ip_address=_client_ip(request),
+            user_agent=request.headers.get("User-Agent", ""),
+        )
+        pair.pop("family_id", None)
+        pair["user"] = {
+            "id": str(user.id),
+            "full_name_ar": user.full_name_ar,
+        }
+        return Response(pair)

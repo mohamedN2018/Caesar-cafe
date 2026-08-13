@@ -8,6 +8,7 @@ alone never prevents.
 from __future__ import annotations
 
 import ast
+import inspect
 import re
 from pathlib import Path
 
@@ -46,17 +47,24 @@ class TestNoFloatNearMoney:
                 assert node.func.id != "float", "float() called in money.py"
 
 
-class TestMoneyModuleIsPortable:
+class TestVendoredModulesArePortable:
     """
-    apps/core/money.py is vendored into the PySide6 Desktop client verbatim.
-
-    It must therefore have no Django dependency — otherwise the two sides cannot
-    share one algorithm, and they will drift.
+    These modules are copied into the PySide6 Desktop client verbatim, so both
+    sides run identical logic. A Django import in any of them breaks that — and
+    the two implementations would then be free to drift, which is exactly what
+    vendoring exists to prevent.
     """
 
-    def test_no_django_imports(self) -> None:
-        source = (APPS_DIR / "core" / "money.py").read_text(encoding="utf-8")
-        tree = ast.parse(source)
+    VENDORED = [
+        ("core", "money.py", "order totals must agree to the piaster"),
+        ("licensing", "offline_token.py", "the client verifies tokens locally"),
+        ("licensing", "keys.py", "the client normalizes typed keys before sending"),
+    ]
+
+    @pytest.mark.parametrize(("app", "filename", "why"), VENDORED)
+    def test_no_django_imports(self, app: str, filename: str, why: str) -> None:
+        tree = ast.parse((APPS_DIR / app / filename).read_text(encoding="utf-8"))
+
         imported: list[str] = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
@@ -66,7 +74,7 @@ class TestMoneyModuleIsPortable:
 
         django_imports = [name for name in imported if name.split(".")[0] == "django"]
         assert not django_imports, (
-            f"money.py must stay Django-free so the Desktop can vendor it; found: {django_imports}"
+            f"{app}/{filename} must stay Django-free ({why}); found: {django_imports}"
         )
 
 
@@ -126,3 +134,142 @@ class TestRegistryCoversTheDocumentedCatalog:
         from apps.configuration.registry import registry
 
         assert key in registry, f"{key} is documented but not registered"
+
+
+class TestNoReservedKeysInLogExtra:
+    """
+    `logger.info(..., extra={"filename": x})` raises KeyError at runtime.
+
+    Python's logging refuses to let `extra` shadow a LogRecord attribute, so the
+    call site does not log — it throws, from inside an exception handler, and
+    takes down whatever it was trying to report on. Found the hard way in
+    `apps/ops/backups.py`, where every backup crashed on its own success message.
+
+    Cheap to check statically, and the failure is invisible until the code path
+    runs — which for logging is usually during an incident.
+    """
+
+    #: The subset of LogRecord attributes a developer might plausibly reach for.
+    RESERVED = frozenset(
+        {
+            "args",
+            "asctime",
+            "created",
+            "exc_info",
+            "exc_text",
+            "filename",
+            "funcName",
+            "levelname",
+            "levelno",
+            "lineno",
+            "message",
+            "module",
+            "msecs",
+            "msg",
+            "name",
+            "pathname",
+            "process",
+            "processName",
+            "relativeCreated",
+            "stack_info",
+            "thread",
+            "threadName",
+            "taskName",
+        }
+    )
+
+    def _extra_keys(self, path: Path) -> list[tuple[int, str]]:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        found: list[tuple[int, str]] = []
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg != "extra" or not isinstance(keyword.value, ast.Dict):
+                    continue
+                for key in keyword.value.keys:
+                    if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                        found.append((key.lineno, key.value))
+        return found
+
+    def test_no_call_site_shadows_a_logrecord_attribute(self) -> None:
+        offenders = []
+        for path in _python_files():
+            for lineno, key in self._extra_keys(path):
+                if key in self.RESERVED:
+                    offenders.append(f"{path.relative_to(APPS_DIR)}:{lineno}: extra={{'{key}': …}}")
+
+        assert not offenders, (
+            "These would raise KeyError instead of logging. Rename the key:\n  "
+            + "\n  ".join(offenders)
+        )
+
+    def test_the_guard_actually_catches_a_violation(self, tmp_path: Path) -> None:
+        """A guard that cannot fail is not a guard."""
+        offender = tmp_path / "offender.py"
+        offender.write_text('logger.info("x", extra={"filename": f, "ok": 1})\n', encoding="utf-8")
+        keys = [key for _, key in self._extra_keys(offender)]
+
+        assert "filename" in keys
+        assert "ok" in keys, "the guard must see every key, not just the first"
+
+
+class TestErrorConstructorsAcceptWhatCallersPass:
+    """
+    Every keyword handed to an `AppError` must be one it accepts.
+
+    The same shape of bug as the reserved-`extra` class above: it type-checks
+    fine, reads fine, and raises `TypeError` only on the path it guards. Found in
+    four call sites at once — `BRANCH_REQUIRED` in three views and the
+    `DEVICE_REVOKED` backstop in sync — none of which had a test that reached
+    them. Each returned a 500 with no machine code in place of the 400 or 403 the
+    client is written to branch on.
+    """
+
+    def _accepted_kwargs(self) -> set[str]:
+        from apps.core.exceptions import AppError
+
+        signature = inspect.signature(AppError.__init__)
+        return {
+            name
+            for name, param in signature.parameters.items()
+            if param.kind is inspect.Parameter.KEYWORD_ONLY
+        }
+
+    def _error_call_kwargs(self, path: Path) -> list[tuple[int, str, str]]:
+        """(line, class, kwarg) for every `SomethingError(...)` call in a file."""
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        found: list[tuple[int, str, str]] = []
+
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call) or not isinstance(node.func, ast.Name):
+                continue
+            if not node.func.id.endswith("Error"):
+                continue
+            for keyword in node.keywords:
+                if keyword.arg:
+                    found.append((node.lineno, node.func.id, keyword.arg))
+        return found
+
+    def test_no_call_site_passes_an_unaccepted_keyword(self) -> None:
+        accepted = self._accepted_kwargs()
+        offenders = []
+
+        for path in _python_files():
+            for lineno, name, kwarg in self._error_call_kwargs(path):
+                if kwarg not in accepted:
+                    offenders.append(f"{path.relative_to(APPS_DIR)}:{lineno}: {name}(…, {kwarg}=…)")
+
+        assert not offenders, (
+            "These raise TypeError instead of the error they describe. "
+            f"AppError accepts {sorted(accepted)}:\n  " + "\n  ".join(offenders)
+        )
+
+    def test_the_guard_actually_catches_a_violation(self, tmp_path: Path) -> None:
+        offender = tmp_path / "offender.py"
+        offender.write_text('raise AppError("x", code="C", http=418)\n', encoding="utf-8")
+        kwargs = [kwarg for _, _, kwarg in self._error_call_kwargs(offender)]
+
+        assert kwargs == ["code", "http"]
+        assert "http" not in self._accepted_kwargs()

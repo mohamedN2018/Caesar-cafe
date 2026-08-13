@@ -355,6 +355,40 @@ class TestMFAEnrolmentIsNotADeadlock:
         assert api.get("/api/v1/settings/schema/").status_code == 401
 
 
+class TestDeviceTokens:
+    """
+    A device principal has no human, so its token carries no `sub`.
+
+    Regression: setting `sub` to null instead of omitting it made every device
+    token undecodable — PyJWT enforces RFC 7519's "sub is a string when
+    present", so the whole POS would have failed to authenticate.
+    """
+
+    def test_a_device_token_has_no_subject_and_still_decodes(self, branch) -> None:
+        device_id = uuid.uuid4()
+        pair = tokens.issue_pair(
+            user=None,
+            kind="DEVICE",
+            organization_id=branch.organization_id,
+            branch_id=branch.id,
+            device_id=device_id,
+        )
+        payload = tokens.decode(pair["access"], expected_type="access")
+
+        assert "sub" not in payload
+        assert payload["kind"] == "DEVICE"
+        assert payload["device"] == str(device_id)
+
+    def test_a_device_family_needs_no_user(self, branch) -> None:
+        tokens.issue_pair(user=None, kind="DEVICE", organization_id=branch.organization_id)
+        assert TokenFamily.objects.filter(user__isnull=True, kind="DEVICE").exists()
+
+    def test_a_user_token_still_carries_its_subject(self, make_user) -> None:
+        user = make_user()
+        pair = tokens.issue_pair(user=user, kind="WEB", organization_id=user.organization_id)
+        assert tokens.decode(pair["access"], expected_type="access")["sub"] == str(user.id)
+
+
 class TestPermissionEnforcement:
     def test_cashier_cannot_read_the_settings_registry(self, make_user, authed) -> None:
         client = authed(make_user(role="CASHIER"))

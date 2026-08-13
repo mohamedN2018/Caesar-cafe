@@ -28,6 +28,10 @@ PUBLIC_ROUTE_NAMES = frozenset(
         "accounts:login",
         "accounts:refresh",
         "accounts:mfa-verify",
+        # A device has no credentials until it activates, and none afterwards
+        # until it exchanges its secret. Both are throttled hard instead.
+        "licensing:activate",
+        "licensing:device-token",
         "schema",
         "swagger-ui",
         "redoc",
@@ -95,6 +99,17 @@ class HasPermission(BasePermission):
     Accepts a step-up approval token (X-Approval-Token) as an alternative to
     holding the permission directly — that is how a cashier gets a manager's
     approval without logging out. Both identities are recorded.
+
+    **A declaration may be a tuple, meaning "any of these".** Some endpoints are
+    genuinely reachable by two unrelated capabilities, and the alternatives are
+    both worse: picking one locks out a role that legitimately needs it, and
+    inventing a third permission that both roles are granted describes the
+    implementation rather than the job. The payment-method list is the case that
+    forced it — a cashier needs it to take a payment, an accountant needs it to
+    read a report, and neither of those is the other's permission.
+
+    A tuple is `any`, never `all`. An endpoint that truly needs two capabilities
+    at once should say so in its own body, where the reason can be written down.
     """
 
     def has_permission(self, request, view) -> bool:
@@ -107,25 +122,30 @@ class HasPermission(BasePermission):
         if required == "":  # explicitly public within an otherwise-guarded view
             return True
 
+        options = (required,) if isinstance(required, str) else tuple(required)
+
         context = auth_context(request)
         if not context.is_authenticated:
             return False
-        if context.has(required):
+        if any(context.has(code) for code in options):
             return True
 
         token = request.headers.get("X-Approval-Token")
         if token:
-            approval = consume_approval_token(
-                token, permission=required, target=self._target(request, view)
-            )
-            if approval:
-                request.approval = approval
-                return True
+            target = self._target(request, view)
+            for code in options:
+                approval = consume_approval_token(token, permission=code, target=target)
+                if approval:
+                    request.approval = approval
+                    return True
 
-        raise PermissionDeniedError(f"ليس لديك صلاحية: {required}", code="PERMISSION_DENIED")
+        # Names the FIRST option, not all of them. A message listing three codes
+        # reads as a puzzle; the first is the one the caller was most likely
+        # meant to have, and the audit log has the full picture anyway.
+        raise PermissionDeniedError(f"ليس لديك صلاحية: {options[0]}", code="PERMISSION_DENIED")
 
     @staticmethod
-    def _required(request, view) -> str | None:
+    def _required(request, view) -> str | tuple[str, ...] | None:
         per_method = getattr(view, "required_permissions", None)
         if isinstance(per_method, dict):
             return per_method.get(request.method, per_method.get("default"))

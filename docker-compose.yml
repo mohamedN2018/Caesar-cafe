@@ -1,0 +1,355 @@
+# Caesar Cafe — one compose file, local and production.
+#
+#   local:        docker compose up -d --build
+#   local + HMR:  docker compose --profile dev up -d --build
+#   production:   Dokploy clones the repo and runs this file. Nothing else.
+#
+# There used to be three files (dev, prod, dokploy) and they drifted, which is the
+# usual fate of parallel copies: a header tightened in one, a flag added to
+# another, and the thing you tested is not the thing you deployed. There is one
+# file now, and **the difference between local and production is `.env`, not YAML.**
+#
+# `DJANGO_ENV` is the single switch. It selects the build stage (the Dockerfile's
+# stages are literally named `dev` and `prod`), the settings module, and the server
+# the api runs. One variable rather than three that must agree.
+#
+# What is deliberately NOT different between the two modes:
+#
+#   * **Postgres and Redis publish no ports, ever.** They sit on an internal
+#     network the host cannot reach, in both modes. A stack that works locally
+#     only because a port is exposed will fail in production, and it will fail
+#     after you have stopped looking for that class of bug.
+#   * **Everything is reached through Caddy**, so `/api/*` is same-origin in both
+#     modes. That is what makes `connect-src 'self'` in the CSP a real constraint
+#     rather than a comment.
+#   * The security headers, the resource limits, the log rotation, the statement
+#     timeouts and the unprivileged user apply in both. A local stack that is
+#     shaped differently from production is not a rehearsal.
+
+name: caesar
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+# Shared by api, worker and beat — three processes, one image, one config.
+x-django: &django
+  build:
+    context: ./backend
+    # The Dockerfile's stages are named `dev` and `prod`, so this needs no second
+    # variable. `dev` installs the dev extras and runs as root; `prod` installs
+    # without them and drops to an unprivileged user.
+    target: ${DJANGO_ENV:-prod}
+  # The mode is IN the tag. Both stages produce a `caesar-api` image, and with one
+  # shared tag whichever built last would win: switch DJANGO_ENV to dev and you get
+  # the prod image back — no autoreload, and no pytest, reported as
+  # "No module named pytest" from a file that plainly has it installed. Two tags,
+  # so the two images cannot be mistaken for each other.
+  image: caesar-api:${DJANGO_ENV:-prod}-${IMAGE_TAG:-latest}
+  env_file: [.env]
+  environment:
+    DJANGO_SETTINGS_MODULE: config.settings.${DJANGO_ENV:-prod}
+    # Passed explicitly as well as through env_file, so the start script below can
+    # branch on it even when .env does not mention it.
+    DJANGO_ENV: ${DJANGO_ENV:-prod}
+  restart: unless-stopped
+  logging: *logging
+  depends_on:
+    postgres: {condition: service_healthy}
+    redis: {condition: service_healthy}
+
+services:
+  # ── data ───────────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-caesar}
+      POSTGRES_USER: ${POSTGRES_USER:-caesar}
+      # No default. A database whose password is whatever the file happened to say
+      # is a database with a known password.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — copy .env.production to .env}
+    # A statement timeout, so one pathological query cannot hold a connection all
+    # night. 30s is far above any request this app makes and far below "forever".
+    command:
+      - postgres
+      - -c
+      - statement_timeout=30000
+      - -c
+      - idle_in_transaction_session_timeout=60000
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-caesar} -d ${POSTGRES_DB:-caesar}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    logging: *logging
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    logging: *logging
+    networks: [internal]
+
+  # ── application ────────────────────────────────────────────────────────────
+  api:
+    <<: *django
+    # Migrations, roles and static files on every start.
+    #
+    # `sync_roles` is here rather than in a runbook because a release that adds a
+    # permission code otherwise lands with the code in the catalogue, the routes
+    # enforcing it, and no role holding it — the feature is deployed and nobody
+    # can reach it. Ask how many times that shipped before it was noticed.
+    #
+    # `$$` escapes the interpolation so compose passes the variable through to the
+    # shell instead of substituting it at parse time.
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        python manage.py migrate --noinput
+        python manage.py sync_roles
+
+        # Demo data, off unless asked for. `seed_demo` refuses when orders already
+        # exist, and that refusal is the guard that stops a second boot from mixing
+        # demo rows into real trading — so it is tolerated here rather than fatal.
+        if [ "$${DEMO_SEED:-0}" = "1" ]; then
+          python manage.py seed_demo --days "$${DEMO_DAYS:-14}" || \
+            echo "seed_demo declined: trading data already present, leaving it alone"
+        fi
+
+        # The admin account, on EVERY boot rather than only alongside seeding.
+        #
+        # It used to live inside the block above, which meant it appeared once and
+        # then stopped: seeding is a first-boot job, so turning DEMO_SEED off — which
+        # the seed itself tells you to do — also quietly stopped maintaining the
+        # login. `demo_admin` creates or updates, so running it every time is what
+        # makes the account reliably there.
+        #
+        # Its own switch, defaulting to OFF. It has to be a switch: this command
+        # writes a known password and relaxes MFA, so a repository whose default
+        # start-up creates `admin`/`admin` would ship a back door to everyone who
+        # cloned it. `.env.production` sets it to 1 — that decision belongs to the
+        # person deploying, recorded in their environment, not to this file.
+        if [ "$${DEMO_ADMIN:-0}" = "1" ]; then
+          python manage.py demo_admin
+        fi
+
+        if [ "$${DJANGO_ENV:-prod}" = "dev" ]; then
+          exec python manage.py runserver 0.0.0.0:8000
+        fi
+
+        python manage.py collectstatic --noinput
+        exec gunicorn config.wsgi:application \
+          --bind 0.0.0.0:8000 \
+          --workers "$${GUNICORN_WORKERS:-3}" \
+          --timeout 60 \
+          --graceful-timeout 30 \
+          --max-requests 1000 \
+          --max-requests-jitter 100 \
+          --access-logfile - \
+          --error-logfile -
+    volumes:
+      - static:/app/staticfiles
+      - media:/app/media
+      - backups:/backups
+    ports:
+      # **Loopback only, in both modes.** This is the whole trick that lets one
+      # file serve both: locally it is how you curl the API directly, and on a
+      # public VPS `127.0.0.1` means the internet cannot reach Django even though
+      # the mapping exists. A bare `8010:8000` here would publish an unencrypted
+      # Django to the world beside the TLS everyone assumes they are using.
+      #
+      # In `prod` mode this port answers 301, not 200: `SECURE_SSL_REDIRECT` sends
+      # plain HTTP to https://, and nothing serves TLS here. That is correct — the
+      # api refuses unencrypted traffic — and it means a direct curl needs the
+      # header Caddy adds:
+      #     curl -H 'X-Forwarded-Proto: https' http://127.0.0.1:8010/api/v1/system/health/
+      - "127.0.0.1:${API_PORT:-8010}:8000"
+    # Overridden for two reasons, and the second one is the interesting one.
+    #
+    # 1. `--start-period=20s` in the image is right for a restart and far too short
+    #    for a FIRST boot: migrations, `collectstatic` and (with DEMO_SEED=1) two
+    #    weeks of generated trading all run before gunicorn binds — just over two
+    #    minutes here. Docker reports unhealthy meanwhile, and an orchestrator that
+    #    gates a deploy on health calls that a failed deploy. The image cannot know
+    #    whether seeding is on; this file can.
+    #
+    # 2. The image's check asks for plain http, so in prod mode it receives the
+    #    `SECURE_SSL_REDIRECT` 301 — and `curl -f` does not fail on a 3xx, so it
+    #    **passed on the redirect**, having proven only that something was
+    #    listening on the port. It never reached the view, so it never checked the
+    #    database it exists to check. With the forwarded-proto header it gets the
+    #    real 200 and the real database probe.
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS -H 'X-Forwarded-Proto: https' http://localhost:8000/api/v1/system/health/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      start_period: 240s
+      retries: 3
+    networks: [internal, edge]
+    deploy:
+      resources:
+        limits: {memory: 1G}
+    develop:
+      # `docker compose watch` syncs code into the running container. This replaces
+      # the old dev bind mount, which could not live in a shared file: mounting the
+      # host's ./backend over /app in production would shadow the image's installed
+      # code with whatever the clone happened to contain.
+      watch:
+        - action: sync
+          path: ./backend
+          target: /app
+          ignore: [.venv/, __pycache__/, .pytest_cache/, htmlcov/]
+        - action: rebuild
+          path: ./backend/pyproject.toml
+
+  worker:
+    <<: *django
+    command: celery -A config worker -l info --concurrency=${CELERY_CONCURRENCY:-2} --max-tasks-per-child=200
+    volumes:
+      - media:/app/media
+      - backups:/backups
+    networks: [internal]
+    # The image's own HEALTHCHECK curls :8000, because it was written for the api.
+    # A worker serves no HTTP, so that check can never pass and Docker reports this
+    # container as permanently unhealthy — which is worse than having no check at
+    # all, because it teaches you that "unhealthy" here means nothing, and then you
+    # read past it on the day the api says it too.
+    #
+    # This asks the worker whether it is actually consuming from the broker, which
+    # is the thing that matters. 20s because `inspect ping` waits on a round trip.
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A config inspect ping -d celery@$$HOSTNAME || exit 1"]
+      interval: 60s
+      timeout: 20s
+      start_period: 40s
+      retries: 3
+    deploy:
+      resources:
+        limits: {memory: 768M}
+
+  beat:
+    <<: *django
+    command: celery -A config beat -l info
+    networks: [internal]
+    # Disabled rather than faked, for the same reason as above but the opposite
+    # conclusion. beat answers no `inspect` — it publishes, it does not consume —
+    # so the only check available is "is the process running", which Docker already
+    # knows and which tells you nothing: a beat that has silently stopped
+    # scheduling is still a running process. The real signal is a scheduled job
+    # that stopped arriving, and that is monitored where the job lands.
+    healthcheck:
+      disable: true
+    deploy:
+      resources:
+        limits: {memory: 256M}
+
+  # ── the edge ───────────────────────────────────────────────────────────────
+  web:
+    # Caddy, serving the built SPA and proxying /api/* to the api service. The SPA
+    # is built inside the image because Dokploy has no host step to build it on —
+    # it clones the repo and brings this file up.
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile.web
+    image: caesar-web:${IMAGE_TAG:-latest}
+    restart: unless-stopped
+    logging: *logging
+    volumes:
+      # Read-only: this container serves these, it never writes them.
+      - static:/srv/static:ro
+      - media:/srv/media:ro
+    ports:
+      # Loopback for the same reason as the api. In production Traefik reaches this
+      # container over the proxy network, not through a published port.
+      - "127.0.0.1:${HTTP_PORT:-8080}:80"
+    networks: [internal, edge, proxy]
+    depends_on: [api]
+    deploy:
+      resources:
+        limits: {memory: 128M}
+    labels:
+      # Traefik holds the certificate and routes the domain here. Caddy inside this
+      # container listens on :80 with `auto_https off` — two things trying to obtain
+      # a certificate for one hostname is how you get an ACME rate-limit and an
+      # outage. Locally there is no Traefik and these labels are inert.
+      traefik.enable: "true"
+      traefik.docker.network: ${PROXY_NETWORK:-bridge}
+      traefik.http.routers.caesar.rule: Host(`${DOMAIN:-localhost}`)
+      traefik.http.routers.caesar.entrypoints: websecure
+      traefik.http.routers.caesar.tls.certresolver: letsencrypt
+      traefik.http.services.caesar.loadbalancer.server.port: "80"
+      # Plain HTTP is redirected, not served. A POS reachable over http:// is a POS
+      # whose session token can be read off the wire.
+      traefik.http.routers.caesar-insecure.rule: Host(`${DOMAIN:-localhost}`)
+      traefik.http.routers.caesar-insecure.entrypoints: web
+      traefik.http.routers.caesar-insecure.middlewares: caesar-https
+      traefik.http.middlewares.caesar-https.redirectscheme.scheme: https
+      traefik.http.middlewares.caesar-https.redirectscheme.permanent: "true"
+
+  # ── local only ─────────────────────────────────────────────────────────────
+  frontend:
+    # Vite with hot reload, for working on the SPA. Off unless you ask for it:
+    #   docker compose --profile dev up -d
+    # Without it, `web` serves the built bundle and a change needs a rebuild —
+    # which is also exactly what production does.
+    profiles: [dev]
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0"
+    environment:
+      # Derived from API_PORT rather than written out again. Two copies of one port
+      # is a trap: change one and the browser silently calls a port nothing is
+      # listening on.
+      VITE_API_BASE_URL: http://localhost:${API_PORT:-8010}/api/v1
+      # The HMR client dials this from the page. It must be the HOST port, not
+      # Vite's internal 5173, or the websocket connects to nothing and every edit
+      # needs a manual refresh.
+      FRONTEND_PORT: ${FRONTEND_PORT:-5173}
+    volumes:
+      - ./frontend:/app
+      # `npm run api:types` reads ../backend/schema.yml. Read-only: the schema is
+      # generated by the backend, never here.
+      - ./backend/schema.yml:/backend/schema.yml:ro
+      - frontend_modules:/app/node_modules
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-5173}:5173"
+    networks: [edge]
+
+volumes:
+  pgdata:
+  redisdata:
+  static:
+  media:
+  backups:
+  frontend_modules:
+
+networks:
+  # Postgres and Redis live here and nothing else can reach them.
+  internal:
+    internal: true
+  # api ↔ web ↔ frontend.
+  edge:
+  # Dokploy's Traefik network in production; the always-present default bridge
+  # locally, so `docker compose up` needs no `docker network create` first.
+  #
+  # `external` because this compose must not try to own it — Traefik is already
+  # attached, and a second definition would create a separate network with the
+  # same name and nothing would route.
+  proxy:
+    external: true
+    name: ${PROXY_NETWORK:-bridge}

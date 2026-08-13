@@ -8,6 +8,11 @@ SECRET_KEY = "test-only-secret-key-padded-to-thirty-two-bytes-minimum"  # noqa: 
 SIMPLE_JWT = {**SIMPLE_JWT, "SIGNING_KEY": SECRET_KEY}
 LICENSE_PEPPER = "test-only-pepper"
 
+# A fixed Ed25519 key so licence tokens work without per-test setup. Generated
+# once for the suite and committed deliberately — it signs nothing real, and a
+# fresh key per run would make token fixtures non-reproducible.
+LICENSE_SIGNING_KEY = "TXvXVjKcTBpr5PjEjPFqDpDLxWvBmFmXKDNjrmhbMQI="
+
 # Throttling is per-IP; account lockout is per-account. Both are real controls,
 # but in tests they collide — every request comes from the same address, so the
 # IP throttle would mask the lockout under test. Rates are raised here and

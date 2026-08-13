@@ -1,0 +1,307 @@
+<script setup lang="ts">
+/**
+ * Login, including the MFA step.
+ *
+ * MFA is mandatory for admin roles (C11), so this screen must also handle the
+ * enrolment case — otherwise a policy-mandated second factor is a deadlock:
+ * login refuses a token until you enrol, and enrolling needs a token.
+ */
+import { computed, onMounted, ref } from 'vue'
+import { useRouter } from 'vue-router'
+
+import { ApiError, api } from '@/api/client'
+import logoBig from '@/assets/brand/logo-256.png'
+import UiAlert from '@/components/ui/UiAlert.vue'
+import UiButton from '@/components/ui/UiButton.vue'
+import UiInput from '@/components/ui/UiInput.vue'
+import { useAuthStore } from '@/stores/auth'
+
+const auth = useAuthStore()
+const router = useRouter()
+
+const email = ref('')
+const password = ref('')
+const mfaCode = ref('')
+
+const step = ref<'credentials' | 'mfa'>('credentials')
+const error = ref('')
+const enrolmentToken = ref('')
+
+/**
+ * The demo logins, offered as buttons.
+ *
+ * The seed builds ten staff accounts with a password apiece and prints them to a
+ * terminal nobody deploying through Dokploy ever sees. So a demo arrived with a
+ * full cafe behind it and no way in unless you knew to go and read the container
+ * logs.
+ *
+ * **The server decides whether this appears, not this component.** `/system/info/`
+ * needs no authentication, so it returns an empty list unless `DEMO_MODE` is
+ * explicitly on — a real install with real staff never sends credentials here, and
+ * the panel then has nothing to render. Gating it in the frontend would put the
+ * decision on the side of the wire that anybody can edit.
+ */
+interface DemoAccount {
+  email: string
+  password: string
+  name: string
+  role: string
+  pin: string
+}
+
+const demoAccounts = ref<DemoAccount[]>([])
+
+onMounted(async () => {
+  try {
+    const info = await api.get<{ demo_mode?: boolean; demo_accounts?: DemoAccount[] }>(
+      '/system/info/',
+    )
+    demoAccounts.value = info.demo_mode ? (info.demo_accounts ?? []) : []
+  } catch {
+    // A login screen that will not render because a convenience endpoint failed is
+    // worse than one with no demo panel. Silence is correct here.
+  }
+})
+
+function useAccount(account: DemoAccount) {
+  email.value = account.email
+  // The superuser's password is set by `demo_admin` and can be rotated, so the
+  // server sends an empty string rather than a guess. Filling the field with a
+  // stale value would produce a failed login that looks like a broken button.
+  password.value = account.password
+  error.value = ''
+}
+
+const canSubmit = computed(() =>
+  step.value === 'credentials'
+    ? email.value.includes('@') && password.value.length > 0
+    : /^\d{6}$/.test(mfaCode.value),
+)
+
+async function submit() {
+  error.value = ''
+  enrolmentToken.value = ''
+
+  try {
+    const outcome = await auth.login(email.value, password.value, mfaCode.value || undefined)
+
+    if (outcome.status === 'ok') {
+      router.push('/')
+    } else if (outcome.status === 'mfa_required') {
+      step.value = 'mfa'
+    } else {
+      enrolmentToken.value = outcome.enrollmentToken
+      error.value =
+        'هذا الحساب يتطلب تفعيل التحقق بخطوتين. استخدم رمز التفعيل أدناه من شاشة الإعدادات.'
+    }
+  } catch (caught) {
+    error.value =
+      caught instanceof ApiError ? caught.message : 'حدث خطأ غير متوقع. برجاء المحاولة مرة أخرى.'
+    if (step.value === 'mfa') mfaCode.value = ''
+  }
+}
+</script>
+
+<template>
+  <!--
+    The room, not a login form on a grey field.
+
+    Deep burgundy with a gold bloom behind the card — the same two colours the
+    cafe is painted in, and the same treatment the dashboard hero and the POS
+    header use. This is the first thing anybody ever sees of the product, and a
+    centred box on `--surface-sunken` said nothing about whose product it is.
+  -->
+  <div class="login-screen flex min-h-screen items-center justify-center px-4 py-10">
+    <div class="login-panel w-full max-w-md">
+      <div class="mb-8 text-center">
+        <!--
+          The real mark. This was a coffee emoji at 48px — the first thing
+          anyone saw of the product, rendered in whatever font the machine
+          happened to have, in colours belonging to no part of the brand.
+        -->
+        <img :src="logoBig" alt="" class="login-mark mx-auto h-20 w-auto" aria-hidden="true" />
+        <h1 class="login-title mt-4 text-3xl font-bold">القيصر</h1>
+        <p class="login-subtitle mt-1 text-sm">نظام الإدارة</p>
+      </div>
+
+      <form
+        class="space-y-5 rounded-xl border border-line bg-surface p-6 shadow-xl"
+        @submit.prevent="submit"
+      >
+        <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
+
+        <template v-if="step === 'credentials'">
+          <UiInput
+            v-model="email"
+            label="البريد الإلكتروني"
+            type="email"
+            placeholder="owner@example.com"
+            ltr
+            required
+            autocomplete="username"
+          />
+          <UiInput
+            v-model="password"
+            label="كلمة المرور"
+            type="password"
+            ltr
+            required
+            autocomplete="current-password"
+          />
+        </template>
+
+        <template v-else>
+          <p class="text-sm text-ink-muted">
+            أدخل الرمز المكوّن من ٦ أرقام من تطبيق المصادقة.
+          </p>
+          <UiInput
+            v-model="mfaCode"
+            label="رمز التحقق"
+            placeholder="000000"
+            ltr
+            required
+            autocomplete="one-time-code"
+          />
+          <button
+            type="button"
+            class="text-sm text-brand-700 hover:underline"
+            @click="((step = 'credentials'), (mfaCode = ''), (error = ''))"
+          >
+            رجوع
+          </button>
+        </template>
+
+        <UiButton type="submit" size="lg" block :loading="auth.loading" :disabled="!canSubmit">
+          {{ step === 'credentials' ? 'تسجيل الدخول' : 'تأكيد' }}
+        </UiButton>
+      </form>
+
+      <!--
+        Only ever rendered when the server said DEMO_MODE is on. See the note in
+        the script — the decision is not this component's to make.
+      -->
+      <div
+        v-if="demoAccounts.length && step === 'credentials'"
+        class="demo-panel mt-6 rounded-xl border border-line bg-surface p-4"
+      >
+        <p class="demo-heading text-xs font-semibold">حسابات التجربة — اضغط للدخول</p>
+        <p class="demo-note mt-1 text-xs">
+          كلمة المرور تُملأ تلقائياً. هذه بيانات عرض فقط.
+        </p>
+
+        <ul class="mt-3 space-y-1">
+          <li v-for="account in demoAccounts" :key="account.email">
+            <button type="button" class="demo-row" @click="useAccount(account)">
+              <span class="demo-name">{{ account.name }}</span>
+              <span class="demo-role">{{ account.role }}</span>
+              <!-- The PIN is for the POS keypad, not this form. Shown because a
+                   cashier reaching the till needs it and has nowhere else to look. -->
+              <span v-if="account.pin" class="demo-pin tabular-nums">PIN {{ account.pin }}</span>
+              <span v-else class="demo-pin demo-pin-none">كلمة المرور اليدوية</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
+      <p class="login-footnote mt-6 text-center text-xs">
+        الاتصال مؤمَّن. لا تشارك بيانات الدخول مع أحد.
+      </p>
+    </div>
+  </div>
+</template>
+
+<style scoped>
+.demo-panel {
+  box-shadow: var(--shadow-lg);
+}
+.demo-heading {
+  color: var(--ink);
+}
+.demo-note {
+  color: var(--ink-faint);
+}
+.demo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.5rem;
+  text-align: start;
+  font-size: 0.8rem;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.demo-row:hover,
+.demo-row:focus-visible {
+  background-color: var(--brand-50);
+}
+.demo-name {
+  flex: 1 1 auto;
+  color: var(--ink);
+  font-weight: 500;
+}
+.demo-role {
+  color: var(--ink-muted);
+}
+.demo-pin {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.demo-pin-none {
+  font-size: 0.7rem;
+}
+
+.login-screen {
+  position: relative;
+  overflow: hidden;
+  background-image: var(--brand-gradient);
+}
+
+/*
+   A gold bloom behind the card, off-centre.
+
+   Off-centre on purpose: a glow centred exactly behind a centred card reads as
+   a rendering artefact — a halo — while one offset above and to the trailing
+   side reads as light coming from somewhere in the room.
+*/
+.login-screen::before {
+  content: '';
+  position: absolute;
+  inset-block-start: -20%;
+  inset-inline-end: -15%;
+  width: 40rem;
+  height: 40rem;
+  background: radial-gradient(circle, rgba(201, 162, 39, 0.22) 0%, transparent 62%);
+  pointer-events: none;
+}
+.login-screen::after {
+  content: '';
+  position: absolute;
+  inset-block-end: -25%;
+  inset-inline-start: -20%;
+  width: 34rem;
+  height: 34rem;
+  background: radial-gradient(circle, rgba(0, 0, 0, 0.22) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.login-panel {
+  position: relative;
+}
+
+.login-title {
+  color: var(--fg-on-brand);
+}
+.login-subtitle {
+  color: var(--fg-on-brand-muted);
+}
+.login-footnote {
+  color: var(--fg-on-brand-faint);
+}
+
+/* The mark sits on burgundy now, so it needs a shadow to have an edge. Without
+   one the darker parts of the artwork merge into the background. */
+.login-mark {
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.35));
+}
+</style>

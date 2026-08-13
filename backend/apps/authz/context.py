@@ -56,6 +56,52 @@ class AuthContext:
         """True when a person is accountable for this request."""
         return self.kind in (PrincipalKind.WEB, PrincipalKind.POS)
 
+    def require_branch(self) -> UUID:
+        """
+        The caller's branch, or a 400 saying to pick one.
+
+        `branch_id` is optional because a fresh Web login genuinely has no branch
+        yet — the user has authenticated and not chosen where they are. Almost
+        every caller, though, is about to scope a query by it, and passing None
+        into `.filter(branch_id=...)` compiles to `IS NULL`: no rows, no
+        explanation, and a screen that looks empty rather than broken.
+
+        Written out longhand at each call site, that check was `filter(...)` →
+        `if None` → `raise`, four lines that had to be remembered every time.
+        Here it is one call that cannot be forgotten, and the return type says
+        so — which is what turns the whole class of mistake into a type error.
+        """
+        from apps.core.exceptions import AppError
+
+        if self.branch_id is None:
+            raise AppError("يجب اختيار الفرع أولاً", code="BRANCH_REQUIRED", status_code=400)
+        return self.branch_id
+
+    def require_organization(self) -> UUID:
+        """As `require_branch`, for the org-wide screens."""
+        from apps.core.exceptions import AppError
+
+        if self.organization_id is None:
+            raise AppError("لا توجد مؤسسة على هذا الحساب", code="ORG_REQUIRED", status_code=400)
+        return self.organization_id
+
+    def require_user(self) -> UUID:
+        """
+        The person behind this request.
+
+        Endpoints that change a person's own account are already behind
+        `RequiresHuman`, so at runtime this never fires — a bare device token
+        cannot reach them. It exists because "already guarded upstream" is a
+        fact the type system cannot see, and `User.objects.get(id=None)` raises
+        `DoesNotExist`, which reaches the caller as a 404 about a user that does
+        exist. If the upstream guard is ever removed, this says what happened.
+        """
+        from apps.core.exceptions import AppError
+
+        if self.user_id is None:
+            raise AppError("هذه العملية تتطلب مستخدماً", code="NOT_AUTHENTICATED", status_code=401)
+        return self.user_id
+
     def has(self, code: str) -> bool:
         return self.is_superuser or code in self.permissions
 

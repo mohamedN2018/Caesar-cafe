@@ -122,6 +122,20 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     _p("staff.manage_users", "staff", "إدارة المستخدمين", sensitive=True),
     _p("staff.manage_roles", "staff", "إدارة الأدوار والصلاحيات", sensitive=True),
     _p("staff.reset_pin", "staff", "إعادة تعيين رمز الدخول", sensitive=True),
+    # ── HR ───────────────────────────────────────────────────────────────────
+    # `hr.view` is separate from `staff.view` because they answer different
+    # questions: staff.view is "who works here and what may they do", hr.view is
+    # "when were they here". A shift leader building next week's rota needs the
+    # second and has no business reading role assignments.
+    #
+    # `hr.amend_attendance` is split from `hr.manage_roster` deliberately. Moving
+    # somebody's clock-in changes what they get paid; moving them to Tuesday does
+    # not. The person who writes the rota is very often not the person who should
+    # be able to rewrite history.
+    _p("hr.view", "hr", "عرض الحضور والجدول"),
+    _p("hr.manage_roster", "hr", "إدارة جدول الورديات"),
+    _p("hr.record_attendance", "hr", "تسجيل حضور وانصراف"),
+    _p("hr.amend_attendance", "hr", "تعديل سجل الحضور", sensitive=True),
     # ── Branch & devices ─────────────────────────────────────────────────────
     _p("branch.view", "branch", "عرض بيانات الفرع"),
     _p("branch.edit_settings", "branch", "تعديل إعدادات الفرع", sensitive=True),
@@ -132,6 +146,13 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     # ── Licensing ────────────────────────────────────────────────────────────
     _p("licenses.view", "licensing", "عرض التراخيص"),
     _p("licenses.manage", "licensing", "إدارة التراخيص", sensitive=True),
+    # ── Sync (docs/07) ───────────────────────────────────────────────────────
+    # Push and pull are NOT here on purpose: they are device operations,
+    # authorized by the activated terminal itself. Gating them behind a human's
+    # permission would mean an outbox that cannot drain at 3am — which is
+    # exactly when a terminal that has been queueing since Tuesday needs to.
+    _p("sync.view", "sync", "عرض حالة المزامنة"),
+    _p("sync.resolve_conflicts", "sync", "حل تعارضات المزامنة", sensitive=True),
     # ── System ───────────────────────────────────────────────────────────────
     _p("system.settings", "system", "إعدادات النظام", sensitive=True),
     _p("audit.view", "system", "عرض سجل التدقيق"),
@@ -171,9 +192,9 @@ SYSTEM_ROLES: dict[str, dict] = {
         # ones a branch manager should never hold. Note the deliberate absences:
         #   system.settings        → they get branch.edit_settings only, so they
         #                            cannot weaken security.* or licensing
-        #   staff.manage_roles     → 🔓 step-up, not held directly
-        #   devices.manage         → 🔓 step-up
-        #   orders.change_price    → 🔓 step-up
+        #   staff.manage_roles     → step-up only, never held directly
+        #   devices.manage         → step-up only
+        #   orders.change_price    → step-up only
         #   licenses.manage        → Super Admin only
         #   backups.manage         → Super Admin only
         "permissions": [
@@ -237,12 +258,18 @@ SYSTEM_ROLES: dict[str, dict] = {
             "staff.view",
             "staff.manage_users",
             "staff.reset_pin",
+            "hr.view",
+            "hr.manage_roster",
+            "hr.record_attendance",
+            "hr.amend_attendance",
             "branch.view",
             "branch.edit_settings",
             "branch.manage_tables",
             "branch.manage_printers",
             "devices.view",
             "licenses.view",
+            "sync.view",
+            "sync.resolve_conflicts",
             "audit.view",
         ],
     },
@@ -270,6 +297,10 @@ SYSTEM_ROLES: dict[str, dict] = {
             "kids.extend_session",
             "kids.log_incident",
             "catalog.view",
+            # `inventory.view` accompanies `inventory.waste` deliberately: you
+            # cannot sensibly write off an item you are not allowed to look up,
+            # and the low-stock alert is exactly what a cashier needs to see.
+            "inventory.view",
             "inventory.waste",
             "shifts.open",
             "shifts.close",
@@ -339,24 +370,53 @@ SYSTEM_ROLES: dict[str, dict] = {
     },
     "ACCOUNTANT": {
         "name_ar": "محاسب",
+        # **Sees everything, changes almost nothing.**
+        #
+        # An accountant reconciling a month needs to open every screen an owner
+        # can open — the floor, the kitchen, the kids area, the devices, the
+        # sync state — because "why is the 14th short" is not a question that
+        # stays inside the finance screens. Withholding those made them ask an
+        # owner to read a screen aloud, which is worse for control, not better:
+        # the owner ends up sharing a session.
+        #
+        # So this is EVERY read code in the catalogue, and the write codes are
+        # only the two that are genuinely an accountant's job — a supplier
+        # record and paying one. Listed explicitly rather than derived from a
+        # `.view` suffix: a future permission named `payments.view_all` that
+        # happened to grant a write would be swept in silently, and this role's
+        # whole value is that it cannot move money out of a till.
         "permissions": [
+            # Read across the whole product.
             "orders.view",
             "orders.reprint",
             "payments.view_all",
             "catalog.view",
             "inventory.view",
             "purchasing.view",
-            "purchasing.manage_suppliers",
-            "purchasing.pay_supplier",
+            "floor.view",
+            "kitchen.view",
+            "kids.view",
+            "staff.view",
+            # Read-only. The accountant computes wages from the hours and must
+            # never be able to change the hours they are computing from.
+            "hr.view",
+            "devices.view",
+            "licenses.view",
+            "sync.view",
             "shifts.view_all",
+            "branch.view",
+            "audit.view",
+            # Every report, including the export an accountant lives in.
             "reports.sales",
             "reports.products",
             "reports.inventory",
             "reports.financial",
             "reports.employees",
             "reports.export",
-            "branch.view",
-            "audit.view",
+            # The only writes. Both are the finance function itself, and
+            # neither can take money out of a drawer or alter a sale.
+            "purchasing.manage_suppliers",
+            "purchasing.pay_supplier",
         ],
     },
 }

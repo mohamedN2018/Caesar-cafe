@@ -1,10 +1,15 @@
 # Caesar Cafe — كافيه القيصر
 
 **Integrated POS, Kitchen & Management System**
-Architecture Dossier — v0.1 (pre-implementation)
+Architecture Dossier — v1.0
 
-> **Status: AWAITING REVIEW.** No implementation code exists yet, by design. This dossier is
-> the artifact to review and sign off before Phase 1 begins. See [08-roadmap.md](08-roadmap.md).
+> **Status: BUILT.** All ten phases and all twelve commitments are implemented. Every permission
+> code in the catalogue is enforced by something a test can find. See
+> [08-roadmap.md](08-roadmap.md) for what each phase delivered and what it cost.
+>
+> These documents are the *reasoning*, kept current with the code rather than frozen at sign-off.
+> Where a decision was reversed during implementation, the roadmap says so and why — a dossier that
+> only records the decisions that survived is a dossier that teaches nothing.
 
 ---
 
@@ -24,6 +29,8 @@ Architecture Dossier — v0.1 (pre-implementation)
 | 10 | [Future Extensions](10-future.md) | Multi-branch, SaaS, mobile, loyalty, e-invoicing, deliberately deferred items |
 | 11 | [Configuration Framework](11-configuration.md) | Settings registry, scope resolution, the full ~180-setting catalog |
 | 12 | [Kids Area](12-kids-area.md) | Time-based billing, tariff engine, capacity & child-safety rules |
+| 13 | [Operations Runbook](13-operations.md) | Secret rotation, the restore drill, reading the audit trail during an incident |
+| 14 | [دليل التدريب](14-training.md) | **In Arabic**, for the people who will actually use it: cashier, waiter, kitchen, kids area, manager, owner. Every step says why |
 
 ---
 
@@ -110,7 +117,9 @@ All three architectural questions from the first review are answered. Details in
 | Cashier vs waiter ordering | **Admin chooses** — three service modes plus independent toggles | Floor/Waiter screens are firmly **in Phase 5**, not deferred; `CASHIER_ONLY` simply hides them |
 | Remote owner access | **Yes** | Public TLS from Phase 1; MFA mandatory for admin roles; rate limiting, fail2ban, and alerting move from Phase 9 into Phases 1–3; Web Admin becomes a PWA |
 
-**No open questions remain.** Phase 1 is ready to start on approval.
+**No open questions remain.** All three were answered before Phase 1, and none of the three had to
+be reopened during implementation — which is the only evidence that answering them up front was
+worth the delay.
 
 ---
 

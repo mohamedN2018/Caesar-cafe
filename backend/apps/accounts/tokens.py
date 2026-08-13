@@ -115,19 +115,25 @@ def issue_pair(
 
 def _access_token(*, user, kind, organization_id, branch_id, device_id, family_id, ttl) -> str:
     now = timezone.now()
-    return _encode(
-        {
-            "typ": "access",
-            "sub": str(user.id),
-            "kind": kind,
-            "org": str(organization_id) if organization_id else None,
-            "branch": str(branch_id) if branch_id else None,
-            "device": str(device_id) if device_id else None,
-            "fam": str(family_id),
-            "iat": int(now.timestamp()),
-            "exp": int((now + ttl).timestamp()),
-        }
-    )
+    payload: dict[str, Any] = {
+        "typ": "access",
+        "kind": str(kind),
+        "org": str(organization_id) if organization_id else None,
+        "branch": str(branch_id) if branch_id else None,
+        "device": str(device_id) if device_id else None,
+        "fam": str(family_id),
+        "iat": int(now.timestamp()),
+        "exp": int((now + ttl).timestamp()),
+    }
+
+    # `sub` is OMITTED — not set to null — for DEVICE tokens. A terminal has no
+    # human behind it, and pretending otherwise would put someone's name on
+    # actions they never took. RFC 7519 says `sub` is a string when present, and
+    # PyJWT enforces that: a null value makes the token undecodable.
+    if user is not None:
+        payload["sub"] = str(user.id)
+
+    return _encode(payload)
 
 
 def _refresh_token(*, family_id: uuid.UUID, jti: uuid.UUID, ttl: timedelta) -> str:
@@ -197,9 +203,19 @@ def rotate(refresh_token: str, *, ip_address: str | None = None) -> dict[str, An
                 "ip": ip_address,
             },
         )
+        from apps.audit import services as audit
+
+        audit.record(
+            "auth.refresh_reuse_detected",
+            organization=getattr(family.user, "organization", None),
+            actor=family.user,
+            object_type="token_family",
+            object_id=str(family.id),
+            detail={"families_revoked": revoked, "rotations": family.rotation_count},
+        )
         raise TokenReuseDetected()
 
-    if not family.user.is_active:
+    if family.user is not None and not family.user.is_active:
         raise TokenError("الحساب غير مفعّل", code="ACCOUNT_INACTIVE")
 
     access_ttl, refresh_ttl = _lifetimes()
@@ -213,7 +229,7 @@ def rotate(refresh_token: str, *, ip_address: str | None = None) -> dict[str, An
         "access": _access_token(
             user=family.user,
             kind=family.kind,
-            organization_id=family.user.organization_id,
+            organization_id=family.user.organization_id if family.user else None,
             branch_id=None,
             device_id=family.device_id,
             family_id=family.id,

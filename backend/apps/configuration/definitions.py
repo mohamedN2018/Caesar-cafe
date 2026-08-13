@@ -410,6 +410,279 @@ register(
     pushes_to_desktop=True,
 )
 
+# ── Kitchen ──────────────────────────────────────────────────────────────────
+
+register(
+    key="kitchen.allow_recall_minutes",
+    type=SettingType.INTEGER,
+    default=30,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="مهلة استرجاع التذكرة (دقيقة)",
+    label_en="Recall window",
+    help_ar="بعدها لا يمكن استرجاع تذكرة — حتى لا تُستخدم لإعادة كتابة يوم مضى.",
+    validators=(Range(0, 1440),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="kitchen.warning_threshold_percent",
+    type=SettingType.INTEGER,
+    default=80,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="نسبة التحذير من الوقت المستهدف",
+    label_en="Warning threshold",
+    help_ar="عندها تتحول بطاقة التذكرة للون الكهرماني.",
+    validators=(Range(10, 100),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kitchen.print_ticket_mode",
+    type=SettingType.ENUM,
+    default="on_kds_failure",
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="طباعة تذكرة المطبخ",
+    label_en="Print kitchen ticket",
+    help_ar=(
+        "on_kds_failure: الطباعة هي مسار الطوارئ لو الشاشة أو الشبكة وقعت — "
+        "ولهذا طابعة المطبخ ليست اختيارية حتى مع وجود شاشة."
+    ),
+    choices=("always", "on_kds_failure", "never"),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kitchen.kds_columns",
+    type=SettingType.INTEGER,
+    default=4,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="عدد أعمدة شاشة المطبخ",
+    label_en="KDS columns",
+    validators=(Range(1, 8),),
+    overridable_at=(Scope.DEVICE,),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kitchen.kds_sound_on_new",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="صوت تنبيه عند تذكرة جديدة",
+    label_en="Sound on new ticket",
+    overridable_at=(Scope.DEVICE,),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kitchen.show_prices_on_ticket",
+    type=SettingType.BOOLEAN,
+    default=False,
+    scope=Scope.BRANCH,
+    group="kitchen",
+    label_ar="إظهار الأسعار على تذكرة المطبخ",
+    label_en="Show prices on ticket",
+    help_ar="مغلق افتراضياً: المطبخ لا يحتاج الأسعار، والأرقام المالية تنتشر بلا سبب.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+
+# ── Inventory ────────────────────────────────────────────────────────────────
+
+register(
+    key="inventory.deduct_on",
+    type=SettingType.ENUM,
+    default="PAYMENT",
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="خصم المخزون عند",
+    label_en="Deduct stock on",
+    help_ar=(
+        "PAYMENT أأمن: طلب متروك لا يستهلك مخزون. "
+        "FIRE أدق لحظياً: الباريستا استخدم البن سواء دفع العميل أو لا. "
+        "أيهما صحيح يعتمد على طريقة عمل الكافيه."
+    ),
+    choices=("FIRE", "PAYMENT", "SERVE"),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="inventory.allow_negative",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="السماح برصيد سالب",
+    label_en="Allow negative stock",
+    help_ar="كافيه خلص منه صنف وسط الخدمة لازم يقدر يسجل البيع.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="inventory.costing_method",
+    type=SettingType.ENUM,
+    default="WEIGHTED_AVG",
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="طريقة التكلفة",
+    label_en="Costing method",
+    choices=("WEIGHTED_AVG", "FIFO"),
+    permission="branch.edit_settings",
+    high_impact=True,
+)
+register(
+    key="inventory.waste_reasons",
+    type=SettingType.LIST,
+    default=["انسكاب", "انتهاء صلاحية", "خطأ تحضير", "تلف", "أخرى"],
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="أسباب الهالك",
+    label_en="Waste reasons",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="inventory.require_waste_reason",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="إلزام سبب الهالك",
+    label_en="Require waste reason",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="inventory.count_requires_approval",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="inventory",
+    label_ar="ترحيل الجرد يتطلب موافقة",
+    label_en="Count requires approval",
+    permission="branch.edit_settings",
+    high_impact=True,
+)
+
+# ── Shifts ───────────────────────────────────────────────────────────────────
+
+register(
+    key="shifts.required_to_sell",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="إلزام فتح وردية قبل البيع",
+    label_en="Shift required to sell",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="shifts.blind_close",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="إغلاق أعمى (إخفاء المتوقع)",
+    label_en="Blind close",
+    help_ar=("الكاشير يعد الدرج دون رؤية المتوقع، فيكون العد ملاحظة حقيقية لا رقماً مشتقاً من هدف."),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="shifts.max_variance",
+    type=SettingType.DECIMAL,
+    default=Decimal("50.00"),
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="أقصى فرق نقدي بدون موافقة",
+    label_en="Max variance without approval",
+    validators=(Range(Decimal("0"), Decimal("100000")),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="shifts.require_variance_reason",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="إلزام سبب الفرق",
+    label_en="Require variance reason",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="shifts.cash_movement_reasons",
+    type=SettingType.LIST,
+    default=["شراء مستلزمات", "سلفة", "إيداع بنكي", "مصروف نثري", "أخرى"],
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="أسباب الحركة النقدية",
+    label_en="Cash movement reasons",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="shifts.max_duration_hours",
+    type=SettingType.INTEGER,
+    default=16,
+    scope=Scope.BRANCH,
+    group="shifts",
+    label_ar="أقصى مدة وردية (ساعة)",
+    label_en="Max shift duration",
+    validators=(Range(1, 48),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+
+# ── Payments ─────────────────────────────────────────────────────────────────
+
+register(
+    key="payments.allow_split",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="payments",
+    label_ar="السماح بتقسيم الدفع",
+    label_en="Allow split payment",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="payments.allow_partial",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="payments",
+    label_ar="السماح بالدفع الجزئي",
+    label_en="Allow partial payment",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="payments.quick_tender_mode",
+    type=SettingType.ENUM,
+    default="smart",
+    scope=Scope.BRANCH,
+    group="payments",
+    label_ar="أزرار المبلغ السريع",
+    label_en="Quick tender mode",
+    help_ar="smart يحسب أقرب ٥٠ و١٠٠ والمضبوط — أكثر تفاعل في كافيه نقدي.",
+    choices=("smart", "fixed", "off"),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+
 # ── Security ─────────────────────────────────────────────────────────────────
 # The system is internet-facing from Phase 1 (C11), so these defaults are the
 # posture the first deployment actually runs with.
@@ -518,6 +791,44 @@ register(
     label_en="Device offline alert",
     validators=(Range(5, 1440),),
 )
+register(
+    key="sync.pull_page_size",
+    type=SettingType.INTEGER,
+    default=500,
+    scope=Scope.BRANCH,
+    group="sync",
+    label_ar="حجم صفحة الاستلام",
+    label_en="Pull page size",
+    validators=(Range(10, 2000),),
+    overridable_at=(Scope.DEVICE,),
+    pushes_to_desktop=True,
+)
+register(
+    key="sync.max_clock_skew_seconds",
+    type=SettingType.INTEGER,
+    default=300,
+    scope=Scope.BRANCH,
+    group="sync",
+    label_ar="أقصى فرق مسموح في ساعة الجهاز (ثانية)",
+    label_en="Max clock skew",
+    help_ar=(
+        "تجاوز الحد يُسجَّل كتعارض للمراجعة — ولا تُرفض العملية أبداً بسببه، "
+        "لأن البيع حدث فعلاً وساعة الخادم هي المعتمدة في كل ما يهم."
+    ),
+    validators=(Range(30, 86400),),
+    pushes_to_desktop=True,
+)
+register(
+    key="sync.pending_alert_threshold",
+    type=SettingType.INTEGER,
+    default=100,
+    scope=Scope.BRANCH,
+    group="sync",
+    label_ar="تنبيه عند تراكم العمليات",
+    label_en="Pending operations alert",
+    help_ar="طابور يكبر معناه جهاز توقف عن الإرسال — والمبيعات على قرص صلب.",
+    validators=(Range(1, 10000),),
+)
 
 # ── Licensing ────────────────────────────────────────────────────────────────
 
@@ -533,6 +844,44 @@ register(
     permission="licenses.manage",
     pushes_to_desktop=True,
     high_impact=True,
+)
+register(
+    key="license.warn_before_expiry_days",
+    type=SettingType.INTEGER,
+    default=14,
+    scope=Scope.ORGANIZATION,
+    group="licensing",
+    label_ar="التنبيه قبل انتهاء الترخيص (يوم)",
+    label_en="Warn before expiry",
+    validators=(Range(1, 180),),
+    permission="licenses.manage",
+    pushes_to_desktop=True,
+)
+register(
+    key="license.grace_days_after_expiry",
+    type=SettingType.INTEGER,
+    default=7,
+    scope=Scope.ORGANIZATION,
+    group="licensing",
+    label_ar="مهلة السماح بعد الانتهاء (يوم)",
+    label_en="Grace days after expiry",
+    help_ar="خلال هذه المدة يعمل النظام بالكامل مع تنبيه دائم.",
+    validators=(Range(0, 90),),
+    permission="licenses.manage",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+register(
+    key="license.heartbeat_interval_minutes",
+    type=SettingType.INTEGER,
+    default=15,
+    scope=Scope.ORGANIZATION,
+    group="licensing",
+    label_ar="فترة نبضة الجهاز (دقيقة)",
+    label_en="Heartbeat interval",
+    validators=(Range(1, 1440),),
+    permission="licenses.manage",
+    pushes_to_desktop=True,
 )
 register(
     key="license.expiry_policy",
@@ -725,4 +1074,242 @@ register(
     label_en="Auto-link to guardian's table",
     permission="branch.edit_settings",
     pushes_to_desktop=True,
+)
+register(
+    key="kids.billing_product",
+    type=SettingType.STRING,
+    default="",
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="صنف احتساب جلسة اللعب",
+    label_en="Play session billing product",
+    help_ar=(
+        "الصنف الذي تُسجَّل عليه الجلسة في الفاتورة. السعر يأتي من التعريفة وليس من الصنف — "
+        "وجوده فقط ليظهر دخل الصالة في تقارير المبيعات مع باقي الأصناف."
+    ),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.socks_product",
+    type=SettingType.STRING,
+    default="",
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="صنف شراب الأطفال",
+    label_en="Socks product",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.default_tariff",
+    type=SettingType.STRING,
+    default="",
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="التعريفة الافتراضية",
+    label_en="Default tariff",
+    help_ar="تُقترح عند الدخول إذا لم تطابق أي تعريفة موقوتة وقت الدخول.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.require_guardian_phone",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="إلزام رقم هاتف ولي الأمر",
+    label_en="Require guardian phone",
+    help_ar="الهاتف هو وسيلة الوصول الوحيدة لولي الأمر إذا حدث شيء.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.overdue_alert_minutes",
+    type=SettingType.INTEGER,
+    default=5,
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="تنبيه التأخير بعد انتهاء الباقة (دقائق)",
+    label_en="Overdue alert",
+    validators=(Range(0, 120),),
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.print_checkin_slip",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="طباعة إيصال الدخول",
+    label_en="Print check-in slip",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.tag_numbers",
+    type=SettingType.STRING,
+    default="1-30",
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="أرقام التاجات المتاحة",
+    label_en="Wristband tag range",
+    help_ar="مدى مثل 1-30، أو أرقام مفصولة بفواصل.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+)
+register(
+    key="kids.allow_charge_override",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="kids",
+    label_ar="السماح بتعديل قيمة الجلسة",
+    label_en="Allow charge override",
+    help_ar="مقيَّد بصلاحية kids.override_charge، والقيمة المحسوبة تُحفظ دائماً بجوار المعدَّلة.",
+    permission="branch.edit_settings",
+    pushes_to_desktop=True,
+    high_impact=True,
+)
+
+# ── notifications (C11) ──────────────────────────────────────────────────────
+# Every threshold below is a setting because the right number is a property of
+# the cafe, not of the software. A 25-minute grill in one kitchen is normal and
+# in another is a complaint, and hardcoding either would make the alerts wrong
+# somewhere. The defaults are chosen to be quiet: an alert nobody trusts gets
+# muted, and then the one that mattered is muted too.
+
+register(
+    key="alerts.enabled",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="تفعيل التنبيهات",
+    label_en="Enable alerts",
+    help_ar="إيقافها يوقف كل الإشعارات لهذا الفرع دون حذف الاشتراكات.",
+)
+register(
+    key="alerts.kinds",
+    type=SettingType.LIST,
+    default=[
+        "CASH_VARIANCE",
+        "KITCHEN_LATE",
+        "KIDS_OVERDUE",
+        "TERMINAL_OFFLINE",
+        "BACKUP_FAILED",
+        "LOW_STOCK",
+    ],
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="أنواع التنبيهات المفعّلة",
+    label_en="Enabled alert kinds",
+    help_ar="SYNC_CONFLICT مطفأة افتراضياً — التعارضات ظاهرة على الكاشير بالفعل.",
+)
+register(
+    key="alerts.cash_variance_threshold",
+    type=SettingType.DECIMAL,
+    default="50.00",
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="حد الفرق النقدي للتنبيه",
+    label_en="Cash variance alert threshold",
+    help_ar="بالجنيه. الفروق الصغيرة عادية؛ التنبيه على كل قرش يُفقد معناه.",
+)
+register(
+    key="alerts.kitchen_late_minutes",
+    type=SettingType.INTEGER,
+    default=20,
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="تأخير المطبخ الذي يستحق تنبيهاً (دقيقة)",
+    label_en="Kitchen late alert threshold",
+    help_ar="فوق الوقت المستهدف للمحطة. شاشة المطبخ تلوّن التأخير الأقل من ذلك.",
+)
+register(
+    key="alerts.kids_overdue_minutes",
+    type=SettingType.INTEGER,
+    default=30,
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="تجاوز وقت الطفل الذي يستحق تنبيهاً (دقيقة)",
+    label_en="Kids overdue alert threshold",
+)
+register(
+    key="alerts.terminal_offline_minutes",
+    type=SettingType.INTEGER,
+    default=45,
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="انقطاع الجهاز الذي يستحق تنبيهاً (دقيقة)",
+    label_en="Terminal offline alert threshold",
+    help_ar="أقل من ذلك يعني انقطاعاً عابراً؛ الجهاز يعمل ويصطف بالعمليات.",
+)
+register(
+    key="alerts.quiet_hours",
+    type=SettingType.STRING,
+    default="",
+    scope=Scope.BRANCH,
+    group="alerts",
+    label_ar="ساعات الصمت",
+    label_en="Quiet hours",
+    help_ar="مثل 02:00-09:00. التنبيهات تُسجَّل ولا تُرسَل خلالها — عدا فشل النسخ الاحتياطي.",
+)
+
+# ── HR ───────────────────────────────────────────────────────────────────────
+# Every threshold here is a setting rather than a constant for the reason C10
+# exists: "late" is a different number in a cafe with a 6am bakery shift than in
+# one that opens at noon, and a hardcoded fifteen minutes would be wrong in one
+# of them with no way to say so.
+
+register(
+    key="hr.grace_minutes",
+    type=SettingType.INTEGER,
+    default=10,
+    scope=Scope.BRANCH,
+    group="hr",
+    label_ar="سماح التأخير (دقيقة)",
+    label_en="Lateness grace period",
+    help_ar=(
+        "التأخير داخل هذه المدة لا يُحسب تأخيراً. نمط الوردية يمكنه تجاوزها — "
+        "وردية توصيل تبدأ بوصول السيارة ليست كوردية كاشير أمامها طابور."
+    ),
+)
+register(
+    key="hr.overtime_after_minutes",
+    type=SettingType.INTEGER,
+    default=540,
+    scope=Scope.BRANCH,
+    group="hr",
+    label_ar="بداية الوقت الإضافي (دقيقة)",
+    label_en="Overtime threshold",
+    help_ar="ما زاد عن ذلك في اليوم الواحد يُحسب إضافياً. ٥٤٠ = تسع ساعات.",
+)
+register(
+    key="hr.missing_checkout_hours",
+    type=SettingType.INTEGER,
+    default=14,
+    scope=Scope.BRANCH,
+    group="hr",
+    label_ar="تنبيه انصراف غير مسجَّل (ساعة)",
+    label_en="Missing check-out alert",
+    help_ar=(
+        "حضور مفتوح أطول من ذلك يرفع تنبيهاً لشخص يسأل. لا شيء يُقفل تلقائياً: "
+        "الإقفال التلقائي يسجّل أن أحداً انصرف ولم يره أحد."
+    ),
+)
+register(
+    key="hr.allow_punch_without_shift",
+    type=SettingType.BOOLEAN,
+    default=True,
+    scope=Scope.BRANCH,
+    group="hr",
+    label_ar="السماح بالحضور بدون وردية مسجلة",
+    label_en="Allow attendance with no rostered shift",
+    help_ar=(
+        "الافتراضي مسموح: من جاء ليغطي غياب زميل يجب أن يُسجَّل حضوره، ورفض "
+        "التسجيل لا يمنع الحضور — يمنع الأثر فقط."
+    ),
 )

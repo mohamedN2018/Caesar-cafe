@@ -12,15 +12,19 @@ reconciles through an idempotent event log.
 
 ## Status
 
-**Phases 1–2 complete** — foundation, identity and authorization built and verified.
-**222 tests passing.** Next: Phase 3, licensing & device activation. See the
+**Phases 1–5 complete** (domain layers) — **504 tests passing** (440 backend + 64 desktop).
+Foundation, identity, authorization, licensing, the desktop activation gate, catalog,
+inventory, purchasing, and event-sourced orders with payments and shifts.
+
+Outstanding: the REST surface for orders/payments/shifts, the Web Admin screens, and
+Phases 6–10 (kitchen, kids area, sync, reporting, hardening, production). See the
 [roadmap](docs/08-roadmap.md).
 
 ```bash
 cp .env.example .env          # adjust API_PORT if 8000 is taken
 make up                       # postgres, redis, api, worker, beat, frontend
 make migrate
-docker compose -f docker-compose.dev.yml run --rm api \
+docker compose run --rm api \
   python manage.py bootstrap --admin-email=you@example.com
 make check                    # lint + typecheck + tests
 ```
@@ -28,6 +32,18 @@ make check                    # lint + typecheck + tests
 API → `http://localhost:${API_PORT}/api/v1/system/health/`
 Web → `http://localhost:${FRONTEND_PORT}/`
 Docs → `/api/v1/docs/` (dev only)
+
+**Desktop client** (`desktop/`) — PySide6, Windows:
+
+```bash
+make signing-key              # generate LICENSE_SIGNING_KEY, put it in .env
+make desktop-test             # 64 tests, headless
+python scripts/vendor_shared.py --check   # shared logic in sync with backend
+```
+
+The desktop vendors `money.py`, `offline_token.py` and `keys.py` from the backend
+verbatim — order totals and licence checks must give identical answers on both
+sides, so they are copied rather than reimplemented, and CI fails if they drift.
 
 ---
 
