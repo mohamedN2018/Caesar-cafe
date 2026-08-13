@@ -57,18 +57,19 @@ from apps.recipes.models import Recipe, RecipeLine
 from apps.shifts.models import Shift
 from apps.suppliers.models import Supplier, SupplierLedgerEntry
 
-#: (code, Arabic name, English name, phone, address)
+#: (code, Arabic name, English name, phone, address, trading weight)
 #:
-#: Three branches, because one branch hides a whole class of bug. Every catalogue
-#: row, every stock item, every table and every licence is scoped to a branch, and
-#: a seed with one branch can never show a query that forgot to filter by it —
-#: the wrong answer and the right answer are the same number. The branch switcher,
-#: the per-branch reports and the licence-per-till rule all had nothing to work
-#: with either.
+#: One branch, by request. The list stays a list rather than collapsing back to a
+#: single hardcoded branch, because the code around it — the per-branch build loop,
+#: the licence per branch, the per-branch summary — is correct for one or for many,
+#: and a list of one is not a workaround. Adding a second branch is appending a row
+#: here; going back to a hardcoded single branch would mean rewriting the loop,
+#: and then rewriting it again the next time.
 #:
-#: They are deliberately different sizes. `_trade` scales its volume per branch, so
-#: the main branch is busy and the third is quiet — a report that only ever sees
-#: identical branches cannot show you that it is sorting them by the wrong column.
+#: `weight` scales how busy the branch is relative to the main one. With one branch
+#: it is 1.0 and does nothing; it is what a second branch would use to avoid
+#: trading identically to the first, which would make a branch comparison look
+#: correct whichever column it sorted by.
 BRANCHES = [
     (
         "MB",
@@ -77,22 +78,6 @@ BRANCHES = [
         "0132600000",
         "شارع الصلاحة، آخر شارع قاعة الدار البيضاء، بحري شبين القناطر",
         Decimal("1.0"),
-    ),
-    (
-        "ZM",
-        "فرع الزمالك",
-        "Zamalek Branch",
-        "0227350000",
-        "شارع أبو الفدا، الزمالك، القاهرة",
-        Decimal("0.7"),
-    ),
-    (
-        "SM",
-        "فرع سموحة",
-        "Smouha Branch",
-        "0342100000",
-        "شارع فيكتور عمانويل، سموحة، الإسكندرية",
-        Decimal("0.45"),
     ),
 ]
 
@@ -575,10 +560,43 @@ class Command(BaseCommand):
         # each row carries its own `object_label`, so it still reads correctly.
         kept = AuditLog.objects.filter(branch_id__in=branches).count()
 
+        # Branches the seed no longer defines.
+        #
+        # The reset empties each branch's trading but had no reason to touch the
+        # `Branch` rows themselves — so shrinking BRANCHES from three back to one
+        # left two standing with everything behind them deleted. An active branch
+        # with nothing in it is the worst shape a branch can be in: it still scopes
+        # queries, still counts as a branch anywhere the code iterates them, and
+        # every figure it produces is zero. Zero reads as "a quiet week", not as
+        # "this branch should not exist".
+        #
+        # **Deactivated, not deleted**, and that is the model's own rule rather than
+        # a shortcut. `Branch` is a `SoftDeletableModel`, and Station, InventoryItem,
+        # Supplier, Area, PaymentMethod, PlayArea and Guardian all PROTECT it — the
+        # first attempt at a hard delete collected ninety-odd protected rows. Naming
+        # each of them here would be a list that silently rots the next time any
+        # model gains a branch foreign key, and it would be a demo command asserting
+        # it knows better than a constraint the schema states deliberately.
+        #
+        # Only branches this command created and has since dropped. A branch still
+        # in BRANCHES is untouched, and so is any branch of another organisation —
+        # on a shared database that scope is the difference between tidying up after
+        # yourself and deleting somebody's café.
+        defined = {code for code, *_rest in BRANCHES}
+        stale = Branch.objects.filter(organization=org, is_active=True).exclude(code__in=defined)
+        retired = [b.code for b in stale]
+        stale.update(is_active=False, deactivated_at=timezone.now())
+
         self.stdout.write(
             f"Reset: removed {removed} demo orders and their trading. "
             f"Kept {kept} audit rows — that log is append-only."
         )
+        if retired:
+            self.stdout.write(
+                f"Deactivated {len(retired)} branch(es) the seed no longer defines: "
+                + ", ".join(retired)
+                + " — their history is protected, so they are retired rather than removed."
+            )
 
     def _organization(self) -> tuple[Organization, Branch]:
         org, _ = Organization.objects.get_or_create(

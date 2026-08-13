@@ -2318,19 +2318,37 @@ Two follow-ups, both because the demo was less discoverable than it was complete
 
 **The seed built one branch.** Every catalogue row, stock item, table, supplier and licence is
 branch-scoped, and with a single branch **a query that forgot to filter by branch gives the same
-answer as one that did** — the bug is unobservable. The branch switcher, the per-branch reports and
-the licence-per-till rule also had nothing to work with. There are three now (MB / ZM / SM), each
+answer as one that did** — the bug is unobservable. The per-branch reports and the licence-per-till
+rule also had nothing to work with. There are three now (MB / ZM / SM), each
 with its own catalogue, stock, suppliers, floor, kitchen stations, printers, kids area and licence,
 deliberately at different volumes — 2,552 / 1,690 / 1,074 orders — because three identical branches
 would make a branch comparison look correct whichever column it sorted by.
 
-The new risk that introduces is the opposite one: a branch that exists in the switcher and nowhere
+The new risk that introduces is the opposite one: a branch that exists in the branch list and nowhere
 else, so a name is offered and every screen behind it is empty. Four tests cover it — a licence per
 branch, a distinct printed key per branch, a non-empty catalogue and stock per branch, and a cashier
 who holds a role at all three. That last one matters more than it looks: staff assigned only to the
 main branch would leave two branches full of data that nobody can log into, which reads as a
 permissions bug in the product rather than a gap in the seed, and sends whoever investigates into
 `authz`.
+
+**Reverted to one branch the same day, by request.** The list stays a list and the per-branch build
+loop stays, because both are correct for one branch or for several — a list of one is not a
+workaround, and collapsing back to a hardcoded single branch would mean rewriting the loop twice.
+
+That revert exposed the thing worth recording: **the reset emptied each branch's trading and never
+touched the `Branch` rows**, so shrinking the list left two active branches with everything beneath
+them deleted. An active branch containing nothing still scopes queries and still counts wherever the
+code iterates branches, and every figure it produces is zero — which reads as a quiet week.
+
+They are **retired, not deleted**, and that is the schema's rule rather than a shortcut: `Branch` is
+a `SoftDeletableModel`, and `Station`, `InventoryItem`, `Supplier`, `Area`, `PaymentMethod`,
+`PlayArea` and `Guardian` all PROTECT it — the first attempt at a hard delete collected ninety-odd
+protected rows. Naming each of them in the seed would be a list that rots the next time any model
+gains a branch foreign key, and a demo command does not get to overrule a constraint the product
+states deliberately. Four tests: the stale branch is deactivated, the defined one is untouched, the
+output says which branch was retired, and another organisation's branch of the same code is left
+entirely alone.
 
 **The demo logins now appear on the sign-in screen**, as buttons that fill the form. They existed all
 along — ten accounts, a password each, printed to a terminal that nobody deploying through a Dokploy
@@ -2347,6 +2365,21 @@ like the rotation broke the login.
 
 The two credential lists are separate copies (a view cannot import a management command without
 dragging the whole seeding module into every request's import graph), so a test asserts they agree.
+
+### The admin account, created on every boot
+
+`demo_admin` used to run inside the `DEMO_SEED` block, which meant the account appeared once and then
+stopped being maintained — because seeding is a first-boot job and the seed itself tells you to set
+`DEMO_SEED=0` afterwards. It has its own switch now and runs on every start; the command creates or
+updates, so that is what makes the login reliably present rather than present once.
+
+It is a switch, defaulting to **off**, and not simply unconditional. The command writes a known
+password and relaxes MFA, so a repository whose default start-up creates `admin`/`admin` would ship a
+back door to everyone who cloned it. `.env.production` sets it to `1` — that decision belongs to the
+person deploying, recorded in their environment, not to a file in the repo.
+
+The consequence worth knowing: `demo_admin --rotate` is undone by the next restart unless
+`DEMO_ADMIN=0` goes with it. Both places that mention rotating now say so.
 
 ### The demo admin, stated plainly
 

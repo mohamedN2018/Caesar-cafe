@@ -129,6 +129,22 @@ services:
         if [ "$${DEMO_SEED:-0}" = "1" ]; then
           python manage.py seed_demo --days "$${DEMO_DAYS:-14}" || \
             echo "seed_demo declined: trading data already present, leaving it alone"
+        fi
+
+        # The admin account, on EVERY boot rather than only alongside seeding.
+        #
+        # It used to live inside the block above, which meant it appeared once and
+        # then stopped: seeding is a first-boot job, so turning DEMO_SEED off — which
+        # the seed itself tells you to do — also quietly stopped maintaining the
+        # login. `demo_admin` creates or updates, so running it every time is what
+        # makes the account reliably there.
+        #
+        # Its own switch, defaulting to OFF. It has to be a switch: this command
+        # writes a known password and relaxes MFA, so a repository whose default
+        # start-up creates `admin`/`admin` would ship a back door to everyone who
+        # cloned it. `.env.production` sets it to 1 — that decision belongs to the
+        # person deploying, recorded in their environment, not to this file.
+        if [ "$${DEMO_ADMIN:-0}" = "1" ]; then
           python manage.py demo_admin
         fi
 

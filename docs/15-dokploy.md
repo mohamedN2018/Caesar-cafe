@@ -80,18 +80,24 @@ would route. Locally the variable is unset and it falls back to `bridge`, which 
 
 ## Demo data, and the admin login
 
-`DEMO_SEED=1` in `.env.production` seeds **three branches** on first boot — each with its own
-catalogue, stock, suppliers, floor plan, kitchen stations, kids area, licence and two weeks of
-trading, at different volumes — then creates `admin@caesar.deplois.net` with the password `admin` and
-turns MFA off for it so it can actually log in.
+Three switches, all in `.env.production`, all deliberately separate. They answer different questions
+and they stop being true at different times.
 
-`DEMO_MODE=1` is a second, separate switch: it puts the ten demo staff logins **on the sign-in
-screen** as buttons that fill the form. Separate because seeding stops after the first boot and the
-demo does not. It drives `/system/info/`, which takes **no authentication** — so anywhere with real
-staff or real takings, `DEMO_MODE` must be `0`. Leaving it on publishes the staff login sheet.
+| | what it does | when to turn it off |
+|---|---|---|
+| `DEMO_SEED=1` | Seeds the café on first boot: one branch — catalogue, stock, suppliers, floor plan, kitchen stations, kids area, licence and two weeks of trading | once you have your own data |
+| `DEMO_ADMIN=1` | Creates/refreshes `admin@caesar.deplois.net` / `admin` on **every** boot, MFA off | after `--rotate`, or it undoes the rotation |
+| `DEMO_MODE=1` | Puts the ten demo staff logins **on the sign-in screen** as buttons | anywhere with real staff or real takings |
 
-Each branch gets its own licence key, and all three are printed once by the seed. A till activated
-against another branch's key is refused, so keep them:
+`DEMO_ADMIN` is separate from `DEMO_SEED` because seeding is a first-boot job: tying the admin to it
+meant the account appeared once and then stopped being maintained the moment you set `DEMO_SEED=0` —
+which the seed itself tells you to do. `demo_admin` creates or updates, so running it every start is
+what makes the login reliably there.
+
+`DEMO_MODE` drives `/system/info/`, which takes **no authentication**. Leaving it on anywhere real
+publishes the staff login sheet.
+
+The branch's licence key is printed once by the seed. A till cannot be activated without it:
 
 ```sh
 docker compose logs api | grep "licence key"
@@ -109,7 +115,8 @@ crash-loop the container either.
 > docker compose exec api python manage.py demo_admin --rotate
 > ```
 >
-> Prints a strong password once and does not store it. Then set `DEMO_SEED=0`.
+> Prints a strong password once and does not store it. **Then set `DEMO_ADMIN=0`** — otherwise the
+> next restart recreates `admin` and quietly undoes the rotation.
 
 ## Running the production shape locally
 

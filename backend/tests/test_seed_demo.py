@@ -44,9 +44,11 @@ def printed_key(output: str, code: str = "MB") -> str:
     """
     Pull one branch's licence key out of the summary.
 
-    `code` exists because the seed builds three branches and issues a licence per
-    branch. Matching on "licence key" alone would silently return whichever line
-    came first, and the test would pass while two branches had no reachable key.
+    `code` because a licence is issued per branch and the summary prints one line
+    each. There is one branch today, so this reads like ceremony — it is not:
+    matching on "licence key" alone would silently return whichever line came
+    first, so the day a second branch is added the test would keep passing while
+    that branch had no reachable key.
 
     Read from stdout rather than from the database on purpose: the plaintext is
     never stored, so what the operator can see is the only thing that can ever
@@ -280,7 +282,7 @@ class TestEveryBranchIsSeeded:
     One branch could never show a query that forgot to filter by branch — the right
     answer and the wrong answer are the same number — so the seed builds three. The
     risk that introduces is the opposite one: a second branch that exists in the
-    branch list and nowhere else, so the switcher offers a name and every screen
+    branch list and nowhere else, so a name is counted everywhere and every screen
     behind it is empty.
     """
 
@@ -338,3 +340,80 @@ class TestEveryBranchIsSeeded:
         )
 
         assert assigned >= {b.code for b in Branch.objects.all()}
+
+
+class TestShrinkingTheBranchList:
+    """
+    A branch the seed stopped defining must not be left looking open.
+
+    The reset empties each branch's trading and had no reason to touch the `Branch`
+    rows, so going from three branches back to one left two behind with everything
+    underneath them deleted. An active branch with nothing in it still scopes
+    queries and still counts wherever the code iterates branches, and every figure
+    it produces is zero — which reads as a quiet week, not as a branch that should
+    not exist.
+
+    Retired rather than removed, because that is what the schema says. `Branch` is a
+    `SoftDeletableModel` and seven models PROTECT it; a hard delete collected ninety
+    protected rows on the first attempt. A demo command does not get to overrule a
+    constraint the product states on purpose.
+    """
+
+    @staticmethod
+    def _stale_branch() -> Branch:
+        from apps.organizations.models import Organization
+
+        org = Organization.objects.get(name_en="Caesar Cafe")
+        return Branch.objects.create(
+            organization=org, code="ZM", name_ar="فرع قديم", name_en="Old Branch"
+        )
+
+    def test_a_branch_no_longer_defined_is_retired_by_the_reset(self) -> None:
+        seed()
+        stale = self._stale_branch()
+
+        seed(reset=True)
+
+        stale.refresh_from_db()
+        assert stale.is_active is False
+        assert stale.deactivated_at is not None
+
+    def test_the_branch_still_in_the_list_is_untouched(self) -> None:
+        # The obvious way to get this wrong is a filter that retires everything.
+        seed()
+        self._stale_branch()
+
+        seed(reset=True)
+
+        assert Branch.objects.get(code="MB").is_active is True
+
+    def test_the_reset_says_which_branches_it_retired(self) -> None:
+        # Retiring a branch is not quiet housekeeping — it should be visible in the
+        # output that it happened, and to which branch.
+        seed()
+        self._stale_branch()
+
+        output = seed(reset=True)
+
+        assert "ZM" in output
+        assert "no longer defines" in output
+
+    def test_another_organisation_s_branches_are_untouched(self) -> None:
+        """
+        The narrowest scope that does the job.
+
+        A reset that retired every branch whose code is not in this file would be a
+        demo command reaching into a real café's data.
+        """
+        from apps.organizations.models import Organization
+
+        other = Organization.objects.create(name_ar="مطعم آخر", name_en="Another Place")
+        theirs = Branch.objects.create(
+            organization=other, code="ZM", name_ar="فرعهم", name_en="Their Branch"
+        )
+
+        seed()
+        seed(reset=True)
+
+        theirs.refresh_from_db()
+        assert theirs.is_active is True, "the demo reset retired another organisation's branch"
