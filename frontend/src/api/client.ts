@@ -140,14 +140,48 @@ http.interceptors.response.use(
       )
     }
 
-    // No envelope: the request never reached the app (network down, proxy error).
+    // No envelope: the request never reached the app.
+    //
+    // These used to be one message — "تحقق من الإنترنت" — for every case, and it
+    // sent somebody to check a working connection while the server was restarting.
+    // The three are genuinely different problems with different remedies, and the
+    // status code already tells them apart:
+    //
+    //   * the browser is offline        → the person can fix it
+    //   * 502/503/504 from the proxy    → the app is starting or down; waiting is
+    //                                     the remedy, and the reverse proxy
+    //                                     answered, so the network is fine
+    //   * anything else                 → the request did not arrive
+    //
+    // Saying "check your internet" when the proxy just answered 502 is not merely
+    // unhelpful: it points at the one thing that is demonstrably working.
+    const status = error.response?.status
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      return Promise.reject(
+        new ApiError('OFFLINE', 'لا يوجد اتصال بالإنترنت. الجهاز غير متصل.', {}, status),
+      )
+    }
+
+    if (error.code === 'ECONNABORTED') {
+      return Promise.reject(
+        new ApiError('TIMEOUT', 'الخادم استغرق وقتاً أطول من اللازم. أعد المحاولة.', {}, status),
+      )
+    }
+
+    if (status === 502 || status === 503 || status === 504) {
+      return Promise.reject(
+        new ApiError(
+          'SERVER_UNAVAILABLE',
+          'الخادم غير متاح حالياً — قد يكون قيد إعادة التشغيل. انتظر دقيقة ثم أعد المحاولة.',
+          {},
+          status,
+        ),
+      )
+    }
+
     return Promise.reject(
-      new ApiError(
-        error.code === 'ECONNABORTED' ? 'TIMEOUT' : 'NETWORK_ERROR',
-        'تعذر الاتصال بالخادم. تحقق من الإنترنت ثم أعد المحاولة.',
-        {},
-        error.response?.status,
-      ),
+      new ApiError('NETWORK_ERROR', 'تعذّر الوصول إلى الخادم. أعد المحاولة.', {}, status),
     )
   },
 )

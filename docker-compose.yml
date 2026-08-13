@@ -145,7 +145,12 @@ services:
         # cloned it. Your `.env` sets it to 1 — that decision belongs to the
         # person deploying, recorded in their environment, not to this file.
         if [ "$${DEMO_ADMIN:-0}" = "1" ]; then
-          python manage.py demo_admin
+          # Not allowed to be fatal. `set -e` is right for migrate, sync_roles and
+          # collectstatic — a server that starts without them is a server serving
+          # wrong answers. This is a demo convenience, and letting it kill the boot
+          # means one failure here takes the whole site down with a 502 and a
+          # restart loop, which is a far worse outcome than no admin account.
+          python manage.py demo_admin ||             echo "demo_admin failed — the site is up, but the admin login was not created"
         fi
 
         if [ "$${DJANGO_ENV:-prod}" = "dev" ]; then
