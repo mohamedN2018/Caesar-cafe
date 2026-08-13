@@ -123,34 +123,33 @@ services:
         python manage.py migrate --noinput
         python manage.py sync_roles
 
-        # Demo data, off unless asked for. `seed_demo` refuses when orders already
-        # exist, and that refusal is the guard that stops a second boot from mixing
-        # demo rows into real trading — so it is tolerated here rather than fatal.
-        if [ "$${DEMO_SEED:-0}" = "1" ]; then
-          python manage.py seed_demo --days "$${DEMO_DAYS:-14}" || \
-            echo "seed_demo declined: trading data already present, leaving it alone"
+        # ── the demo, in the BACKGROUND ────────────────────────────────────
+        #
+        # This used to run before gunicorn, and that was the bug behind:
+        #
+        #     dial tcp 10.0.1.36:8000: connect: connection refused   → 502
+        #
+        # The container was up and the port was closed, because the boot was still
+        # generating a fortnight of trading — thousands of orders through the real
+        # order and payment services. On a laptop that is two minutes. On a small
+        # VPS it is longer, and if the container is restarted or OOM-killed part
+        # way, the seed begins again from nothing and the server never starts at
+        # all. A slow demo dataset should never be able to mean "no website".
+        #
+        # The rule this encodes: **only work the server cannot serve without may
+        # block the server.** Migrations, roles and static files qualify — a server
+        # without them answers wrong. Demo data does not.
+        #
+        # `demo_admin` stays in the foreground because it takes about a second and
+        # a login that is not there yet is a demo nobody can enter.
+        if [ "$${DEMO_ADMIN:-0}" = "1" ]; then
+          python manage.py demo_admin ||             echo "demo_admin failed — the site is up, but the admin login was not created"
         fi
 
-        # The admin account, on EVERY boot rather than only alongside seeding.
-        #
-        # It used to live inside the block above, which meant it appeared once and
-        # then stopped: seeding is a first-boot job, so turning DEMO_SEED off — which
-        # the seed itself tells you to do — also quietly stopped maintaining the
-        # login. `demo_admin` creates or updates, so running it every time is what
-        # makes the account reliably there.
-        #
-        # Its own switch, defaulting to OFF. It has to be a switch: this command
-        # writes a known password and relaxes MFA, so a repository whose default
-        # start-up creates `admin`/`admin` would ship a back door to everyone who
-        # cloned it. Your `.env` sets it to 1 — that decision belongs to the
-        # person deploying, recorded in their environment, not to this file.
-        if [ "$${DEMO_ADMIN:-0}" = "1" ]; then
-          # Not allowed to be fatal. `set -e` is right for migrate, sync_roles and
-          # collectstatic — a server that starts without them is a server serving
-          # wrong answers. This is a demo convenience, and letting it kill the boot
-          # means one failure here takes the whole site down with a 502 and a
-          # restart loop, which is a far worse outcome than no admin account.
-          python manage.py demo_admin ||             echo "demo_admin failed — the site is up, but the admin login was not created"
+        if [ "$${DEMO_SEED:-0}" = "1" ]; then
+          (
+            python manage.py seed_demo --days "$${DEMO_DAYS:-14}"               && echo "seed_demo finished — the demo data is ready"               || echo "seed_demo declined or failed; the site is unaffected"
+          ) &
         fi
 
         if [ "$${DJANGO_ENV:-prod}" = "dev" ]; then
