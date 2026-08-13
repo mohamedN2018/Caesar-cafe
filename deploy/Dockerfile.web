@@ -32,7 +32,7 @@ RUN npm run build
 # ── serve ────────────────────────────────────────────────────────────────────
 FROM caddy:2-alpine
 
-COPY deploy/Caddyfile.dokploy /etc/caddy/Caddyfile
+COPY deploy/Caddyfile /etc/caddy/Caddyfile
 COPY --from=build /app/dist /srv/web
 
 EXPOSE 80

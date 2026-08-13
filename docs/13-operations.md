@@ -26,7 +26,7 @@ consequences, so they are listed separately rather than as "rotate the secrets".
    `python -c "import secrets; print(secrets.token_urlsafe(64))"`
 2. Put it in the deployment host's `.env`. Never in Git — `.env` is ignored and
    CI scans for secrets (docs/09, I3).
-3. `docker compose -f docker-compose.prod.yml up -d --force-recreate api worker beat`
+3. `docker compose up -d --force-recreate api worker beat`
 4. Confirm the app booted: `GET /api/v1/system/health/` returns 200. Production
    settings refuse to start on a placeholder secret, so a failed boot here means
    the value did not reach the container — check for shell quoting, not for a
@@ -69,7 +69,7 @@ nothing else here is.
 
 ```bash
 # 3. The Ed25519 licence signing key
-docker compose -f docker-compose.prod.yml run --rm api python manage.py generate_signing_key
+docker compose run --rm api python manage.py generate_signing_key
 #    → paste the output into .env as LICENSE_SIGNING_KEY
 
 # 4. Build the SPA. Caddy serves the files directly; there is no Node process in
@@ -79,10 +79,10 @@ docker run --rm -v "$PWD/frontend:/app" -w /app -e VITE_API_BASE_URL=/api/v1 \
   node:22-alpine sh -c "npm ci && npm run build"
 
 # 5. Up. `api` runs migrate and collectstatic on start.
-docker compose -f docker-compose.prod.yml up -d
+docker compose up -d
 
 # 6. The first administrator
-docker compose -f docker-compose.prod.yml exec api python manage.py createsuperuser
+docker compose exec api python manage.py createsuperuser
 ```
 
 ### Verify, in this order
@@ -94,12 +94,12 @@ database and no certificate.
    real certificate. Caddy obtains it on first boot; if this is a self-signed
    warning, DNS is not pointing here yet.
 2. Log in to `https://$DOMAIN` as the superuser.
-3. `docker compose -f docker-compose.prod.yml exec api python manage.py backup_database`
+3. `docker compose exec api python manage.py backup_database`
    → completes and says **(encrypted)**. If it says NOT ENCRYPTED, stop and fix
    `BACKUP_ENCRYPTION_KEY`; production settings will refuse the scheduled run.
 4. Apply the audit grant — the one step that appears to work when skipped:
    ```bash
-   docker compose -f docker-compose.prod.yml exec postgres \
+   docker compose exec postgres \
      psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
      -c 'REVOKE DELETE, TRUNCATE, UPDATE ON audit_log FROM '"$POSTGRES_USER"';'
    ```
@@ -112,12 +112,12 @@ database and no certificate.
 
 ```bash
 git pull
-docker compose -f docker-compose.prod.yml exec api python manage.py backup_database --label pre-deploy
-docker compose -f docker-compose.prod.yml build api
-docker compose -f docker-compose.prod.yml up -d api worker beat
+docker compose exec api python manage.py backup_database --label pre-deploy
+docker compose build api
+docker compose up -d api worker beat
 
 # Grant permission codes this release introduced. Safe to run every deploy.
-docker compose -f docker-compose.prod.yml exec api python manage.py sync_roles
+docker compose exec api python manage.py sync_roles
 ```
 
 The backup before the build is not ceremony. A migration that fails halfway is
@@ -163,18 +163,18 @@ back; migrations that only added columns are harmless to leave in place:
 
 ```bash
 git checkout <previous-tag>
-docker compose -f docker-compose.prod.yml build api
-docker compose -f docker-compose.prod.yml up -d api worker beat
+docker compose build api
+docker compose up -d api worker beat
 ```
 
 **The migration corrupted or destroyed data** — restore, and accept the data loss
 between the backup and now:
 
 ```bash
-docker compose -f docker-compose.prod.yml stop api worker beat
-docker compose -f docker-compose.prod.yml run --rm api \
+docker compose stop api worker beat
+docker compose run --rm api \
   python manage.py restore_database <pre-deploy-file> --i-understand-this-destroys-data
-docker compose -f docker-compose.prod.yml up -d
+docker compose up -d
 ```
 
 Terminals that were offline during this keep their outbox and push when they
@@ -246,13 +246,13 @@ git clone <repo> && cd caesar-cafe
 cp .env.example .env          # then fill in real secrets from the vault
 
 # 2. Restore into a fresh volume
-docker compose -f docker-compose.prod.yml up -d postgres
+docker compose up -d postgres
 gunzip -c caesar-2026-08-08.sql.gz | \
-  docker compose -f docker-compose.prod.yml exec -T postgres \
+  docker compose exec -T postgres \
   psql -U caesar -d caesar
 
 # 3. Bring the app up and check the numbers, not the health endpoint
-docker compose -f docker-compose.prod.yml up -d
+docker compose up -d
 ```
 
 **What to verify, in this order.** Anything that passes step 1 and fails step 4

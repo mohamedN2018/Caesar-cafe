@@ -10003,117 +10003,6 @@ paths:
       responses:
         '204':
           description: No response body
-  /api/v1/schema/:
-    get:
-      operationId: schema_retrieve
-      description: |-
-        OpenApi3 schema for this API. Format can be selected via content negotiation.
-
-        - YAML: application/vnd.oai.openapi
-        - JSON: application/vnd.oai.openapi+json
-      parameters:
-      - in: query
-        name: format
-        schema:
-          type: string
-          enum:
-          - json
-          - yaml
-      - in: query
-        name: lang
-        schema:
-          type: string
-          enum:
-          - ar
-          - en
-      tags:
-      - schema
-      security:
-      - {}
-      responses:
-        '200':
-          content:
-            application/vnd.oai.openapi:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    enum:
-                    - true
-                  data:
-                    type: object
-                    additionalProperties: {}
-                  meta:
-                    type: object
-                    properties:
-                      request_id:
-                        type: string
-                        description: Correlates this response with server logs.
-                required:
-                - success
-                - data
-            application/yaml:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    enum:
-                    - true
-                  data:
-                    type: object
-                    additionalProperties: {}
-                  meta:
-                    type: object
-                    properties:
-                      request_id:
-                        type: string
-                        description: Correlates this response with server logs.
-                required:
-                - success
-                - data
-            application/vnd.oai.openapi+json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    enum:
-                    - true
-                  data:
-                    type: object
-                    additionalProperties: {}
-                  meta:
-                    type: object
-                    properties:
-                      request_id:
-                        type: string
-                        description: Correlates this response with server logs.
-                required:
-                - success
-                - data
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                    enum:
-                    - true
-                  data:
-                    type: object
-                    additionalProperties: {}
-                  meta:
-                    type: object
-                    properties:
-                      request_id:
-                        type: string
-                        description: Correlates this response with server logs.
-                required:
-                - success
-                - data
-          description: ''
   /api/v1/settings/:
     get:
       operationId: settings_retrieve
@@ -12846,6 +12735,26 @@ components:
       - top_products
       - week
       - yesterday_net
+    DemoAccount:
+      type: object
+      properties:
+        email:
+          type: string
+        password:
+          type: string
+        name:
+          type: string
+        role:
+          type: string
+        pin:
+          type: string
+          description: For the POS keypad. Empty for office-only accounts.
+      required:
+      - email
+      - name
+      - password
+      - pin
+      - role
     Detail:
       type: object
       description: |-
@@ -18693,8 +18602,18 @@ components:
           description: Clients below this are refused everything except the heartbeat.
         api_version:
           type: string
+        demo_mode:
+          type: boolean
+        demo_accounts:
+          type: array
+          items:
+            $ref: '#/components/schemas/DemoAccount'
+          description: Present ONLY when DEMO_MODE is on. Empty everywhere else —
+            this endpoint is unauthenticated, so a populated list on a real install
+            would be the staff login sheet, published.
       required:
       - api_version
+      - demo_mode
       - min_supported_client_version
       - server_version
     Table:

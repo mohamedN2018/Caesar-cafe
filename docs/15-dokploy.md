@@ -1,171 +1,157 @@
 # 15 — Deploying on Dokploy
 
-For `caesar.deplois.net`. The bare-host procedure is [13 — Operations](13-operations.md); this is the
-same stack with Dokploy's Traefik in front of it instead of our own Caddy holding the certificate.
+`caesar.deplois.net`. Read this once before the first deploy; it is short.
 
----
+## One compose file
 
-## What is different from `docker-compose.prod.yml`
+`docker-compose.yml` — and that is the only one. There were three (dev, prod, dokploy) and they
+drifted, which is what parallel copies do: a header tightened in one, a flag added to another, and
+the thing you tested is not the thing you deployed.
 
-Three things, and each one is a decision rather than a port:
+**The difference between your laptop and the server is `.env`, not YAML.** One variable does it:
 
-**Dokploy's Traefik terminates TLS.** `deploy/Caddyfile.dokploy` listens on `:80` with `auto_https
-off`. Two processes trying to obtain a certificate for one hostname is how you get an ACME rate-limit
-and an outage. Caddy still does everything else — the security headers, the SPA fallback, the cache
-rules, the `/api/*` proxy — because a deployment that quietly relaxed its headers by going through a
-different proxy would be the worst kind of difference: invisible until somebody audits it.
+| `DJANGO_ENV` | build stage | settings | server |
+|---|---|---|---|
+| `prod` | `prod` — no dev extras, unprivileged user | `config.settings.prod` | gunicorn |
+| `dev` | `dev` — dev extras, root | `config.settings.dev` | `runserver`, autoreload |
 
-**The SPA is built inside its image.** `deploy/Dockerfile.web` runs `npm ci && npm run build` in a Node
-stage and copies `dist` into a Caddy stage that carries no Node at all. The bare-host runbook builds
-the bundle with a one-off `docker run node` and mounts it; Dokploy clones the repo and brings the
-compose up, so there is no host step to do that in. `npm run build` is `vue-tsc --noEmit && vite
-build`, so a type error fails the image rather than shipping a bundle nobody type-checked.
+The Dockerfile's stages are named `dev` and `prod` on purpose, so one variable selects the image, the
+settings module and the process. Three variables that have to agree is three chances to disagree.
 
-**`sync_roles` runs on every start.** Added to the api command beside `migrate` and `collectstatic`.
-A release that introduces a permission code otherwise lands with the code in the catalogue, the routes
-enforcing it, and no role holding it — see the entry in [08](08-roadmap.md).
+## What does not differ between local and production
 
-Unchanged: Postgres and Redis publish no ports and sit on an `internal: true` network, the statement
-timeouts, the log rotation, the memory limits, the unprivileged container user.
+This matters more than the parts that do. A local stack shaped differently from production is not a
+rehearsal.
 
----
+- **Postgres and Redis publish no ports, in either mode.** They are on an `internal: true` network
+  the host cannot reach. Use `make shell-db`, not a client on localhost — a stack that works locally
+  only because a port is exposed fails in production, long after you stopped looking for that.
+- **Every published port binds `127.0.0.1`.** This is the trick that lets one file serve both.
+  Locally it is how you reach the app; on a public VPS the mapping exists and the internet cannot
+  use it, because Traefik reaches the container over the proxy network instead. Written as
+  `8080:80` the same line publishes an unencrypted app to the world — and it behaves identically in
+  every local test, which is why `scripts/check_compose_ports.py` checks it in CI rather than a
+  reviewer checking it by eye.
+- **Everything is reached through Caddy**, so `/api/*` is same-origin in both modes. That is what
+  makes `connect-src 'self'` in the CSP a real constraint rather than a decoration.
+- The security headers, the memory limits, the log rotation, the statement timeouts and the
+  unprivileged user are the same in both.
+
+## TLS: Traefik holds the certificate, Caddy does not
+
+`deploy/Caddyfile` listens on `:80` with `auto_https off`. Dokploy's Traefik terminates TLS and
+speaks plain HTTP to the `web` container over the internal network. Two things trying to obtain a
+certificate for one hostname is how you get an ACME rate-limit and an outage.
+
+Caddy still sets HSTS itself, because it is the app that knows it is only ever served over TLS.
+Traefik setting it would also work; both setting it produces a duplicate header, and neither setting
+it is a downgrade nobody notices.
+
+The `proxy` network is declared `external` with an interpolated name:
+
+```yaml
+proxy:
+  external: true
+  name: ${PROXY_NETWORK:-bridge}
+```
+
+In production that is `dokploy-network`, which Dokploy created and Traefik is already attached to —
+`external` because a second definition would make a separate network with the same name and nothing
+would route. Locally the variable is unset and it falls back to `bridge`, which always exists, so
+`docker compose up` needs no `docker network create` first.
 
 ## First deploy
 
-1. **DNS.** Point `caesar.deplois.net` at the Dokploy host — an `A` record to its IPv4. Do this first:
-   Traefik cannot obtain a certificate for a name that does not resolve to it, and the failure looks
-   like a browser TLS warning rather than like a DNS problem.
-
-2. **In Dokploy** → *Create Application* → *Docker Compose*.
+1. **DNS.** An `A` record for `caesar.deplois.net` at the server's IP. Do this first: Traefik cannot
+   obtain a certificate for a name that does not resolve, and a failed ACME attempt is rate-limited.
+2. **New application** in Dokploy → *Docker Compose*.
    - Repository: this repo, branch `main`
-   - Compose file: `docker-compose.dokploy.yml`
-   - Domain: `caesar.deplois.net`, HTTPS on, certificate provider Let's Encrypt
+   - Compose file: `docker-compose.yml`
+   - Domain: `caesar.deplois.net`, HTTPS on, Let's Encrypt
+3. **Environment.** Paste `.env.production` into Dokploy's Environment panel. The secrets in it are
+   real and generated — it is ready as it stands. It is gitignored, so it is the only copy: keep it
+   somewhere safe. Rotating `JWT_SIGNING_KEY` logs everyone out; rotating `LICENSE_PEPPER` bricks
+   every activated terminal, because the stored licence hashes stop matching.
+4. **Deploy.** The api container migrates, runs `sync_roles`, collects static files and starts
+   gunicorn. `sync_roles` is in the start command rather than a runbook step because a release that
+   adds a permission code otherwise lands with the code in the catalogue, the routes enforcing it,
+   and no role holding it — deployed, and unreachable.
+5. **Check.** `https://caesar.deplois.net/api/v1/system/health/` should answer `ok`.
 
-3. **Environment.** Paste `.env.dokploy.example` into Dokploy's Environment panel and replace every
-   `CHANGE-ME`. Generate each secret with `openssl rand -base64 36`.
+## Demo data, and the admin login
 
-   `LICENSE_SIGNING_KEY` is the exception — it is an Ed25519 key and has to come from the app:
+`DEMO_SEED=1` in `.env.production` seeds **three branches** on first boot — each with its own
+catalogue, stock, suppliers, floor plan, kitchen stations, kids area, licence and two weeks of
+trading, at different volumes — then creates `admin@caesar.deplois.net` with the password `admin` and
+turns MFA off for it so it can actually log in.
 
-   ```bash
-   # after the first deploy, from Dokploy's terminal on the api container
-   python manage.py generate_signing_key
-   ```
+`DEMO_MODE=1` is a second, separate switch: it puts the ten demo staff logins **on the sign-in
+screen** as buttons that fill the form. Separate because seeding stops after the first boot and the
+demo does not. It drives `/system/info/`, which takes **no authentication** — so anywhere with real
+staff or real takings, `DEMO_MODE` must be `0`. Leaving it on publishes the staff login sheet.
 
-   Paste the output into the environment and redeploy. Until it is set, licence activation fails and
-   no terminal can be enrolled.
+Each branch gets its own licence key, and all three are printed once by the seed. A till activated
+against another branch's key is refused, so keep them:
 
-4. **Deploy.** Dokploy builds both images and starts the stack. The api container runs migrations,
-   collects static files and syncs roles before gunicorn binds.
-
-5. **The administrator.**
-
-   ```bash
-   python manage.py demo_admin
-   ```
-
-   Prints the credentials and a warning. See *The demo login* below — read it before leaving the host
-   running.
-
-6. **Data to look at.**
-
-   ```bash
-   python manage.py seed_demo --days 14
-   ```
-
-   A fortnight of trading through the real services: ~2,500 orders, a seated room, kitchen tickets at
-   every state, children mid-visit, closed shifts with cash variances, ten staff with PINs, and a
-   licence key printed at the end so a till can be activated. It refuses to run against a database
-   that already holds orders unless forced, because demo trading mixed into a real ledger cannot be
-   separated afterwards.
-
----
-
-## Verify, in this order
-
-Not the health endpoint alone — that returns 200 on a stack with an empty database.
-
-1. `curl -I https://caesar.deplois.net/api/v1/system/health/` → **200 over HTTPS with a real
-   certificate.** A self-signed warning means DNS is not pointing at this host yet.
-2. `curl -I http://caesar.deplois.net` → **301 to https**. A POS reachable over plain HTTP is a POS
-   whose session token can be read off the wire.
-3. Load `https://caesar.deplois.net` and sign in. The dashboard should show a fortnight of takings,
-   not zeros.
-4. Open `/pos`, activate the till with the licence key `seed_demo` printed, and sign in with PIN
-   `3333`. **Open a shift first** — the server refuses a sale without one, and the till now says so.
-5. Check a response header: `curl -sI https://caesar.deplois.net | grep -i strict-transport` →
-   HSTS present. If it is missing, Caddy is not in the request path and Traefik is reaching the api
-   directly.
-6. `python manage.py backup_database` → completes and says **(encrypted)**. If it says NOT ENCRYPTED,
-   `BACKUP_ENCRYPTION_KEY` is unset and production will refuse the scheduled run.
-
----
-
-## The demo login
-
-`demo_admin` creates:
-
-```
-email     admin@caesar.deplois.net
-password  admin
+```sh
+docker compose logs api | grep "licence key"
 ```
 
-**The identifier is an email, not the bare word `admin`.** `accounts.User` uses email as its username
-field, and making a one-word login work would mean changing the authentication path of an
-internet-facing system. That is a much larger and much worse change than typing a longer string once,
-so it was not made.
+`seed_demo` refuses to run once real orders exist, and the start script treats that refusal as
+normal rather than fatal — so a second boot cannot mix demo rows into live trading, and cannot
+crash-loop the container either.
 
-**This password is guessable and this host is on the public internet.** Anyone who finds the domain
-owns the cafe's money, its staff records and its audit trail. That is an acceptable state while
-somebody is looking at a demo and an unacceptable one the moment it is left running unattended.
+> ⚠️ `admin`/`admin` on a public domain is guessed, not cracked. It is the first pair an automated
+> scanner tries, and the account reads every sale, every staff record and every cost. This is what
+> was asked for and it is what is deployed; it should not outlive the demo.
+>
+> ```
+> docker compose exec api python manage.py demo_admin --rotate
+> ```
+>
+> Prints a strong password once and does not store it. Then set `DEMO_SEED=0`.
 
-Close it with one command:
+## Running the production shape locally
 
-```bash
-python manage.py demo_admin --rotate
+Worth doing before any deploy — it is the same containers, the same gunicorn, the same headers:
+
+```sh
+docker network create dokploy-network   # once, so the production .env works unchanged
+cp .env.production .env
+docker compose up -d --build            # → http://127.0.0.1:8080
 ```
 
-It replaces the password with a strong random one and prints it once. Do this before the demo stops
-being a demo.
+It works over plain `http://127.0.0.1:8080` only because Caddy sends `X-Forwarded-Proto: https`,
+which is exactly what Traefik does in production. A CSP or header mistake surfaces here, on your
+machine, instead of on the domain.
 
-Two further things worth doing on a host that will live:
+For day-to-day work on the code, change two lines in `.env` (`DJANGO_ENV=dev`, drop
+`PROXY_NETWORK`) and:
 
-- **Turn MFA back on.** `seed_demo` relaxes `security.require_mfa_for_roles` for the demo
-  organisation through the settings registry. Set it back to `["SUPER_ADMIN", "BRANCH_MANAGER"]` on
-  the settings screen — those accounts are reachable from the internet, which is the whole reason
-  C11 required it.
-- **Apply the audit grant.** `REVOKE DELETE ON audit_log` — the one step that appears to work when
-  skipped. The procedure is in [13](13-operations.md).
-
----
-
-## Deploying a change
-
-Dokploy redeploys on push, or on the button. The api container re-runs `migrate`, `collectstatic` and
-`sync_roles` on every start, so there is no separate step for any of them.
-
-**Take a backup before a deploy that carries a migration.** A migration that fails halfway is the one
-deployment failure that rolling the images back does not fix:
-
-```bash
-python manage.py backup_database --label pre-deploy
+```sh
+docker compose up -d --build            # runserver + built SPA
+docker compose --profile dev up -d      # adds Vite with hot reload on :5173
+docker compose watch                    # syncs backend edits into the container
 ```
 
-The migration checklist and the rollback procedure are unchanged — [13](13-operations.md).
+`docker compose watch` replaces the old dev bind mount, which could not survive into a shared file:
+mounting the host's `./backend` over `/app` in production would shadow the image's installed code
+with whatever the clone happened to contain.
+
+## Updating
+
+Dokploy redeploys on push to `main`. Migrations run on every start, so an ordinary release needs
+nothing by hand. Before a migration that rewrites a table, take a backup first —
+`make prod-migrate` does both in that order.
+
+## What is checked in CI
+
+- `docker compose config` in **both** modes, so a mistake reachable from one mode only still fails.
+- `scripts/check_compose_ports.py`, so no port escapes loopback.
+- `caddy validate` on `deploy/Caddyfile`.
+- `docker build -f deploy/Dockerfile.web`, which runs `vue-tsc --noEmit && vite build` inside the
+  image — so the bundle Dokploy serves is known to have type-checked, not merely to have built.
 
 ---
 
-## What this deployment does not have
-
-Stated rather than assumed, because a gap somebody discovers during an incident is worse than one
-they were told about:
-
-- **No WAL archiving.** The RPO is the nightly backup, so up to 24 hours — not the five minutes
-  docs/09 targets. In the words to use with the customer: *a host loss at 22:00 costs the whole
-  trading day.*
-- **No off-site copy by default.** Backups are encrypted and they are on the same host as the
-  database. A host loss takes both. The off-site step is in [13](13-operations.md).
-- **The restore drill has not been rehearsed here.** A backup nobody has restored is a hypothesis.
-
----
-
-**Next:** [13 — Operations Runbook](13-operations.md)
+**Next:** [13 — Operations](13-operations.md)

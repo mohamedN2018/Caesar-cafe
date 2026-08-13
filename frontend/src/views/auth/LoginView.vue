@@ -6,10 +6,10 @@
  * enrolment case — otherwise a policy-mandated second factor is a deadlock:
  * login refuses a token until you enrol, and enrolling needs a token.
  */
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { ApiError } from '@/api/client'
+import { ApiError, api } from '@/api/client'
 import logoBig from '@/assets/brand/logo-256.png'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiButton from '@/components/ui/UiButton.vue'
@@ -26,6 +26,51 @@ const mfaCode = ref('')
 const step = ref<'credentials' | 'mfa'>('credentials')
 const error = ref('')
 const enrolmentToken = ref('')
+
+/**
+ * The demo logins, offered as buttons.
+ *
+ * The seed builds ten staff accounts with a password apiece and prints them to a
+ * terminal nobody deploying through Dokploy ever sees. So a demo arrived with a
+ * full cafe behind it and no way in unless you knew to go and read the container
+ * logs.
+ *
+ * **The server decides whether this appears, not this component.** `/system/info/`
+ * needs no authentication, so it returns an empty list unless `DEMO_MODE` is
+ * explicitly on — a real install with real staff never sends credentials here, and
+ * the panel then has nothing to render. Gating it in the frontend would put the
+ * decision on the side of the wire that anybody can edit.
+ */
+interface DemoAccount {
+  email: string
+  password: string
+  name: string
+  role: string
+  pin: string
+}
+
+const demoAccounts = ref<DemoAccount[]>([])
+
+onMounted(async () => {
+  try {
+    const info = await api.get<{ demo_mode?: boolean; demo_accounts?: DemoAccount[] }>(
+      '/system/info/',
+    )
+    demoAccounts.value = info.demo_mode ? (info.demo_accounts ?? []) : []
+  } catch {
+    // A login screen that will not render because a convenience endpoint failed is
+    // worse than one with no demo panel. Silence is correct here.
+  }
+})
+
+function useAccount(account: DemoAccount) {
+  email.value = account.email
+  // The superuser's password is set by `demo_admin` and can be rotated, so the
+  // server sends an empty string rather than a guess. Filling the field with a
+  // stale value would produce a failed login that looks like a broken button.
+  password.value = account.password
+  error.value = ''
+}
 
 const canSubmit = computed(() =>
   step.value === 'credentials'
@@ -131,6 +176,33 @@ async function submit() {
         </UiButton>
       </form>
 
+      <!--
+        Only ever rendered when the server said DEMO_MODE is on. See the note in
+        the script — the decision is not this component's to make.
+      -->
+      <div
+        v-if="demoAccounts.length && step === 'credentials'"
+        class="demo-panel mt-6 rounded-xl border border-line bg-surface p-4"
+      >
+        <p class="demo-heading text-xs font-semibold">حسابات التجربة — اضغط للدخول</p>
+        <p class="demo-note mt-1 text-xs">
+          كلمة المرور تُملأ تلقائياً. هذه بيانات عرض فقط.
+        </p>
+
+        <ul class="mt-3 space-y-1">
+          <li v-for="account in demoAccounts" :key="account.email">
+            <button type="button" class="demo-row" @click="useAccount(account)">
+              <span class="demo-name">{{ account.name }}</span>
+              <span class="demo-role">{{ account.role }}</span>
+              <!-- The PIN is for the POS keypad, not this form. Shown because a
+                   cashier reaching the till needs it and has nowhere else to look. -->
+              <span v-if="account.pin" class="demo-pin tabular-nums">PIN {{ account.pin }}</span>
+              <span v-else class="demo-pin demo-pin-none">كلمة المرور اليدوية</span>
+            </button>
+          </li>
+        </ul>
+      </div>
+
       <p class="login-footnote mt-6 text-center text-xs">
         الاتصال مؤمَّن. لا تشارك بيانات الدخول مع أحد.
       </p>
@@ -139,6 +211,46 @@ async function submit() {
 </template>
 
 <style scoped>
+.demo-panel {
+  box-shadow: var(--shadow-lg);
+}
+.demo-heading {
+  color: var(--ink);
+}
+.demo-note {
+  color: var(--ink-faint);
+}
+.demo-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border-radius: 0.5rem;
+  text-align: start;
+  font-size: 0.8rem;
+  transition: background-color var(--duration-fast) var(--ease-out);
+}
+.demo-row:hover,
+.demo-row:focus-visible {
+  background-color: var(--brand-50);
+}
+.demo-name {
+  flex: 1 1 auto;
+  color: var(--ink);
+  font-weight: 500;
+}
+.demo-role {
+  color: var(--ink-muted);
+}
+.demo-pin {
+  color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.demo-pin-none {
+  font-size: 0.7rem;
+}
+
 .login-screen {
   position: relative;
   overflow: hidden;

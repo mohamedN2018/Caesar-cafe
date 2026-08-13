@@ -42,7 +42,7 @@ if not ROUTER.exists():  # pragma: no cover - depends on how the suite was invok
     pytest.skip(
         "The frontend tree is not reachable from here, so this guard cannot run.\n"
         "\n"
-        "That is the dev container: docker-compose.dev.yml mounts only `./backend:/app`,\n"
+        "That is the dev container: docker-compose.yml mounts only `./backend:/app`,\n"
         "so there is no sibling `frontend/` to read. CI is where this is enforced —\n"
         "`actions/checkout` takes the whole repo and the backend job runs with\n"
         "working-directory: backend, so the sibling exists there. It also runs when the\n"

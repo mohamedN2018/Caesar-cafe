@@ -2186,6 +2186,179 @@ the reports route pays for it.
 
 ---
 
+## Three compose files became one ✅ COMPLETE (2026-08-13)
+
+`docker-compose.dev.yml`, `docker-compose.prod.yml` and `docker-compose.dokploy.yml` are gone.
+There is one `docker-compose.yml`, and **the difference between a laptop and the server is `.env`,
+not YAML.**
+
+### Why three was the wrong number
+
+They had already drifted. `request_body { max_size 10MB }` went into one Caddyfile; the statement
+timeouts went into two compose files and not the third; `sync_roles` was in the Dokploy start
+command and nowhere else. That is the ordinary fate of parallel copies — each is edited when someone
+is working on that environment, and nobody diffs them. The result is that the stack you tested is
+not the stack you deployed, and the gap is invisible until it is 6am.
+
+### `DJANGO_ENV` is the only switch
+
+The Dockerfile's stages are named `dev` and `prod`, so one variable selects the build stage, the
+settings module and the process:
+
+```yaml
+target: ${DJANGO_ENV:-prod}
+DJANGO_SETTINGS_MODULE: config.settings.${DJANGO_ENV:-prod}
+```
+
+Three variables that must agree is three chances to disagree.
+
+### The loopback rule, and why a script checks it
+
+Every published port binds `127.0.0.1` — in both modes. That single property is what lets one file
+serve both: locally it is how you reach the app, and on a public VPS the mapping exists while the
+internet cannot use it, because Traefik reaches the container over the proxy network instead.
+
+Written `8080:80` instead, the same line publishes an unencrypted app to the world.
+
+**That mistake is invisible to every test.** `8080:80` and `127.0.0.1:8080:80` are indistinguishable
+on a developer's machine — same curl, same browser, same suite. Nothing fails until the file is on a
+public host, and then nothing fails *visibly* at all. A reviewer reads the diff and sees a port
+mapping, which is what they expected to see. So `scripts/check_compose_ports.py` asserts it and CI
+runs it. An absent `host_ip` is treated as `0.0.0.0` and fails, rather than being read as "unset, so
+probably fine".
+
+### Two things that could not simply be merged
+
+**The dev bind mount had to go.** `./backend:/app` is what made local edits live, and it cannot
+survive into a shared file: in production it would shadow the image's installed code with whatever
+the clone happened to contain. Replaced by `develop.watch`, which syncs on `docker compose watch` and
+is inert otherwise.
+
+**`dokploy-network` does not exist on a laptop**, and it is declared `external` because Traefik is
+already attached to it — a second definition would create a separate network with the same name and
+nothing would route. An interpolated external name solves it:
+
+```yaml
+proxy:
+  external: true
+  name: ${PROXY_NETWORK:-bridge}
+```
+
+`bridge` always exists, so `docker compose up` locally needs no `docker network create` first.
+
+The Vite dev server is the one thing behind a profile (`--profile dev`), because hot reload is
+genuinely local-only. Without it, `web` serves the built bundle — which is what production does.
+
+### One Caddyfile too
+
+`deploy/Caddyfile.dokploy` became `deploy/Caddyfile`; the bare-host one was deleted with the compose
+file that used it. The surviving copy is the `auto_https off` one, because Traefik holds the
+certificate. CI validates the single file instead of validating two and hoping they matched.
+
+### Verified
+
+`docker compose config` clean in both modes, the port guard clean, and the **production shape brought
+up locally with the production `.env` unchanged** — gunicorn, `config.settings.prod`, the real
+security headers, reachable on `http://127.0.0.1:8080` only because Caddy sends
+`X-Forwarded-Proto: https`, exactly as Traefik will. A CSP or header mistake now surfaces on a
+laptop rather than on the domain.
+
+`.env.production` is written and ready to paste into Dokploy, with real generated secrets. It is
+gitignored (`.env.*`), so the secrets are not in this repo — and it is therefore the only copy.
+Rotating `JWT_SIGNING_KEY` logs everyone out; rotating `LICENSE_PEPPER` bricks every activated
+terminal, because the stored licence hashes stop matching.
+
+### Four things the local production run found
+
+None of these would have been caught by reading the file. They are the reason a
+consolidation gets run rather than reviewed.
+
+**The demo reported a 94% gross margin, and that was the data, not the report.** 712,437 in sales
+against 41,067 of cost. Only 13 of 56 variants have a recipe, and a variant's cost is computed from
+its recipe when stock is received; the other 43 kept `cost = 0`, and the order service snapshotted
+that faithfully onto every line it sold. Every report built on cost was wrong at once — the P&L,
+product profitability, the margin column, the dashboard — and not one of them was broken. **A zero
+cost is not a missing value, it is an assertion of infinite margin**, and it reads like an unfilled
+field, which is how it survived a fortnight of seeded trading and a report overhaul. Now 0 of 56
+variants and 0 of 6,181 order lines cost nothing, and the margin is 77% — a drinks-led café's real
+shape.
+
+The first version of that fix was wrong in an instructive way: it read the variants out of the
+in-memory `menu`, but `_receive_stock` recosts the recipe-backed ones with an `UPDATE`, so those
+objects still read zero and would have had a properly computed weighted-average cost overwritten
+with a flat percentage of price. It would have looked like it worked — every variant ends up with a
+plausible number either way. A test pins the cappuccino's cost to *not* be exactly 22% of its price.
+
+**`worker` and `beat` were permanently unhealthy**, and had been. They inherit the api image's
+`HEALTHCHECK`, which curls port 8000; neither serves HTTP, so the check could never pass. That is
+worse than having no check, because it teaches you that "unhealthy" on this stack means nothing —
+and then you read past it on the day the api says it too. The worker now answers `celery inspect
+ping`; beat's check is `disable: true` rather than faked, because beat publishes and does not
+consume, so the only available check is "is the process running", which Docker already knows and
+which a silently-not-scheduling beat passes.
+
+**The api's health check was passing on a redirect.** It asked for plain http, so in prod mode it got
+the `SECURE_SSL_REDIRECT` 301 — and `curl -f` does not fail on a 3xx. It had proven only that
+something held the port; it never reached the view, so it never ran the database probe it exists for.
+It now sends `X-Forwarded-Proto: https` and gets the real 200. Its `start_period` also went to 240s,
+because a first boot runs migrations, `collectstatic` and two weeks of generated trading before
+gunicorn binds — just over two minutes here, during which an orchestrator that gates on health would
+call the deploy failed.
+
+**Both build stages shared one image tag.** `caesar-api:latest` for dev and prod alike, so whichever
+built last won: switch `DJANGO_ENV` to dev and you get the prod image back, silently — no autoreload,
+and `pytest` missing from an image whose extras plainly install it. The mode is in the tag now
+(`caesar-api:dev-latest`), and the Makefile's tooling targets pin `DJANGO_ENV=dev` rather than
+inheriting whatever `.env` says, since pytest, ruff and mypy are deliberately absent from the
+production image.
+
+### Three branches, and demo logins on the sign-in screen
+
+Two follow-ups, both because the demo was less discoverable than it was complete.
+
+**The seed built one branch.** Every catalogue row, stock item, table, supplier and licence is
+branch-scoped, and with a single branch **a query that forgot to filter by branch gives the same
+answer as one that did** — the bug is unobservable. The branch switcher, the per-branch reports and
+the licence-per-till rule also had nothing to work with. There are three now (MB / ZM / SM), each
+with its own catalogue, stock, suppliers, floor, kitchen stations, printers, kids area and licence,
+deliberately at different volumes — 2,552 / 1,690 / 1,074 orders — because three identical branches
+would make a branch comparison look correct whichever column it sorted by.
+
+The new risk that introduces is the opposite one: a branch that exists in the switcher and nowhere
+else, so a name is offered and every screen behind it is empty. Four tests cover it — a licence per
+branch, a distinct printed key per branch, a non-empty catalogue and stock per branch, and a cashier
+who holds a role at all three. That last one matters more than it looks: staff assigned only to the
+main branch would leave two branches full of data that nobody can log into, which reads as a
+permissions bug in the product rather than a gap in the seed, and sends whoever investigates into
+`authz`.
+
+**The demo logins now appear on the sign-in screen**, as buttons that fill the form. They existed all
+along — ten accounts, a password each, printed to a terminal that nobody deploying through a Dokploy
+dashboard ever reads. A complete café behind a login nobody could get past.
+
+The gate is the interesting part. `/system/info/` takes **no authentication**, so it returns an empty
+list unless `DEMO_MODE` is explicitly on, and `DEMO_MODE` is a separate switch from `DEMO_SEED`
+rather than derived from it — seeding stops after the first boot, the demo does not. The flag decides
+and never the data: a real café that happens to employ a `cashier@caesar.test` must not start
+publishing that password because an address matched a list, and there is a test for exactly that.
+The superuser is offered with an **empty** password, because `demo_admin --rotate` can change it and
+this code cannot know the current value — a stale `admin` shown as valid would fail on click and look
+like the rotation broke the login.
+
+The two credential lists are separate copies (a view cannot import a management command without
+dragging the whole seeding module into every request's import graph), so a test asserts they agree.
+
+### The demo admin, stated plainly
+
+`DEMO_SEED=1` seeds a café and two weeks of trading on first boot and creates
+`admin@caesar.deplois.net` with the password `admin`, MFA off. This was asked for explicitly and it
+is deployed. `admin`/`admin` on a public domain is guessed, not cracked — it is the first pair a
+scanner tries, and the account reads every sale, every staff record and every cost.
+`demo_admin --rotate` is the remedy and it is documented at the point of use, in `.env.production`
+and in [15 — Dokploy](15-dokploy.md), rather than only here.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

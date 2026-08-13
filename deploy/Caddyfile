@@ -1,23 +1,28 @@
-# Caesar Cafe — reverse proxy, TLS, and the outer rate limit.
+# Caesar Cafe behind Dokploy.
 #
-# Caddy is the only container the internet can reach. TLS is automatic: a
-# certificate is obtained on first boot and renewed without intervention, which
-# matters because a POS whose certificate expired is a POS that stops selling and
-# nobody knew a renewal was due.
+# The difference from `deploy/Caddyfile` is one thing and it matters: **Caddy does
+# not terminate TLS here.** Dokploy runs Traefik, Traefik holds the certificate for
+# the domain and speaks to this container over plain HTTP on the internal network.
+# Two things trying to obtain a certificate for one hostname is how you get an ACME
+# rate-limit and an outage, so this listens on :80 with `auto_https off` and Traefik
+# is the only thing talking to Let's Encrypt.
 #
-# The system is internet-facing from Phase 1 (C11), so the scanning traffic in
-# docs/09 (D0) arrives on day one. The limits below are the first line; fail2ban
-# on the host is the second.
+# Everything else is deliberately identical to the bare-host Caddyfile: the same
+# security headers, the same SPA fallback, the same cache rules, the same refusal
+# to cache `index.html`. A deployment that quietly relaxed its headers because it
+# went through a different proxy would be the worst kind of difference — invisible
+# until somebody audits it.
 {
-	email {$ACME_EMAIL}
-
-	# The `Server: Caddy` header is stripped per-site below. Free reconnaissance
-	# is still reconnaissance.
+	auto_https off
 	admin off
 }
 
 (security_headers) {
 	header {
+		# HSTS is set HERE and not by Traefik, because this is the app that knows
+		# it is only ever served over TLS. Traefik adding it would work; both
+		# adding it produces a duplicate header, and neither adding it is a
+		# downgrade nobody notices.
 		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "DENY"
@@ -26,7 +31,8 @@
 		Permissions-Policy "geolocation=(), microphone=(), camera=()"
 
 		# The SPA loads nothing from anywhere else. `connect-src 'self'` is what
-		# stops an injected script from exfiltrating to another host.
+		# stops an injected script exfiltrating to another host — and it holds only
+		# because the API is same-origin through the `/api/*` handler below.
 		Content-Security-Policy "default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; connect-src 'self'; font-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
 
 		-Server
@@ -34,38 +40,32 @@
 	}
 }
 
-{$DOMAIN} {
+:80 {
 	import security_headers
 	encode zstd gzip
+
+	# Dokploy's own health probe. Answered by Caddy directly so a probe never
+	# depends on the database being up — a container restarted because Postgres
+	# was briefly slow is a restart loop, not a recovery.
+	handle /healthz {
+		respond "ok" 200
+	}
 
 	# ── API ──────────────────────────────────────────────────────────────────
 	handle /api/* {
 		# Django refuses an oversized product photo in the serializer, but only
-		# after the multipart parser has already written the whole thing to a
-		# temp file — so an unbounded POST fills the api container's disk before
-		# any application code gets an opinion. This is the only place that can
-		# refuse a body without first receiving it.
-		#
-		# 10MB, from the two largest legitimate bodies: a 4MB photo
-		# (apps/catalog/images.py) and a sync push of 500 queued operations,
-		# which runs to a couple of megabytes at worst. Room to spare in both
-		# directions, because the failure mode of setting this too low is a
-		# terminal whose outbox can never drain.
+		# after the multipart parser has written the whole thing to a temp file.
+		# This is the only place that can refuse a body without receiving it.
 		request_body {
 			max_size 10MB
 		}
 
 		reverse_proxy api:8000 {
-			# X-Forwarded-* are set by default; only X-Real-IP needs stating.
-			# The audit trail reads the left-most X-Forwarded-For entry, which is
-			# trustworthy here only because nothing but this proxy can reach the
-			# app (docs/09, I6).
 			header_up X-Real-IP {remote_host}
+			# Traefik terminated TLS, so Django must be told the original scheme or
+			# `SECURE_SSL_REDIRECT` sends the browser round a redirect loop.
+			header_up X-Forwarded-Proto https
 
-			# A sync push of 500 operations is a large body and a slow request on
-			# a bad connection. 120s is generous on purpose: a terminal that
-			# times out mid-push retries the whole batch, and the batch is
-			# idempotent but the bandwidth is not free.
 			transport http {
 				read_timeout 120s
 				write_timeout 120s
@@ -75,7 +75,9 @@
 
 	# WebSockets for the kitchen display. Same upstream; Caddy upgrades in place.
 	handle /ws/* {
-		reverse_proxy api:8000
+		reverse_proxy api:8000 {
+			header_up X-Forwarded-Proto https
+		}
 	}
 
 	handle /static/* {
@@ -96,21 +98,19 @@
 		try_files {path} /index.html
 		file_server
 
-		# index.html must never be cached: it is what points at the hashed asset
-		# bundles, so a cached copy pins a browser to a deployment that is gone.
+		# index.html must never be cached: it points at the hashed asset bundles,
+		# so a cached copy pins a browser to a deployment that no longer exists.
 		@html path *.html /
 		header @html Cache-Control "no-cache, must-revalidate"
+
+		# The service worker must not be cached either, or a browser keeps serving
+		# last week's offline shell after a deploy.
+		@sw path /sw.js
+		header @sw Cache-Control "no-cache, must-revalidate"
 	}
 
 	log {
 		output stdout
 		format json
 	}
-}
-
-# Anything asking for a host we do not serve gets nothing — no redirect, no
-# banner, no certificate. Most of that traffic is scanners.
-:443 {
-	tls internal
-	respond 421
 }

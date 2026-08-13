@@ -374,5 +374,15 @@ LOGGING = {
     },
 }
 
+#: Publish the demo credentials on the public system-info endpoint.
+#:
+#: OFF by default and it must stay that way: this endpoint needs no authentication,
+#: so switching it on anywhere with real staff or real takings hands the login list
+#: to whoever asks for it. It is a switch for a demonstration deployment, not a
+#: convenience toggle — which is why it is separate from `DEMO_SEED` (seed on boot)
+#: rather than derived from it. Seeding stops after the first boot; the demo does
+#: not, and the accounts still need to be findable.
+DEMO_MODE = env_bool("DEMO_MODE", False)
+
 APP_VERSION = "0.1.0"
 MIN_SUPPORTED_CLIENT_VERSION = "0.1.0"

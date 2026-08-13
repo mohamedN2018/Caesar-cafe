@@ -24,7 +24,7 @@ Phases 6–10 (kitchen, kids area, sync, reporting, hardening, production). See 
 cp .env.example .env          # adjust API_PORT if 8000 is taken
 make up                       # postgres, redis, api, worker, beat, frontend
 make migrate
-docker compose -f docker-compose.dev.yml run --rm api \
+docker compose run --rm api \
   python manage.py bootstrap --admin-email=you@example.com
 make check                    # lint + typecheck + tests
 ```

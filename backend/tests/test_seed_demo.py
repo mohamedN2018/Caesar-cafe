@@ -40,9 +40,13 @@ def seed(*, days: int = 0, **kwargs) -> str:
     return out.getvalue()
 
 
-def printed_key(output: str) -> str:
+def printed_key(output: str, code: str = "MB") -> str:
     """
-    Pull the licence key out of the summary.
+    Pull one branch's licence key out of the summary.
+
+    `code` exists because the seed builds three branches and issues a licence per
+    branch. Matching on "licence key" alone would silently return whichever line
+    came first, and the test would pass while two branches had no reachable key.
 
     Read from stdout rather than from the database on purpose: the plaintext is
     never stored, so what the operator can see is the only thing that can ever
@@ -50,16 +54,16 @@ def printed_key(output: str) -> str:
     printed nothing.
     """
     for line in output.splitlines():
-        if "licence key" in line:
+        if "licence key" in line and line.strip().startswith(code):
             return line.split("licence key", 1)[1].strip()
-    raise AssertionError(f"no licence key in the seed summary:\n{output}")
+    raise AssertionError(f"no licence key for branch {code} in the seed summary:\n{output}")
 
 
 class TestTheDemoIsReachable:
     def test_the_seed_issues_a_licence_for_the_branch(self) -> None:
         seed()
 
-        licence = License.objects.get()
+        licence = License.objects.get(branch__code="MB")
         assert licence.branch is not None, "an org-wide licence cannot allocate invoice blocks"
         assert licence.status == LicenseStatus.PENDING
         assert licence.max_devices == 3
@@ -70,7 +74,7 @@ class TestTheDemoIsReachable:
         demo still unusable if the printed key does not open the till.
         """
         output = seed()
-        licence = License.objects.get()
+        licence = License.objects.get(branch__code="MB")
 
         activation = licensing_services.activate(
             license_key=printed_key(output),
@@ -95,7 +99,7 @@ class TestTheDemoIsReachable:
         """
         output = seed()
 
-        assert License.objects.get().customer_email in output
+        assert License.objects.get(branch__code="MB").customer_email in output
 
     def test_the_plaintext_key_is_never_stored(self) -> None:
         """
@@ -105,7 +109,7 @@ class TestTheDemoIsReachable:
         """
         output = seed()
         key = printed_key(output)
-        licence = License.objects.get()
+        licence = License.objects.get(branch__code="MB")
 
         assert key not in licence.key_hash
         assert licence.key_hash != key
@@ -124,7 +128,7 @@ class TestReseeding:
         reset.
         """
         output = seed()
-        licence = License.objects.get()
+        licence = License.objects.get(branch__code="MB")
         licensing_services.activate(
             license_key=printed_key(output),
             email=licence.customer_email,
@@ -140,7 +144,12 @@ class TestReseeding:
 
         seed(reset=True)
 
-        assert License.objects.count() == 1, "exactly one licence, not two"
+        # One per branch, not two per branch. The point is unchanged — the reset
+        # must not leave the previous run's licence beside the new one — but the
+        # expected count is now the branch count rather than 1.
+        assert License.objects.count() == Branch.objects.count(), (
+            "the reset left a licence from the previous run behind"
+        )
         assert Device.objects.count() == 0, "the old terminal's credential survived the reset"
 
     def test_the_second_run_prints_a_different_key(self) -> None:
@@ -182,4 +191,150 @@ class TestTheBranchIsWiredUp:
         """
         seed()
 
-        assert License.objects.get().branch == Branch.objects.get(code="MB")
+        assert License.objects.get(branch__code="MB").branch == Branch.objects.get(code="MB")
+
+
+class TestEveryVariantHasACost:
+    """
+    The demo reported a 94% gross margin, and that was the data, not the report.
+
+    Only 13 of 56 variants have a recipe, and a variant's cost is computed from its
+    recipe when stock is received. The other 43 kept `cost = 0`; the order service
+    snapshotted that faithfully onto every line it sold; and a fortnight of trading
+    came out as 712,437 in sales against 41,067 of cost.
+
+    Every report built on cost was wrong at once — the P&L, product profitability,
+    the margin column, the dashboard — and none of them were broken. **A zero cost
+    is not a missing value, it is an assertion of infinite margin**, and it reads
+    like an empty field, which is why it survived this long. `_reset` already
+    carried a comment about the same symptom from a different cause.
+    """
+
+    def test_no_variant_is_left_costing_nothing(self) -> None:
+        from decimal import Decimal
+
+        from apps.catalog.models import ProductVariant
+
+        seed()
+
+        free = ProductVariant.objects.filter(cost__lte=Decimal("0")).values_list(
+            "name_ar", flat=True
+        )
+        assert not list(free), "these variants would be sold at 100% margin: " + ", ".join(free)
+
+    def test_a_recipe_costed_variant_keeps_its_computed_cost(self) -> None:
+        """
+        The backfill must not flatten the eleven that were costed properly.
+
+        `_receive_stock` recosts the recipe-backed variants with an UPDATE, so the
+        in-memory objects the seed is holding still read zero. The first version of
+        this fix used those, which would have overwritten a cost derived from a real
+        weighted average with a flat percentage of the price — and it would have
+        looked correct, because every variant ends up with a plausible number
+        either way. Only the ratio gives it away.
+        """
+        from decimal import Decimal
+
+        from apps.catalog.models import ProductVariant
+
+        seed()
+
+        cappuccino = ProductVariant.objects.get(
+            product__sku="CAPP", name_ar="وسط", product__branch__code="MB"
+        )
+
+        # Costed from beans, milk and a cup — nowhere near the 22% of price that a
+        # drink with no recipe would have been given.
+        ratio = cappuccino.cost / cappuccino.price
+        assert ratio != Decimal("0.22"), (
+            f"cappuccino cost {cappuccino.cost} is exactly 22% of its price, "
+            "which means the recipe cost was overwritten by the fallback"
+        )
+        assert cappuccino.cost > Decimal("0")
+
+    def test_food_costs_more_of_its_price_than_a_drink_does(self) -> None:
+        """
+        Plausibility, not just non-zero.
+
+        A café makes its money on drinks: a latte is a spoon of beans and some milk,
+        a burger is mostly beef. If the fallback ever collapses to one flat ratio the
+        numbers stay non-zero and stop meaning anything, and this is the cheapest way
+        to notice.
+        """
+        from apps.catalog.models import ProductVariant
+
+        seed()
+
+        tea = ProductVariant.objects.get(product__sku="TEA", product__branch__code="MB")
+        burger = ProductVariant.objects.get(
+            product__sku="BURGER", name_ar="سنجل", product__branch__code="MB"
+        )
+
+        assert burger.cost / burger.price > tea.cost / tea.price
+
+
+class TestEveryBranchIsSeeded:
+    """
+    Three branches, and each one has to stand on its own.
+
+    One branch could never show a query that forgot to filter by branch — the right
+    answer and the wrong answer are the same number — so the seed builds three. The
+    risk that introduces is the opposite one: a second branch that exists in the
+    branch list and nowhere else, so the switcher offers a name and every screen
+    behind it is empty.
+    """
+
+    def test_every_branch_has_its_own_licence(self) -> None:
+        # A licence is per branch, and a till activated against another branch's key
+        # is refused. Two branches sharing one would be two branches that cannot
+        # open a till.
+        seed()
+
+        for branch in Branch.objects.all():
+            assert License.objects.filter(branch=branch).exists(), (
+                f"branch {branch.code} has no licence, so no till there can be activated"
+            )
+
+    def test_the_summary_prints_a_key_for_each_branch(self) -> None:
+        """
+        Printed once and never stored. A branch whose key does not reach stdout is a
+        branch nobody can activate, and the only remedy is regenerating it.
+        """
+        output = seed()
+
+        keys = {printed_key(output, branch.code) for branch in Branch.objects.all()}
+
+        assert len(keys) == Branch.objects.count(), "two branches were given the same key"
+
+    def test_every_branch_has_its_own_catalogue_and_stock(self) -> None:
+        from apps.catalog.models import ProductVariant
+        from apps.inventory.models import InventoryItem
+
+        seed()
+
+        for branch in Branch.objects.all():
+            assert ProductVariant.objects.filter(product__branch=branch).exists(), (
+                f"branch {branch.code} has an empty menu"
+            )
+            assert InventoryItem.objects.filter(branch=branch).exists(), (
+                f"branch {branch.code} has no stock"
+            )
+
+    def test_a_cashier_can_work_at_every_branch(self) -> None:
+        """
+        Otherwise the demo shows three branches of data and lets you log into one.
+
+        That reads as a permissions bug in the product rather than a gap in the seed,
+        which is the expensive kind of wrong: somebody goes looking in `authz`.
+        """
+        from apps.accounts.models import User
+        from apps.authz.models import RoleAssignment
+
+        seed()
+
+        cashier = User.objects.get(email="cashier@caesar.test")
+        assigned = set(
+            RoleAssignment.objects.filter(user=cashier).values_list("branch__code", flat=True)
+        )
+
+        assert assigned >= {b.code for b in Branch.objects.all()}

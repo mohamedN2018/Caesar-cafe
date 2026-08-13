@@ -57,6 +57,45 @@ from apps.recipes.models import Recipe, RecipeLine
 from apps.shifts.models import Shift
 from apps.suppliers.models import Supplier, SupplierLedgerEntry
 
+#: (code, Arabic name, English name, phone, address)
+#:
+#: Three branches, because one branch hides a whole class of bug. Every catalogue
+#: row, every stock item, every table and every licence is scoped to a branch, and
+#: a seed with one branch can never show a query that forgot to filter by it —
+#: the wrong answer and the right answer are the same number. The branch switcher,
+#: the per-branch reports and the licence-per-till rule all had nothing to work
+#: with either.
+#:
+#: They are deliberately different sizes. `_trade` scales its volume per branch, so
+#: the main branch is busy and the third is quiet — a report that only ever sees
+#: identical branches cannot show you that it is sorting them by the wrong column.
+BRANCHES = [
+    (
+        "MB",
+        "الفرع الرئيسي",
+        "Main Branch",
+        "0132600000",
+        "شارع الصلاحة، آخر شارع قاعة الدار البيضاء، بحري شبين القناطر",
+        Decimal("1.0"),
+    ),
+    (
+        "ZM",
+        "فرع الزمالك",
+        "Zamalek Branch",
+        "0227350000",
+        "شارع أبو الفدا، الزمالك، القاهرة",
+        Decimal("0.7"),
+    ),
+    (
+        "SM",
+        "فرع سموحة",
+        "Smouha Branch",
+        "0342100000",
+        "شارع فيكتور عمانويل، سموحة، الإسكندرية",
+        Decimal("0.45"),
+    ),
+]
+
 #: Fixed, so Tuesday's demo is Monday's demo.
 SEED = 20260808
 
@@ -352,37 +391,63 @@ class Command(BaseCommand):
         self.random = random.Random(SEED)  # noqa: S311 — presentation data, not security
         self.counter = 0
 
+        self.license_keys: dict[str, str] = {}
+
         with transaction.atomic():
-            org, branch = self._organization()
+            org, branches = self._organization()
             self._relax_mfa(org)
             roles = ensure_system_roles(org)
-            staff = self._staff(org, branch, roles)
-            stations = self._stations(org, branch)
-            self._printers(org, branch, stations)
             units = self._units(org)
-            suppliers = self._suppliers(org, branch)
-            items = self._stock(org, branch, units, suppliers)
-            menu = self._menu(org, branch, stations)
-            self._channel_prices(org, branch)
-            self._modifiers(org, branch, items)
-            self._recipes(menu, items, units)
-            methods = self._payment_methods(org, branch)
-            self._floor(org, branch)
-            self._receive_stock(
-                org, branch, suppliers["GROCER"], items, units, staff["store@caesar.test"]
-            )
-            self._kids(org, branch, menu)
-            self._license(org, branch, staff["owner@caesar.test"])
+            staff = self._staff(org, branches, roles)
+
+            # Everything below is branch-scoped in the schema, so it is built per
+            # branch rather than once: its own catalogue, stock, suppliers, floor,
+            # kitchen stations, printers, kids area and licence. A branch that
+            # shared the main branch's rows would be a branch that cannot be told
+            # apart from it, which is the opposite of what a second branch is for.
+            built = []
+            for branch in branches:
+                stations = self._stations(org, branch)
+                self._printers(org, branch, stations)
+                suppliers = self._suppliers(org, branch)
+                items = self._stock(org, branch, units, suppliers)
+                menu = self._menu(org, branch, stations)
+                self._channel_prices(org, branch)
+                self._modifiers(org, branch, items)
+                self._recipes(menu, items, units)
+                methods = self._payment_methods(org, branch)
+                self._floor(org, branch)
+                self._receive_stock(
+                    org, branch, suppliers["GROCER"], items, units, staff["store@caesar.test"]
+                )
+                self._kids(org, branch, menu)
+                # After the receipt, because that is what recosts the recipes.
+                # Anything still at zero has no recipe to cost it, and a zero cost
+                # is not a neutral placeholder — it is a claim of 100% margin.
+                self._backfill_costs(menu)
+                self._license(org, branch, staff["owner@caesar.test"])
+                built.append((branch, menu, methods))
 
         # Trading runs outside the setup transaction: a fortnight is thousands
-        # of rows, and one long transaction holding every lock is how a seed
-        # command times out on a machine that is also serving a dev server.
-        days = self._trade(branch, menu, methods, staff, options["days"])
-        self._seat_the_room(branch, staff)
-        self._live_kitchen(branch, menu, staff)
-        self._children_inside(branch, staff)
+        # of rows per branch, and one long transaction holding every lock is how a
+        # seed command times out on a machine that is also serving a dev server.
+        days = 0
+        for branch, menu, methods in built:
+            weight = self._weight(branch.code)
+            days = self._trade(branch, menu, methods, staff, options["days"], weight=weight)
+            self._seat_the_room(branch, staff)
+            self._live_kitchen(branch, menu, staff)
+            self._children_inside(branch, staff)
 
-        self._summary(branch, days)
+        self._summary(branches, days)
+
+    @staticmethod
+    def _weight(code: str) -> Decimal:
+        """How busy this branch is, relative to the main one."""
+        for branch_code, *_rest, weight in BRANCHES:
+            if branch_code == code:
+                return weight
+        return Decimal("1.0")
 
     # ── the cafe ─────────────────────────────────────────────────────────────
 
@@ -524,17 +589,20 @@ class Command(BaseCommand):
                 "tax_number": "421-885-903",
             },
         )
-        branch, _ = Branch.objects.get_or_create(
-            organization=org,
-            code="MB",
-            defaults={
-                "name_ar": "الفرع الرئيسي",
-                "name_en": "Main Branch",
-                "phone": "0132600000",
-                "address": "شارع الصلاحة، آخر شارع قاعة الدار البيضاء، بحري شبين القناطر",
-            },
-        )
-        return org, branch
+        branches = []
+        for code, name_ar, name_en, phone, address, _weight in BRANCHES:
+            branch, _ = Branch.objects.get_or_create(
+                organization=org,
+                code=code,
+                defaults={
+                    "name_ar": name_ar,
+                    "name_en": name_en,
+                    "phone": phone,
+                    "address": address,
+                },
+            )
+            branches.append(branch)
+        return org, branches
 
     def _relax_mfa(self, org) -> None:
         """
@@ -559,7 +627,7 @@ class Command(BaseCommand):
             "security.require_mfa_for_roles", [], scope=Scope.ORGANIZATION, scope_id=org.id
         )
 
-    def _staff(self, org, branch, roles) -> dict[str, User]:
+    def _staff(self, org, branches, roles) -> dict[str, User]:
         people: dict[str, User] = {}
 
         for email, name, role_code, pin in STAFF:
@@ -575,11 +643,21 @@ class Command(BaseCommand):
             user.set_pin(pin)
             user.save(update_fields=["pin_hash", "pin_set_at"])
 
-            RoleAssignment.objects.get_or_create(
-                user=user,
-                role=roles[role_code],
-                branch=None if role_code == "SUPER_ADMIN" else branch,
-            )
+            # A role at every branch, not just the first.
+            #
+            # A cashier assigned only to the main branch cannot open a till at the
+            # other two, and the demo would show two branches full of data that
+            # nobody can log into — which looks like a permissions bug in the
+            # product rather than a gap in the seed. A real chain does staff it
+            # per site; a demo needs every account to work everywhere it is
+            # offered, because the sign-in screen offers them all.
+            if role_code == "SUPER_ADMIN":
+                RoleAssignment.objects.get_or_create(user=user, role=roles[role_code], branch=None)
+            else:
+                for branch in branches:
+                    RoleAssignment.objects.get_or_create(
+                        user=user, role=roles[role_code], branch=branch
+                    )
             people[email] = user
 
         return people
@@ -626,6 +704,7 @@ class Command(BaseCommand):
         # `issue_license` stores a hash, so a key not printed now is a licence
         # nobody can ever activate against.
         self.license_key = issued.plaintext_key
+        self.license_keys[branch.code] = issued.plaintext_key
         self.license_email = issued.license.customer_email
 
     def _stations(self, org, branch) -> dict[str, Station]:
@@ -855,6 +934,76 @@ class Command(BaseCommand):
                 for code, quantity, unit, waste in lines
             )
 
+    #: Food cost as a share of menu price, by the kind of thing being sold.
+    #:
+    #: Real café figures: drinks run cheap because the cost is a spoon of beans and
+    #: some milk, food runs dearer because it is mostly ingredient. These are the
+    #: fallback for a variant with no recipe — the 13 items that DO have one are
+    #: costed properly, from an actual goods receipt through weighted average.
+    COST_RATIOS = (
+        ("مشروب", Decimal("0.22")),
+        ("قهوة", Decimal("0.22")),
+        ("عصير", Decimal("0.30")),
+        ("حلويات", Decimal("0.33")),
+        ("ساندويتش", Decimal("0.38")),
+        ("وجبات", Decimal("0.38")),
+    )
+    DEFAULT_COST_RATIO = Decimal("0.30")
+
+    def _backfill_costs(self, menu) -> None:
+        """
+        Give every variant a cost, so the P&L is not a fantasy.
+
+        Only 13 of 56 variants have a recipe, and a variant's cost is computed from
+        its recipe when stock is received. The other 43 kept `cost = 0`, the order
+        service snapshotted that faithfully, and a fortnight of trading reported a
+        **94% gross margin** — 712,437 in sales against 41,067 of cost. Every
+        report built on cost was wrong at once: the P&L, product profitability, the
+        margin column, the dashboard.
+
+        Nobody had noticed because zero reads as "not filled in yet" rather than as
+        the assertion it is. `_reset` even carries a comment about the same symptom
+        from a different cause, which says something about how this kind of number
+        hides: it is not a crash, and it is not obviously absurd unless you know
+        what a café's margin looks like.
+
+        An approximation is the right fix for demo data. The alternative is
+        inventing ingredient lines for 43 items, which is more fiction with extra
+        steps — and it would still be an approximation, just a better-hidden one.
+        Anything with a real recipe is left alone.
+        """
+        # Re-read from the database rather than trusting `menu`.
+        #
+        # `_receive_stock` recosts the recipe-backed variants with an UPDATE, so the
+        # objects in `menu` still carry the cost they were built with — zero. Using
+        # them would overwrite a cost computed from a real weighted average with a
+        # flat guess, and it would look like it worked: every variant would end up
+        # with a plausible non-zero number.
+        fresh = ProductVariant.objects.filter(id__in=[v.id for v in menu.values()]).select_related(
+            "product__category"
+        )
+
+        updated = []
+        for variant in fresh:
+            if variant.cost and variant.cost > Decimal("0"):
+                continue
+            category = getattr(variant.product.category, "name_ar", "") or ""
+            ratio = next(
+                (r for key, r in self.COST_RATIOS if key in category), self.DEFAULT_COST_RATIO
+            )
+            variant.cost = (variant.price * ratio).quantize(Decimal("0.01"))
+            updated.append(variant)
+
+        if updated:
+            ProductVariant.objects.bulk_update(updated, ["cost"])
+            # `menu` is what `_trade` sells from, and the order service snapshots
+            # `variant.cost` onto each line. Leaving the in-memory copies stale
+            # would write the fortnight of trading at zero cost anyway.
+            costs = {v.id: v.cost for v in updated}
+            for variant in menu.values():
+                if variant.id in costs:
+                    variant.cost = costs[variant.id]
+
     def _payment_methods(self, org, branch) -> dict[str, PaymentMethod]:
         specs = [("CASH", "نقدي", True), ("CARD", "بطاقة", False), ("WALLET", "محفظة", False)]
         return {
@@ -967,13 +1116,17 @@ class Command(BaseCommand):
 
     # ── trading ──────────────────────────────────────────────────────────────
 
-    def _trade(self, branch, menu, methods, staff, days: int) -> int:
+    def _trade(self, branch, menu, methods, staff, days: int, weight: Decimal | None = None) -> int:
         """
         A fortnight of sales, through the real order and payment services.
 
         Volume follows the shape of a real cafe day — a morning coffee run, a
         quiet afternoon, a heavy evening — because a flat distribution makes the
         hourly report look broken and hides whether it works.
+
+        `weight` scales the whole branch: 1.0 for the main one, less for the others.
+        Three branches trading identically would make every branch comparison look
+        correct whichever column it sorted by.
         """
         from apps.orders import services as order_services
         from apps.payments import services as payment_services
@@ -1007,7 +1160,11 @@ class Command(BaseCommand):
                 # Weekends are busier. A report that cannot show that is not
                 # telling the owner anything they could act on.
                 busy = 1.4 if day.weekday() in (4, 5) else 1.0
-                for _ in range(int(count * busy)):
+                # `max(1, ...)` so the quietest branch still trades every hour it
+                # is open. A branch with empty hours would make the hourly report
+                # look like it lost data rather than like a slow afternoon.
+                scaled = max(1, int(count * busy * float(weight or 1)))
+                for _ in range(scaled):
                     self._one_sale(
                         branch,
                         sellable,
@@ -1321,22 +1478,33 @@ class Command(BaseCommand):
 
     # ── report ───────────────────────────────────────────────────────────────
 
-    def _summary(self, branch, days: int) -> None:
+    def _summary(self, branches, days: int) -> None:
         write = self.stdout.write
         ok = self.style.SUCCESS
 
         write("")
         write(ok("كافيه القيصر — demo data ready"))
         write("")
-        write(f"  {Order.objects.filter(branch=branch).count():>6}  orders over {days} days")
-        write(f"  {Table.objects.filter(area__branch=branch).count():>6}  tables across 2 areas")
+
+        # Per branch, not totalled. A single figure across three branches is the
+        # one number that cannot tell you a branch came out empty, which is the
+        # failure this seed is most likely to have.
+        for branch in branches:
+            orders = Order.objects.filter(branch=branch).count()
+            write(
+                f"  {branch.code:<3} {branch.name_ar:<16} "
+                f"{orders:>6} orders  "
+                f"{ProductVariant.objects.filter(product__branch=branch).count():>3} menu  "
+                f"{InventoryItem.objects.filter(branch=branch).count():>3} stock  "
+                f"{Table.objects.filter(area__branch=branch).count():>3} tables  "
+                f"{Shift.objects.filter(branch=branch).count():>3} shifts"
+            )
+        write("")
+        write(f"  over {days} trading days, {Order.objects.count()} orders in total")
         write(
             f"  {TableSession.objects.filter(closed_at__isnull=True).count():>6}  "
             "parties seated right now"
         )
-        write(f"  {ProductVariant.objects.filter(product__branch=branch).count():>6}  menu items")
-        write(f"  {InventoryItem.objects.filter(branch=branch).count():>6}  stock items")
-        write(f"  {Shift.objects.filter(branch=branch).count():>6}  shifts closed")
         write("")
         write(ok("  Sign in — password for every account:"))
         write(f"      {DEMO_PASSWORD}")
@@ -1350,8 +1518,12 @@ class Command(BaseCommand):
         # past unread is a licence nobody can activate against, and the only
         # remedy is for an owner to regenerate it.
         write(ok("  Activate a till — the POS opens for nothing without this:"))
-        write(f"      licence key   {self.license_key}")
         write(f"      licence email {self.license_email}")
+        # One key per branch, because a licence is issued per branch and a till
+        # activated against the wrong one is refused. Printing only the last would
+        # leave two branches full of data and no way to open a till in either.
+        for code, key in self.license_keys.items():
+            write(f"      {code:<3} licence key   {key}")
         write("      device name   anything — «كاشير الباب»")
         write("")
         write(

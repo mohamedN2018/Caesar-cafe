@@ -197,44 +197,42 @@ jobs:
         # nobody should be able to say they did not know.
         run: npm audit --audit-level=high || echo "::warning::npm audit reported findings"
 
-      - name: Production compose is valid
+      - name: The compose file is valid
         # Catches the class of error that otherwise surfaces during a deploy at
-        # 6am: a typo in docker-compose.prod.yml or a variable nothing sets.
-        env:
-          DOMAIN: ci.example
-          ACME_EMAIL: ci@example
-          POSTGRES_DB: caesar
-          POSTGRES_USER: caesar
-          POSTGRES_PASSWORD: ci
-        run: docker compose -f docker-compose.prod.yml config --quiet
-
-      - name: Caddyfile is valid
-        run: |
-          docker run --rm -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
-            -e DOMAIN=ci.example -e ACME_EMAIL=ci@example \
-            caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
-
-      - name: Dokploy compose is valid
-        # The same reason the production one is checked here: a typo in a compose
-        # file surfaces during a deploy, and a deploy is the worst place to find it.
-        # `dokploy-network` is declared external, so it is created for the check —
+        # 6am: a typo, or a variable nothing sets. Checked in BOTH modes, because
+        # there is one file now and `DJANGO_ENV` is the only thing that differs —
+        # a mistake reachable from one mode only is still a mistake that ships.
+        #
+        # The proxy network is declared external, so it is created for the check;
         # without it `config` fails on a network the CI host has never seen.
         env:
           DOMAIN: ci.example
           POSTGRES_DB: caesar
           POSTGRES_USER: caesar
           POSTGRES_PASSWORD: ci
+          PROXY_NETWORK: dokploy-network
         run: |
           docker network create dokploy-network || true
-          docker compose -f docker-compose.dokploy.yml config --quiet
+          DJANGO_ENV=prod docker compose config --quiet
+          DJANGO_ENV=dev docker compose --profile dev config --quiet
 
-      - name: Dokploy Caddyfile is valid
-        # Validated separately from the bare-host one because it is a DIFFERENT
-        # file with one deliberate difference — `auto_https off`, because Traefik
-        # holds the certificate — and the rest of it must not drift from its
-        # sibling unnoticed.
+      - name: The compose file publishes nothing beyond loopback
+        # The one property that lets a single file serve local and production, so
+        # it is checked rather than trusted. The bad version — a bare "8010:8000"
+        # — works perfectly locally and is indistinguishable from the good one in
+        # every test; it only differs once the file is on a public host, where it
+        # exposes Django directly. A human reads the diff and sees a port mapping.
+        env:
+          DOMAIN: ci.example
+          POSTGRES_PASSWORD: ci
+          PROXY_NETWORK: dokploy-network
         run: |
-          docker run --rm -v "$PWD/deploy/Caddyfile.dokploy:/etc/caddy/Caddyfile:ro" \
+          docker network create dokploy-network || true
+          python3 scripts/check_compose_ports.py
+
+      - name: Caddyfile is valid
+        run: |
+          docker run --rm -v "$PWD/deploy/Caddyfile:/etc/caddy/Caddyfile:ro" \
             caddy:2-alpine caddy validate --config /etc/caddy/Caddyfile
 
       - name: The web image builds, and the SPA type-checks inside it
