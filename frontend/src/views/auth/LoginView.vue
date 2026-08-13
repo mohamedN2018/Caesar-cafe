@@ -186,18 +186,41 @@ async function submit() {
       >
         <p class="demo-heading text-xs font-semibold">حسابات التجربة — اضغط للدخول</p>
         <p class="demo-note mt-1 text-xs">
-          كلمة المرور تُملأ تلقائياً. هذه بيانات عرض فقط.
+          اضغط أي حساب ليُملأ تلقائياً. هذه بيانات عرض فقط.
         </p>
 
         <ul class="mt-3 space-y-1">
           <li v-for="account in demoAccounts" :key="account.email">
             <button type="button" class="demo-row" @click="useAccount(account)">
-              <span class="demo-name">{{ account.name }}</span>
-              <span class="demo-role">{{ account.role }}</span>
+              <span class="demo-head">
+                <span class="demo-name">{{ account.name }}</span>
+                <span class="demo-role">{{ account.role }}</span>
+              </span>
+
+              <!--
+                The email and password, in full.
+                
+                They were hidden and only written into the form on click, which is
+                the right instinct for credentials and the wrong one here: this
+                panel exists ONLY when the server says DEMO_MODE, the same server
+                is already handing the whole list to an unauthenticated request,
+                and somebody demonstrating needs to read an address out loud or
+                type it into a second browser. Hiding what the endpoint publishes
+                anyway buys nothing and costs the one thing the panel is for.
+              -->
+              <span class="demo-creds">
+                <span class="demo-email" dir="ltr">{{ account.email }}</span>
+                <span v-if="account.password" class="demo-pass" dir="ltr">
+                  {{ account.password }}
+                </span>
+                <span v-else class="demo-pass demo-pass-none">
+                  كلمة المرور من إعدادات الخادم
+                </span>
+              </span>
+
               <!-- The PIN is for the POS keypad, not this form. Shown because a
                    cashier reaching the till needs it and has nowhere else to look. -->
               <span v-if="account.pin" class="demo-pin tabular-nums">PIN {{ account.pin }}</span>
-              <span v-else class="demo-pin demo-pin-none">كلمة المرور اليدوية</span>
             </button>
           </li>
         </ul>
@@ -221,7 +244,10 @@ async function submit() {
   color: var(--ink-faint);
 }
 .demo-row {
-  display: flex;
+  display: grid;
+  /* identity | credentials | PIN — the credentials get the room, because reading
+     an address off the screen is the thing this panel is for. */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
   align-items: center;
   gap: 0.5rem;
   width: 100%;
@@ -231,14 +257,44 @@ async function submit() {
   font-size: 0.8rem;
   transition: background-color var(--duration-fast) var(--ease-out);
 }
+.demo-head {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.demo-creds {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.demo-email,
+.demo-pass {
+  /* An address that wraps mid-word is an address nobody can read back. */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.72rem;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+.demo-email {
+  color: var(--ink-muted);
+}
+.demo-pass {
+  color: var(--ink-faint);
+}
+.demo-pass-none {
+  font-family: inherit;
+}
 .demo-row:hover,
 .demo-row:focus-visible {
   background-color: var(--brand-50);
 }
 .demo-name {
-  flex: 1 1 auto;
   color: var(--ink);
   font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .demo-role {
   color: var(--ink-muted);
