@@ -51,6 +51,24 @@
 		respond "ok" 200
 	}
 
+	# ACME challenges are NOT ours to answer.
+	#
+	# Traefik holds the certificate, so it is Traefik that must answer
+	# `/.well-known/acme-challenge/*`. This container was answering them with the
+	# SPA — a 200 and a page of HTML — because the fallback below catches every
+	# unmatched path:
+	#
+	#     "looking up info for HTTP challenge" …
+	#     error: "no information found to solve challenge for identifier"
+	#
+	# A 200 with the wrong body is the worst possible reply to a challenge: Let's
+	# Encrypt records a validation FAILURE rather than a retryable error, and
+	# repeated failures are rate-limited. 404 is the honest answer from a server
+	# that does not hold the token, and it leaves the path free for whatever does.
+	handle /.well-known/acme-challenge/* {
+		respond "not the certificate authority for this host" 404
+	}
+
 	# ── API ──────────────────────────────────────────────────────────────────
 	handle /api/* {
 		# Django refuses an oversized product photo in the serializer, but only
