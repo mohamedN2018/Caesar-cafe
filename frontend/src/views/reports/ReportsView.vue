@@ -49,6 +49,16 @@ interface Tab {
   permission: string
   /** Which array inside the payload holds the rows. */
   section: string
+  /**
+   * Turn a payload that is NOT a list into rows.
+   *
+   * The P&L and the sales summary answer with one object of figures, not a table
+   * — and they are the two reports an owner actually opens. Rather than build a
+   * second rendering path for them, they are folded into the same rows the table
+   * and the chart already understand: one row per line of the statement. The
+   * table then reads like a statement, which is what it is.
+   */
+  derive?: (payload: Record<string, unknown>) => Record<string, string | number>[]
   columns: Column[]
   note?: string
   /**
@@ -60,15 +70,192 @@ interface Tab {
    */
   chart?: {
     label: string
-    value: string
-    kind: 'bar' | 'horizontal' | 'line'
+    /** A single measure. Omit when `series` is given. */
+    value?: string
+    /**
+     * Two or more measures on ONE scale — revenue, cost and profit are all money.
+     *
+     * A measure on a different scale never joins them. Putting a percentage beside
+     * a currency needs a second y-axis, and the crossing point of two lines on two
+     * scales is an artefact of where the axes were set: it looks like a finding and
+     * is not one.
+     */
+    series?: { key: string; label: string }[]
+    kind: 'bar' | 'horizontal' | 'line' | 'share'
     title: string
     /** Cap the bars drawn. A chart of eighty products is a wall, not a chart. */
     top?: number
   }
 }
 
+/** A line of a statement. `money: true` on the value column formats them all. */
+function line(label: string, value: unknown): Record<string, string | number> {
+  return { line: label, value: String(value ?? '0') }
+}
+
 const TABS: Tab[] = [
+  {
+    /**
+     * The one an owner opens first, and it was not on this screen at all —
+     * `financial/pnl` has existed since Phase 8 with no way to reach it.
+     *
+     * **It stops at gross profit and says so in its own payload.** The system
+     * knows what was sold and what it cost to make; it knows nothing about rent,
+     * salaries or electricity. A figure that looked like net profit while omitting
+     * the largest costs would be worse than useless, so the note travels with the
+     * numbers rather than living in a footnote somebody scrolls past.
+     */
+    key: 'pnl',
+    label: 'الأرباح والخسائر',
+    path: 'financial/pnl',
+    permission: 'reports.financial',
+    section: '',
+    derive: (payload) => [
+      line('صافي المبيعات', payload.net_sales),
+      line('تكلفة المبيعات', payload.cogs),
+      line('الربح الإجمالي', payload.gross_profit),
+      line('الهالك', payload.waste_value),
+      line('المرتجعات', payload.refunds),
+      line('الخصومات', payload.discounts),
+      line('ضريبة محصَّلة', payload.tax_collected),
+      line('خدمة محصَّلة', payload.service_collected),
+    ],
+    columns: [
+      { key: 'line', label: 'البند' },
+      { key: 'value', label: 'المبلغ', align: 'end', money: true },
+    ],
+    // No `sum` and no chart. These lines are not addends of one another —
+    // totalling a column that mixes revenue, cost and tax produces a number with
+    // no meaning, and bars would invite exactly that comparison.
+    note:
+      'ينتهي عند الربح الإجمالي. النظام يعرف ما بيع وما تكلّف، ولا يعرف الإيجار ولا ' +
+      'الرواتب ولا الكهرباء — ورقم يبدو ربحاً صافياً وهو يُغفل أكبر التكاليف أسوأ من لا رقم.',
+  },
+  {
+    /**
+     * The headline figures. Also had no tab.
+     *
+     * A statement rather than a chart for the same reason as the P&L: these are
+     * different measures, and putting a currency beside a count and a percentage
+     * on one scale is the dual-axis mistake wearing a different hat.
+     */
+    key: 'summary',
+    label: 'ملخص المبيعات',
+    path: 'sales/summary',
+    permission: 'reports.sales',
+    section: '',
+    derive: (payload) => [
+      line('إجمالي المبيعات', payload.gross_sales),
+      line('الخصومات', payload.discounts),
+      line('الخدمة', payload.service),
+      line('الضريبة', payload.tax),
+      line('المرتجعات', payload.refunds),
+      line('صافي المبيعات', payload.net_sales),
+      line('مبيعات نقدية', payload.cash_sales),
+      line('مبيعات غير نقدية', payload.non_cash_sales),
+      line('تكلفة المبيعات', payload.cogs),
+      line('الربح الإجمالي', payload.gross_profit),
+      line('متوسط الفاتورة', payload.average_ticket),
+    ],
+    columns: [
+      { key: 'line', label: 'البند' },
+      { key: 'value', label: 'المبلغ', align: 'end', money: true },
+    ],
+  },
+  {
+    /** Trading shape through the day — the one report that is genuinely a line. */
+    key: 'hourly',
+    label: 'حسب الساعة',
+    path: 'sales/by-hour',
+    permission: 'reports.sales',
+    section: 'hours',
+    columns: [
+      { key: 'hour', label: 'الساعة' },
+      { key: 'order_count', label: 'الطلبات', align: 'end', sum: true },
+      { key: 'net_sales', label: 'صافي المبيعات', align: 'end', money: true, sum: true },
+    ],
+    chart: {
+      label: 'hour',
+      value: 'net_sales',
+      // A line, because the hours are ordered and the shape between them is the
+      // point. Bars would say each hour is a separate category.
+      kind: 'line',
+      title: 'المبيعات على مدار اليوم',
+    },
+  },
+  {
+    key: 'top-products',
+    label: 'الأكثر بيعاً',
+    path: 'products/top',
+    permission: 'reports.products',
+    section: 'top',
+    columns: [
+      { key: 'name', label: 'الصنف' },
+      { key: 'category', label: 'القسم' },
+      { key: 'quantity', label: 'الكمية', align: 'end', sum: true },
+      { key: 'revenue', label: 'الإيراد', align: 'end', money: true, sum: true },
+      { key: 'profit', label: 'الربح', align: 'end', money: true, sum: true },
+    ],
+    chart: {
+      label: 'name',
+      value: 'revenue',
+      // Horizontal: product names are long, and rotated labels are unreadable.
+      kind: 'horizontal',
+      title: 'أعلى الأصناف إيراداً',
+      top: 12,
+    },
+  },
+  {
+    key: 'purchases',
+    label: 'المشتريات',
+    path: 'purchases/summary',
+    permission: 'reports.inventory',
+    section: 'by_supplier',
+    columns: [
+      { key: 'supplier', label: 'المورد' },
+      { key: 'receipts', label: 'عدد الاستلامات', align: 'end', sum: true },
+      { key: 'value', label: 'القيمة', align: 'end', money: true, sum: true },
+    ],
+    chart: {
+      label: 'supplier',
+      value: 'value',
+      kind: 'horizontal',
+      title: 'المشتريات حسب المورد',
+      top: 10,
+    },
+  },
+  {
+    key: 'supplier-balances',
+    label: 'أرصدة الموردين',
+    path: 'suppliers/balances',
+    permission: 'reports.inventory',
+    section: 'suppliers',
+    columns: [
+      { key: 'name', label: 'المورد' },
+      { key: 'phone', label: 'الهاتف' },
+      { key: 'balance', label: 'الرصيد', align: 'end', money: true, sum: true },
+    ],
+    note: 'الرصيد مشتق من دفتر الحسابات، لا يُدخل يدوياً — أي فرق يظهر هو خطأ في مسار كتابة.',
+  },
+  {
+    key: 'movements',
+    label: 'حركة المخزون',
+    path: 'inventory/movements',
+    permission: 'reports.inventory',
+    section: 'movements',
+    columns: [
+      { key: 'occurred_at', label: 'الوقت', time: true },
+      { key: 'item', label: 'الصنف' },
+      { key: 'type', label: 'النوع' },
+      { key: 'quantity_delta', label: 'الحركة', align: 'end' },
+      { key: 'balance_after', label: 'الرصيد بعدها', align: 'end' },
+      { key: 'reason', label: 'السبب' },
+      { key: 'user', label: 'بواسطة' },
+    ],
+    // No chart and no sum: this is a ledger read line by line, and the quantities
+    // are per-item units. Adding 3kg of coffee to 40 cups is a number, not a fact.
+    note: 'السجل هو الحقيقة، والأرصدة مشتقة منه. يُقرأ سطراً سطراً وليس كإجمالي.',
+  },
   {
     key: 'category',
     label: 'حسب القسم',
@@ -101,10 +288,13 @@ const TABS: Tab[] = [
       { key: 'amount', label: 'المبلغ', align: 'end', money: true, sum: true },
     ],
     chart: {
-      label: "method",
-      value: "amount",
-      kind: "horizontal",
-      title: "المحصَّل بكل طريقة",
+      label: 'method',
+      value: 'amount',
+      // Share of ONE total across a handful of categories — the only question a
+      // doughnut answers well, and the only place this product uses one. People
+      // read angles badly, so it is never used to compare magnitudes.
+      kind: 'share',
+      title: 'حصة كل طريقة من المحصَّل',
     },
     note: 'مطابقة النقدي مع البطاقات — الفرق بينهما هو ما يجب أن يكون في الدرج.',
   },
@@ -124,10 +314,18 @@ const TABS: Tab[] = [
       { key: 'margin_percent', label: 'الهامش %', align: 'end' },
     ],
     chart: {
-      label: "name",
-      value: "profit",
-      kind: "horizontal",
-      title: "أعلى ١٢ صنفاً ربحاً",
+      label: 'name',
+      // Three measures on ONE scale, because all three are money. The margin
+      // percentage in the table beside them deliberately stays OUT of the chart:
+      // a percentage on a currency axis needs a second scale, and a second scale
+      // is the mistake that makes two lines appear to cross meaningfully.
+      series: [
+        { key: 'revenue', label: 'الإيراد' },
+        { key: 'cost', label: 'التكلفة' },
+        { key: 'profit', label: 'الربح' },
+      ],
+      kind: 'horizontal',
+      title: 'الإيراد والتكلفة والربح — أعلى ١٢ صنفاً',
       top: 12,
     },
     note: 'الصنف الأعلى إيراداً ليس دائماً الأجدر بالترويج — الهامش هو ما يفرق.',
@@ -256,27 +454,67 @@ function isNegative(row: Record<string, string | number>, column: Column): boole
   return Boolean(column.money) && Number(row[column.key]) < 0
 }
 
+/** A doughnut stops being readable well before this; see the fold below. */
+const MAX_SLICES = 5
+
 /**
- * The rows the chart draws, biggest first and capped.
+ * The rows the chart draws, already ordered and capped.
  *
- * Sorted because a bar chart in table order is a comparison the eye has to do
- * itself; sorted, the ranking IS the chart. Capped because eighty products is
- * a wall of hairlines, and the table underneath still has all of them.
+ * Sorted by magnitude — a bar chart in table order is a comparison the eye has to
+ * do itself, whereas sorted, the ranking IS the chart. Capped because eighty
+ * products is a wall of hairlines and the table underneath still has all of them.
+ *
+ * EXCEPT for a line chart, where the sequence is the point: re-ordering the hours
+ * of a day by how much each took would destroy the only thing the shape is there
+ * to show.
  */
 const chartRows = computed(() => {
   const spec = active.value?.chart
   if (!spec || !rows.value.length) return null
 
+  // With multiple series, the first one decides the ordering — otherwise each
+  // series would want a different order and none of them would get it.
+  const sortKey = spec.series?.[0]?.key ?? spec.value
+  if (!sortKey) return null
+
   const points = rows.value
     .map((row) => ({
       label: String(row[spec.label] ?? '—'),
-      value: Number(row[spec.value] ?? 0),
+      value: Number(row[sortKey] ?? 0),
+      row,
     }))
     .filter((point) => Number.isFinite(point.value))
-    .sort((a, b) => b.value - a.value)
-    .slice(0, spec.top ?? 20)
 
-  return points.length ? points : null
+  const ordered = spec.kind === 'line' ? points : [...points].sort((a, b) => b.value - a.value)
+
+  /**
+   * A share chart FOLDS its tail; it never truncates it.
+   *
+   * Dropping slices off a doughnut is the one cap that changes the meaning of what
+   * is left: the arcs no longer add up to the whole, so every remaining share is
+   * overstated while still looking like a share. Anything past the fifth becomes
+   * "أخرى" and keeps its weight. A bar chart has no such problem — the bars are
+   * read against the axis, not against each other's sum — so it truncates.
+   */
+  if (spec.kind === 'share' && ordered.length > MAX_SLICES) {
+    const head = ordered.slice(0, MAX_SLICES - 1)
+    const tail = ordered.slice(MAX_SLICES - 1)
+    const rest = tail.reduce((sum, point) => sum + point.value, 0)
+    return [...head, { label: `أخرى (${tail.length})`, value: rest, row: {} }]
+  }
+
+  const capped = ordered.slice(0, spec.top ?? 20)
+  return capped.length ? capped : null
+})
+
+/** `undefined` for a single measure, so UiChart takes the `values` path. */
+const chartSeries = computed(() => {
+  const spec = active.value?.chart
+  if (!spec?.series || !chartRows.value) return undefined
+  return spec.series.map((s) => ({
+    label: s.label,
+    values: chartRows.value!.map((point) => Number(point.row[s.key] ?? 0)),
+  }))
 })
 
 /**
@@ -313,7 +551,9 @@ async function load() {
       date_from: dateFrom.value,
       date_to: dateTo.value,
     })
-    rows.value = (payload[active.value.section] ?? []) as Record<string, string | number>[]
+    rows.value = active.value.derive
+      ? active.value.derive(payload)
+      : ((payload[active.value.section] ?? []) as Record<string, string | number>[])
     error.value = ''
   } catch (exc) {
     rows.value = []
@@ -439,10 +679,17 @@ onMounted(async () => {
             <h3 class="mb-2 text-sm font-semibold text-ink">{{ active.chart.title }}</h3>
             <UiChart
               :labels="chartRows.map((point) => point.label)"
-              :values="chartRows.map((point) => point.value)"
+              :values="chartSeries ? undefined : chartRows.map((point) => point.value)"
+              :series="chartSeries"
               :kind="active.chart.kind"
               :format="(value) => money(value)"
-              :height="Math.max(220, chartRows.length * 30)"
+              :height="
+                active.chart.kind === 'horizontal'
+                  ? Math.max(220, chartRows.length * 30)
+                  : active.chart.kind === 'share'
+                    ? 280
+                    : 260
+              "
             />
           </section>
 

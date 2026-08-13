@@ -198,6 +198,46 @@
      would catch the light. This is most of what separates a gradient that looks
      like a considered surface from one that looks like a coloured div. */
   --brand-sheen: inset 0 1px 0 rgba(255, 255, 255, 0.14);
+
+  /* ── charts ────────────────────────────────────────────────────────────────
+     The categorical series colours, in FIXED ORDER. Never cycled: a ninth series
+     is not a generated hue, it folds into "أخرى".
+
+     **These are computed, not chosen by eye.** The obvious palette — brand-700,
+     gold-500, info, success — fails four checks:
+
+       brand-700 #7b1e28   L 0.391, below the lightness band (too dark to read as
+                           a series colour against cream)
+       info      #1f6f8b   chroma 0.086, reads grey
+       success ↔ info      ΔE 11.6 in NORMAL vision — under 15, so full-colour
+                           readers cannot reliably tell them apart
+       ink-muted ↔ success ΔE 4.9 under deuteranopia — indistinguishable
+
+     Snapped to the nearest passing steps and re-run until clean. The set below
+     scores: lightness band PASS · chroma floor PASS · CVD separation worst
+     adjacent ΔE 16.7 (deuteranopia) · normal-vision floor worst adjacent ΔE 20.8.
+
+     The one remaining warning is honest and relieved rather than ignored: the gold
+     sits at 2.47:1 against the surface, under 3:1. That obligates a visible label
+     or a table view — and every chart in the reports is drawn directly above the
+     table of the same numbers, so the relief is real rather than asserted. */
+  --chart-1: #c44553; /* burgundy — the brand hue, lightened into the band */
+  --chart-2: #cf9a1c; /* gold */
+  --chart-3: #0b87ad; /* teal */
+  --chart-4: #57a02a; /* green */
+
+  /* Magnitude, not identity: ONE hue, light to dark. A rainbow ramp implies
+     categories where the data has only "more" and "less". */
+  --chart-seq-1: #f4dfd9;
+  --chart-seq-2: #e59aa0;
+  --chart-seq-3: #c44553;
+  --chart-seq-4: #94303a;
+  --chart-seq-5: #611720;
+
+  /* Chart furniture. Recessive on purpose — a gridline that competes with the
+     data is a gridline that hides it. */
+  --chart-grid: rgba(42, 26, 22, 0.08);
+  --chart-axis: #9a8b83;
 }
 
 /*

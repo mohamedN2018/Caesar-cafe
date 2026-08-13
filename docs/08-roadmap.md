@@ -2094,6 +2094,98 @@ nobody runs.
 
 ---
 
+## The reports page was showing eight of seventeen reports ✅ COMPLETE (2026-08-13)
+
+### The gap was not in the backend
+
+Every figure an owner could want was already computed. `financial/pnl` has existed since Phase 8,
+tested, permission-gated, correct — and **there was no way to reach it from the interface.** The
+same for the sales summary, the hourly breakdown, top products, purchase totals, supplier balances
+and stock movements. Seventeen report endpoints, eight tabs.
+
+This is the failure mode worth naming, because it does not show up in any suite: the backend tests
+pass, the endpoint returns 200, the permission check works, and the feature does not exist as far as
+anybody using the product is concerned. A test that calls the endpoint directly cannot tell you that
+nothing calls the endpoint.
+
+All seventeen are now tabs. The list is still filtered by permission, so a manager without
+`reports.financial` sees no الأرباح tab rather than a locked one.
+
+### The P&L carries its own caveat, in the payload
+
+It stops at gross profit. The system knows what was sold and what it cost to make; it knows nothing
+about rent, salaries or electricity. A figure labelled "الربح" that omits the largest costs is worse
+than no figure, because it will be believed and it will be used to make a decision.
+
+So the limitation is rendered **beside the numbers**, not in this document:
+
+> ينتهي عند الربح الإجمالي. النظام يعرف ما بيع وما تكلّف، ولا يعرف الإيجار ولا الرواتب ولا الكهرباء
+> — ورقم يبدو ربحاً صافياً وهو يُغفل أكبر التكاليف أسوأ من لا رقم.
+
+A caveat somebody has to go and find is a caveat nobody reads.
+
+### Two object-shaped reports, folded into the same table
+
+The P&L and the sales summary answer with one object of figures, not a list of rows — and they are
+the two an owner opens first. Rather than build a second rendering path for them, a `derive` hook
+turns the object into one row per line of the statement, so the existing table and totals machinery
+renders them unchanged. The table then reads like a statement, which is what it is.
+
+### The charts, and the four decisions that shaped them
+
+The palette was **computed, not chosen.** The obvious move — brand burgundy, brand gold, plus the
+`info` and `success` tokens — failed four checks when run through the validator: brand-700 sits
+outside the lightness band at L 0.391, the `info` token's chroma of 0.086 reads as grey, and
+`success`↔`info` separate by ΔE 11.6 to *normal* vision, which is a hard fail before colour-vision
+deficiency enters the picture. `ink-muted`↔`success` then collapsed to ΔE 4.9 under deuteranopia.
+The shipped set — `#c44553`, `#cf9a1c`, `#0b87ad`, `#57a02a` — passes every check, with one accepted
+warning on gold's 2.47:1 against white; the numbers are recorded beside the `--chart-*` tokens.
+
+**No dual-axis chart, anywhere.** Product profitability plots revenue, cost and profit as three
+series because all three are money on one scale. The margin *percentage* is in the table beside them
+and deliberately not in the chart: a percentage on a currency axis needs a second scale, and the
+point where two lines on two scales cross is an artefact of where the axes were set. It looks like a
+finding and is not one.
+
+**One doughnut, for the one question a doughnut answers.** Payment methods is a share of a single
+total across three or four categories. Every other report that could have been a pie is bars,
+because people compare angles badly and the question in those reports is "which is bigger".
+
+That doughnut **folds its tail rather than truncating it**, which the bar charts do not need to do.
+Every other chart caps at twenty rows and the dropped rows cost nothing — bars are read against the
+axis, not against each other's sum. Dropping slices off a share chart is different: the arcs stop
+adding up to the whole, so every surviving share is silently overstated while still looking like a
+share. Past the fifth, the rest becomes `أخرى (n)` and keeps its weight. A shop is free to configure
+a seventh payment method, and this is what stops that from quietly corrupting the chart.
+
+**Hourly sales is the only line**, because the hours are ordered and the shape between them is the
+whole point. Stock movements gets no chart at all — it is a list of incidents to read line by line,
+and bars would invite a comparison nobody is making. `totals` is likewise opt-in per column: the sum
+of eight margin percentages is a number with no meaning, and printing it under a column of real ones
+is worse than printing nothing, because it looks like an answer.
+
+### A real bug in `UiChart`, which the type checker could not see
+
+The table view under every chart read `values[index]`. With multi-series charts `values` is
+undefined, so **every multi-series chart would have thrown when the table was expanded.** `vue-tsc`
+passed it: `withDefaults` widens an optional prop to its declared type even when the default is
+`undefined`, so `values` typechecked as `number[]`. Found by rendering it, not by checking it. The
+table now derives its rows from one series or many, and gains a header row when there is more than
+one column to name.
+
+### Verified
+
+Each of the seventeen tabs was called against the running stack with a two-week range, and every
+`section` key confirmed against what the server actually answers with. This is the check that
+matters here: a tab whose section key is wrong renders a perfectly good empty state, and **nobody
+can tell that apart from a quiet week.** Types cannot catch it — both are strings — and neither can
+the build.
+
+Nine tests cover the screen (frontend 110 → 119). Chart.js stays in its own 178 kB chunk, so only
+the reports route pays for it.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the
