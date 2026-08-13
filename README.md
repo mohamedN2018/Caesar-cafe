@@ -1,6 +1,7 @@
 # Caesar Cafe — كافيه القيصر
 
-Integrated POS, Kitchen & Management System.
+Integrated POS, Kitchen & Management System — an internal system for the kitchen and living
+room, fully connected to the web system.
 
 A Django REST API is the source of truth. A Vue 3 web application is the management control plane
 (catalog, pricing, staff, inventory, suppliers, reports, licensing). A PySide6 Windows application
