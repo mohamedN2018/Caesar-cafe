@@ -82,18 +82,38 @@ would route. Locally the variable is unset and it falls back to `bridge`, which 
 2. **New application** in Dokploy → *Docker Compose*.
    - Repository: this repo, branch `main`
    - Compose file: `docker-compose.yml`
-   - Domain: `caesar.deplois.net`, HTTPS on, Let's Encrypt
-3. **Environment.** Paste `.env` into Dokploy's Environment panel. There is one env file and it
+3. **Domain**, in the app's Domains panel:
+
+   | field | value | why |
+   |---|---|---|
+   | Service | `web` | Caddy. Not `api` — that serves no SPA, no `/static`, no `/media` |
+   | Host | `caesar.deplois.net` | |
+   | Path | `/` | |
+   | **Port** | **`80`** | **the port `web` listens on.** `8000` is gunicorn, and pointing the domain there gets you a 502 or a redirect loop |
+   | HTTPS | on, `letsencrypt` | Traefik obtains and holds the certificate |
+
+   The compose file carries **no Traefik labels**. Dokploy writes the router from
+   this panel, and labels as well would mean two routers matching one hostname —
+   which is worse than either being wrong alone, because they can disagree and the
+   winner is not obvious.
+
+   **Behind Cloudflare**: only tick it if the DNS record is actually proxied (the
+   orange cloud). If it is, Cloudflare's SSL mode must be **Full** or **Full
+   (strict)** — never *Flexible*. Flexible talks plain HTTP to the origin while
+   telling the browser it is HTTPS, and this stack redirects HTTP to HTTPS at two
+   layers, so the request bounces between Cloudflare and the origin until the
+   browser gives up: `ERR_TOO_MANY_REDIRECTS`, on a certificate that looks fine.
+4. **Environment.** Paste `.env` into Dokploy's Environment panel. There is one env file and it
    works unchanged in both places — two env files is how a variable gets fixed in one and stays
    broken in the other. The secrets in it are real and generated. It is gitignored, so it is the
    only copy: keep it somewhere safe. Rotating `JWT_SIGNING_KEY` logs everyone out; rotating
    `LICENSE_PEPPER` bricks every activated terminal, because the stored licence hashes stop
    matching.
-4. **Deploy.** The api container migrates, runs `sync_roles`, collects static files and starts
+5. **Deploy.** The api container migrates, runs `sync_roles`, collects static files and starts
    gunicorn. `sync_roles` is in the start command rather than a runbook step because a release that
    adds a permission code otherwise lands with the code in the catalogue, the routes enforcing it,
    and no role holding it — deployed, and unreachable.
-5. **Check.** `https://caesar.deplois.net/api/v1/system/health/` should answer `ok`.
+6. **Check.** `https://caesar.deplois.net/api/v1/system/health/` should answer `ok`.
 
 ## Demo data, and the admin login
 

@@ -284,24 +284,22 @@ services:
     deploy:
       resources:
         limits: {memory: 128M}
-    labels:
-      # Traefik holds the certificate and routes the domain here. Caddy inside this
-      # container listens on :80 with `auto_https off` — two things trying to obtain
-      # a certificate for one hostname is how you get an ACME rate-limit and an
-      # outage. Locally there is no Traefik and these labels are inert.
-      traefik.enable: "true"
-      traefik.docker.network: ${PROXY_NETWORK:-bridge}
-      traefik.http.routers.caesar.rule: Host(`${DOMAIN:-localhost}`)
-      traefik.http.routers.caesar.entrypoints: websecure
-      traefik.http.routers.caesar.tls.certresolver: letsencrypt
-      traefik.http.services.caesar.loadbalancer.server.port: "80"
-      # Plain HTTP is redirected, not served. A POS reachable over http:// is a POS
-      # whose session token can be read off the wire.
-      traefik.http.routers.caesar-insecure.rule: Host(`${DOMAIN:-localhost}`)
-      traefik.http.routers.caesar-insecure.entrypoints: web
-      traefik.http.routers.caesar-insecure.middlewares: caesar-https
-      traefik.http.middlewares.caesar-https.redirectscheme.scheme: https
-      traefik.http.middlewares.caesar-https.redirectscheme.permanent: "true"
+    # No Traefik labels, on purpose.
+    #
+    # Dokploy owns the domain: you set it in the app's Domains panel and it writes
+    # the router, the entrypoint and the certificate resolver itself. Labels here
+    # too would mean TWO routers matching one hostname — and they disagreed, which
+    # is worse than either being wrong on its own. The label said port 80 (Caddy);
+    # the panel said 8000 (gunicorn), where nothing serves the SPA.
+    #
+    # **The panel must say port 80.** That is the port this container listens on:
+    # Caddy, `:80` in deploy/Caddyfile, `EXPOSE 80` in deploy/Dockerfile.web. 8000
+    # is the api, and the api is not the thing the domain should reach — it serves
+    # no SPA, no /static and no /media, and in prod mode it answers a redirect to
+    # https that the proxy has already terminated.
+    #
+    # The container still joins the proxy network below; that is what lets Traefik
+    # find it at all.
 
   # ── local only ─────────────────────────────────────────────────────────────
   frontend:
