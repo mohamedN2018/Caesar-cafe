@@ -95,30 +95,46 @@ services:
 
   redis:
     image: redis:7-alpine
-    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    # **No `--appendonly yes`.** RDB snapshots instead, and this is a fix, not a
+    # downgrade.
+    #
+    # The append-only file took the whole site down, repeatedly:
+    #
+    #     # Bad file format reading the append only file appendonly.aof.1.incr.aof
+    #
+    # A torn write from an earlier crash left the incremental AOF unparseable, so
+    # redis read it, refused to start, exited, and was restarted — every 60
+    # seconds, forever. `api` waits on redis, so it never started, so every
+    # `/api/*` answered 502 with `connection refused`. Three sessions of debugging
+    # went to Caddy, to ports, to the domain and to the seed, all of them
+    # downstream of this file.
+    #
+    # AOF appends to a live file, so a crash mid-append leaves a half-written
+    # command that redis cannot skip. **RDB writes a temp file and renames it**,
+    # which is atomic — a crash during a save leaves the previous good snapshot
+    # untouched. The failure mode that just cost three deploys becomes impossible.
+    #
+    # What that costs: tasks queued since the last snapshot, and a cache. Nothing
+    # here is a source of truth — orders, payments and stock are in Postgres, and
+    # a lost rollup or notification task is recomputed on the next tick. Durability
+    # that can refuse to start is not durability.
+    #
+    # Verified against the real thing: a deliberately corrupted AOF crash-loops
+    # under the old command and answers PONG under this one, **on the same volume**
+    # — so a server already holding a broken file recovers on the next deploy with
+    # nothing to delete by hand.
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redisdata:/data
-    # **start_period is the whole point of this block.**
+    # `start_period` because a container that is still starting is not a container
+    # that is broken, and Docker needs telling: failures inside the start period do
+    # not count toward retries. Loading a snapshot is fast, but the api waits on
+    # this check, so the cost of being wrong is the whole site.
     #
-    # This deploy failed on `dependency failed to start: redis is unhealthy`, and
-    # the reason was here: without a start_period the first probe fires
-    # immediately, and `interval 10s x retries 5` gives redis about fifty seconds
-    # to become answerable. That is plenty on an idle laptop and not plenty on a
-    # server, because `--appendonly yes` means redis REPLAYS its append-only file
-    # before it will serve. While it does, PING is answered with
-    # `-LOADING Redis is loading the dataset in memory` and redis-cli exits
-    # non-zero — so a container doing exactly what it should was marked unhealthy,
-    # api never started because it waits on redis, and every /api/* returned 502.
-    #
-    # A container that is still starting is not a container that is broken. The
-    # start_period is Docker's way of saying so: failures inside it do not count
-    # toward retries.
-    #
-    # If redis is STILL unhealthy after this, the AOF itself is unreadable — a
-    # truncated write from an earlier crash. That is recoverable and destroys only
-    # a cache and a task queue, never an order:
-    #
-    #     docker compose stop redis && docker volume rm <project>_redisdata
+    # It was the absence of this that first turned the AOF problem above into
+    # `dependency failed to start: redis is unhealthy` — the real cause was the
+    # corrupt file, but with ~50s of grace a merely SLOW redis would have failed
+    # the same way and sent the next person hunting in the same wrong places.
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
