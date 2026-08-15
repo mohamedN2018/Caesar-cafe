@@ -255,8 +255,30 @@ const router = createRouter({
       meta: { permission: 'orders.create' },
       children: [
         {
+          /**
+           * The room, first.
+           *
+           * The till used to land on the product board, so the first question it
+           * asked was "what are you selling?" — which is the second question. In
+           * table service the first is always "who is this for?", and answering
+           * it late is how a round lands on the wrong bill and is found at
+           * closing.
+           */
           path: '',
           name: 'pos',
+          component: () => import('@/views/pos/PosTablesView.vue'),
+        },
+        {
+          /**
+           * The product board, reached BY a table rather than instead of one.
+           *
+           * `?table=` is a query rather than state the board keeps, so a reload —
+           * or a second device opening the same URL — lands on the same table
+           * instead of on a blank order belonging to nobody. Without it the
+           * screen is the counter: takeaway and delivery still need to sell.
+           */
+          path: 'order',
+          name: 'pos-order',
           component: () => import('@/views/pos/PosBoardView.vue'),
         },
         {
