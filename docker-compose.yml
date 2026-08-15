@@ -84,6 +84,10 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-caesar} -d ${POSTGRES_DB:-caesar}"]
       interval: 10s
       timeout: 5s
+      # Same reasoning as redis below. Postgres replays its WAL after an unclean
+      # shutdown, and the api waits on this too — so a slow recovery must not be
+      # mistaken for a broken database.
+      start_period: 60s
       retries: 10
     restart: unless-stopped
     logging: *logging
@@ -94,11 +98,33 @@ services:
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
       - redisdata:/data
+    # **start_period is the whole point of this block.**
+    #
+    # This deploy failed on `dependency failed to start: redis is unhealthy`, and
+    # the reason was here: without a start_period the first probe fires
+    # immediately, and `interval 10s x retries 5` gives redis about fifty seconds
+    # to become answerable. That is plenty on an idle laptop and not plenty on a
+    # server, because `--appendonly yes` means redis REPLAYS its append-only file
+    # before it will serve. While it does, PING is answered with
+    # `-LOADING Redis is loading the dataset in memory` and redis-cli exits
+    # non-zero — so a container doing exactly what it should was marked unhealthy,
+    # api never started because it waits on redis, and every /api/* returned 502.
+    #
+    # A container that is still starting is not a container that is broken. The
+    # start_period is Docker's way of saying so: failures inside it do not count
+    # toward retries.
+    #
+    # If redis is STILL unhealthy after this, the AOF itself is unreadable — a
+    # truncated write from an earlier crash. That is recoverable and destroys only
+    # a cache and a task queue, never an order:
+    #
+    #     docker compose stop redis && docker volume rm <project>_redisdata
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
-      timeout: 3s
-      retries: 5
+      timeout: 5s
+      start_period: 60s
+      retries: 10
     restart: unless-stopped
     logging: *logging
     networks: [internal]
