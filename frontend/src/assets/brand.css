@@ -37,13 +37,13 @@
 
   /* Gold. Used for emphasis and never for a whole surface: a gold background
      with dark text is legible, but gold text on white is not, at any weight. */
-  --gold-100: #f7edcf;
-  --gold-200: #eeda9f;
-  --gold-300: #e0c268;
-  --gold-400: #d3ae3f;
+  --gold-100: #f9f0d8;
+  --gold-200: #f0dfae;
+  --gold-300: #e3c87c;
+  --gold-400: #d6b355;
   --gold-500: #c9a227; /* the accent */
-  --gold-600: #a8851d;
-  --gold-700: #866818;
+  --gold-600: #a98a2a;
+  --gold-700: #876d23;
 
   /* ── surfaces ──────────────────────────────────────────────────────────── */
   /* Warm rather than blue-grey. Beside burgundy and gold, a cool grey reads as
@@ -58,6 +58,29 @@
   --ink-muted: #6b5a52;
   --ink-faint: #9a8b83;
   --fg-on-brand: #ffffff;
+  /* ── the focus ring ──────────────────────────────────────────────────────
+     Gold, and two of them, because one ring cannot serve both grounds.
+
+     It was `brand-700`: navy. On the page that is fine; on the navy rail it is
+     navy on navy — a focus indicator that disappears exactly where somebody
+     tabbing through the sidebar needs it. That is not a cosmetic miss, it is the
+     keyboard user losing their place.
+
+     WCAG 2.2 wants a focus indicator at 3:1 against what surrounds it, which
+     rules out the accent itself on white: gold-500 sits at 2.4:1 there. So the
+     light ground gets gold-600 (3.30:1) and the navy ground gets gold-300
+     (7.49:1) — measured, not chosen.
+
+     This is also the cheapest way to put the gold on EVERY interactive element
+     at once: one token, every button, input, link and tab in the product. */
+  --focus-ring: var(--gold-600);
+  --focus-ring-on-brand: var(--gold-300);
+
+  /* A hairline of gold for dividing brand-coloured surfaces — the rail, dark
+     panels, the header. On a light ground use `--border`; gold hairlines on
+     white read as decoration rather than structure. */
+  --gold-line: rgba(227, 200, 124, 0.28);
+
   --fg-on-gold: #2a1a16;
 
   /* ── state ─────────────────────────────────────────────────────────────── */

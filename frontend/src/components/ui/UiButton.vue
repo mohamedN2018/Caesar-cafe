@@ -50,7 +50,7 @@ const sizes = {
     class="ui-btn inline-flex items-center justify-center gap-2 rounded-lg font-semibold
            disabled:cursor-not-allowed disabled:opacity-50 disabled:shadow-none
            focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
-           focus-visible:outline-brand-700"
+           focus-visible:outline-focus"
     :class="[variants[variant], sizes[size], block && 'w-full']"
   >
     <svg

@@ -18,7 +18,7 @@ export default {
         sans: ['Cairo', 'Tajawal', 'system-ui', 'sans-serif'],
       },
       colors: {
-        // كافيه القيصر: burgundy and gold. Deep enough to stay legible on the
+        // كافيه القيصر: navy and gold. Deep enough to stay legible on the
         // cheap, washed-out screens these dashboards actually run on.
         brand: {
           50: 'var(--brand-50)',
@@ -32,6 +32,12 @@ export default {
           800: 'var(--brand-800)',
           900: 'var(--brand-900)',
         },
+        // The focus ring, as a colour utility. Two of them: one for light
+        // grounds, one for the navy rail — see the note in brand.css. Exposing
+        // them here is what lets every component say `outline-focus` instead of
+        // each picking a shade and drifting.
+        focus: 'var(--focus-ring)',
+        'focus-on-brand': 'var(--focus-ring-on-brand)',
         gold: {
           100: 'var(--gold-100)',
           200: 'var(--gold-200)',
