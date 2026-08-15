@@ -95,14 +95,61 @@ const visible = computed(() =>
   area.value ? tables.value.filter((t) => t.area === area.value) : tables.value,
 )
 
-/** Free tables first is wrong: a waiter is looking for the table they were called to. */
-const sorted = computed(() =>
-  [...visible.value].sort((a, b) =>
-    a.area === b.area
-      ? a.number.localeCompare(b.number, 'ar', { numeric: true })
-      : a.area.localeCompare(b.area, 'ar'),
-  ),
-)
+/**
+ * The room, drawn where it actually is.
+ *
+ * `pos_x`, `pos_y`, `span_x`, `span_y`, `shape` and `rotation` have been in the
+ * payload — and under a CI guard — since the floor module was built, and nothing
+ * had ever drawn them. Both this screen and the admin's rendered a sorted LIST,
+ * which is a different thing wearing the same data: a list tells you a table
+ * exists, a plan tells you which one the customer is waving from.
+ *
+ * Grouped per area because a terrace and an inside room are two rooms, and
+ * overlaying their coordinates would put table 11 on top of table 1.
+ */
+const plan = computed(() => {
+  const rooms = new Map<string, FloorTable[]>()
+  for (const table of visible.value) {
+    const list = rooms.get(table.area) ?? []
+    list.push(table)
+    rooms.set(table.area, list)
+  }
+  return [...rooms.entries()].map(([name, list]) => ({
+    name,
+    // +1 because the coordinates are zero-based cell indices, not counts.
+    cols: Math.max(...list.map((t) => t.pos_x + t.span_x)) + 1,
+    rows: Math.max(...list.map((t) => t.pos_y + t.span_y)) + 1,
+    tables: [...list].sort((a, b) =>
+      a.number.localeCompare(b.number, 'ar', { numeric: true }),
+    ),
+  }))
+})
+
+/**
+ * Where a table sits, as grid lines.
+ *
+ * CSS grid is 1-based and the data is 0-based, hence the +1. `rotation` is
+ * applied to the shape only — never to the label — because a number rotated 15
+ * degrees is a number somebody has to tilt their head to read, and the whole
+ * point of the plan is reading it at a glance.
+ */
+function place(table: FloorTable) {
+  return {
+    gridColumn: `${table.pos_x + 1} / span ${table.span_x}`,
+    gridRow: `${table.pos_y + 1} / span ${table.span_y}`,
+  }
+}
+
+function shapeStyle(table: FloorTable) {
+  return {
+    transform: table.rotation ? `rotate(${table.rotation}deg)` : undefined,
+  }
+}
+
+/** ROUND · SQUARE · RECT · BOOTH — the four the floor module defines. */
+function shapeClass(table: FloorTable): string {
+  return `shape-${(table.shape || 'SQUARE').toLowerCase()}`
+}
 
 const occupied = computed(() => tables.value.filter((t) => t.session_id).length)
 const owed = computed(() =>
@@ -200,40 +247,63 @@ function walkIn() {
       <p class="tables-empty-hint">تُضاف من شاشة «الصالة» في الإدارة.</p>
     </div>
 
-    <div v-else class="tables-grid">
-      <button
-        v-for="table in sorted"
-        :key="table.table_id"
-        type="button"
-        class="table-card"
-        :class="{
-          'table-busy': isBusy(table),
-          'table-neglected': isNeglected(table),
-        }"
-        @click="open(table)"
-      >
-        <span class="table-number">{{ table.number }}</span>
+    <!--
+      A plan per room. The grid is the room; a table occupies the cells it was
+      placed in on the admin's floor plan, so moving a table there moves it here.
+    -->
+    <div v-else class="plan-rooms">
+      <section v-for="room in plan" :key="room.name" class="plan-room">
+        <h2 v-if="plan.length > 1" class="plan-room-name">{{ room.name }}</h2>
 
-        <span class="table-meta">
-          <!-- Seated count, not capacity: "4 من 6" answers a question a waiter
-               is actually asking; "6 مقاعد" answers one nobody asked. -->
-          <span v-if="isBusy(table)">{{ table.seated_count }} من {{ table.seats }}</span>
-          <span v-else>{{ table.seats }} مقاعد</span>
-        </span>
+        <div
+          class="plan-grid"
+          :style="{
+            gridTemplateColumns: `repeat(${room.cols}, minmax(5.5rem, 1fr))`,
+            gridTemplateRows: `repeat(${room.rows}, minmax(5.5rem, auto))`,
+          }"
+        >
+          <button
+            v-for="table in room.tables"
+            :key="table.table_id"
+            type="button"
+            class="table-card"
+            :class="[
+              shapeClass(table),
+              { 'table-busy': isBusy(table), 'table-neglected': isNeglected(table) },
+            ]"
+            :style="place(table)"
+            @click="open(table)"
+          >
+            <!-- The shape carries the rotation; the label never does. -->
+            <span class="table-shape" :style="shapeStyle(table)" aria-hidden="true" />
 
-        <span v-if="isBusy(table)" class="table-state">
-          <span v-if="table.order_count" class="table-due">{{ money(table.total_due) }}</span>
-          <span v-else class="table-noorder">لم يطلب بعد</span>
-          <span v-if="table.seated_minutes !== null" class="table-time">
-            {{ minutes(table.seated_minutes) }}
-          </span>
-        </span>
-        <span v-else class="table-free">متاحة</span>
+            <span class="table-face">
+              <span class="table-number">{{ table.number }}</span>
 
-        <span v-if="table.waiter" class="table-waiter">{{ table.waiter }}</span>
-      </button>
+              <span class="table-meta">
+                <span v-if="isBusy(table)">{{ table.seated_count }} من {{ table.seats }}</span>
+                <span v-else>{{ table.seats }} مقاعد</span>
+              </span>
+
+              <span v-if="isBusy(table)" class="table-state">
+                <span v-if="table.order_count" class="table-due">{{ money(table.total_due) }}</span>
+                <span v-else class="table-noorder">لم يطلب بعد</span>
+                <span v-if="table.order_count" class="table-orders">
+                  {{ table.order_count }} طلب
+                </span>
+                <span v-if="table.seated_minutes !== null" class="table-time">
+                  {{ minutes(table.seated_minutes) }}
+                </span>
+              </span>
+              <span v-else class="table-free">متاحة</span>
+
+              <span v-if="table.waiter" class="table-waiter">{{ table.waiter }}</span>
+            </span>
+          </button>
+        </div>
+      </section>
     </div>
-  </div>
+</div>
 </template>
 
 <style scoped>
@@ -285,33 +355,94 @@ function walkIn() {
   tray in the other hand — 6.5rem is comfortably past the 44px minimum and the
   auto-fill keeps a 10" tablet and a 24" till on the same layout rules.
 */
+.plan-rooms {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+.plan-room-name {
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+}
+/*
+  The room. `overflow-x: auto` because a wide terrace on a 10" tablet has to
+  scroll sideways rather than squash the tables into unreadable slivers — the
+  plan is only useful while it still resembles the room.
+*/
+.plan-grid {
+  display: grid;
+  gap: 0.6rem;
+  overflow-x: auto;
+  padding-bottom: 0.3rem;
+}
+
+/* The tables-grid rule is kept for the loading skeletons only. */
 .tables-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
   gap: 0.7rem;
 }
 
+/*
+  A cell in the room. The card itself is a transparent positioning box; the
+  drawn table is `.table-shape` beneath the text, so rotation can apply to the
+  furniture without tilting the label.
+*/
 .table-card {
+  position: relative;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 0.2rem;
-  min-height: 6.5rem;
-  padding: 0.6rem;
-  border-radius: 0.85rem;
+  min-height: 5.5rem;
+  padding: 0.4rem;
+  background: transparent;
+  border: 0;
+  transition: transform var(--duration-fast) var(--ease-out);
+}
+.table-shape {
+  position: absolute;
+  inset: 0.25rem;
   border: 1px solid var(--border);
   background: var(--surface);
   box-shadow: var(--shadow-xs);
   transition:
-    transform var(--duration-fast) var(--ease-out),
-    box-shadow var(--duration-fast) var(--ease-out);
+    box-shadow var(--duration-fast) var(--ease-out),
+    background-color var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+.table-face {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.1rem;
+  text-align: center;
+}
+
+/* The four shapes the floor module defines. */
+.shape-round .table-shape {
+  border-radius: 50%;
+}
+.shape-square .table-shape {
+  border-radius: 0.5rem;
+}
+.shape-rect .table-shape {
+  border-radius: 0.4rem;
+}
+/* A booth has a back: one flat edge, three soft ones. */
+.shape-booth .table-shape {
+  border-radius: 0.5rem 0.5rem 1.4rem 1.4rem;
+  border-top-width: 3px;
+  border-top-color: var(--gold-500);
 }
 .table-card:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
-.table-card:hover,
-.table-card:focus-visible {
+.table-card:hover .table-shape,
+.table-card:focus-visible .table-shape {
   box-shadow: var(--shadow-md);
 }
 
@@ -320,17 +451,17 @@ function walkIn() {
   the room is read at a glance by people who may not separate the two hues, and
   a busy table already says "متاحة" or a price.
 */
-.table-busy {
+.table-busy .table-shape {
   background: var(--brand-50);
   border-color: var(--brand-700);
 }
-.table-neglected {
+.table-neglected .table-shape {
   border-color: var(--warning);
   border-width: 2px;
 }
 
 .table-number {
-  font-size: 1.6rem;
+  font-size: 1.45rem;
   font-weight: 700;
   line-height: 1;
   color: var(--ink);
@@ -354,6 +485,10 @@ function walkIn() {
 }
 .table-noorder {
   font-size: 0.75rem;
+  color: var(--ink-muted);
+}
+.table-orders {
+  font-size: 0.7rem;
   color: var(--ink-muted);
 }
 .table-time {
