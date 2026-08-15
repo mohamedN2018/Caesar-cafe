@@ -115,6 +115,44 @@ would route. Locally the variable is unset and it falls back to `bridge`, which 
    and no role holding it — deployed, and unreachable.
 6. **Check.** `https://caesar.deplois.net/api/v1/system/health/` should answer `ok`.
 
+## When a deploy fails on a dependency
+
+```
+dependency failed to start: container ...-redis-1 is unhealthy
+```
+
+This is the deploy working as intended, not a new bug. `web` waits for `api` to be healthy, and
+`api` waits for postgres and redis. A dependency that never becomes healthy stops the deploy **and
+leaves the previous deployment serving** — which is the correct outcome. The alternative is what
+happened for three sessions: Caddy came up, Dokploy reported success, and every `/api/*` returned
+502 while the logs everyone read were Caddy's, working perfectly, faithfully describing a failure
+one container over.
+
+Read the failure by name:
+
+| the message says | look at | usual cause |
+|---|---|---|
+| `redis is unhealthy` | `docker compose logs redis` | replaying a large or truncated append-only file |
+| `postgres is unhealthy` | `docker compose logs postgres` | WAL recovery after an unclean shutdown, or a password that no longer matches the volume |
+| `api is unhealthy` | `docker compose logs api` | the `[boot]` markers name the step it stopped on |
+
+Both data services get a 60s `start_period` and 10 retries, so a slow start is not mistaken for a
+broken one — **a container that is still starting is not a container that is broken**, and leaving
+that distinction out is what turned a slow redis into a permanent outage.
+
+If redis is *still* unhealthy after that, its AOF is unreadable — a truncated write from an earlier
+crash. Clearing it costs a cache and a task queue, never an order:
+
+```sh
+docker compose stop redis
+docker volume ls | grep redisdata          # find the exact name
+docker volume rm <project>_redisdata
+docker compose up -d
+```
+
+The same move on postgres would destroy the database. Do not reach for it there — restore from a
+backup instead (see [13 — Operations](13-operations.md)).
+
 ## Demo data, and the admin login
 
 Three switches, all in `.env`, all deliberately separate. They answer different questions
