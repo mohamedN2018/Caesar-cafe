@@ -56,7 +56,13 @@ const shiftOpen = computed(() => pos.shift !== null)
  * `permission: undefined` means everybody signed in at a till sees it.
  */
 const TABS: { to: string; label: string; permission?: string; exact?: boolean }[] = [
-  { to: '/pos', label: 'نقطة البيع', permission: 'orders.create', exact: true },
+  // The room first, because that is now where a shift starts: pick the table,
+  // then sell. `exact` because /pos is a prefix of every other tab here and
+  // without it the first one would look active on all of them.
+  { to: '/pos', label: 'الصالة', permission: 'orders.create', exact: true },
+  // Selling without a table — takeaway, delivery, the counter. Reachable in one
+  // tap rather than only by first pretending somebody is sitting down.
+  { to: '/pos/order', label: 'بيع سريع', permission: 'orders.create' },
   { to: '/pos/orders', label: 'الطلبات', permission: 'orders.view' },
   { to: '/pos/shift', label: 'الوردية' },
 ]

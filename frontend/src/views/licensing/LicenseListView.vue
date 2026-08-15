@@ -51,6 +51,31 @@ const loading = ref(true)
 const error = ref('')
 const revealedKey = ref('')
 
+/**
+ * Copied-confirmation, because a key you cannot verify you took is a key you
+ * will assume you took.
+ *
+ * The plaintext exists for one render and is then unrecoverable — the server
+ * keeps an HMAC. That makes the copy button the single most load-bearing control
+ * on this screen: miss it and the remedy is regenerating, which invalidates every
+ * till already activated against the old key.
+ */
+const copied = ref(false)
+
+async function copyKey() {
+  try {
+    await navigator.clipboard.writeText(revealedKey.value)
+    copied.value = true
+    setTimeout(() => (copied.value = false), 2500)
+  } catch {
+    // Clipboard access can be refused — an insecure origin, a locked-down
+    // browser. The key is `select-all` in the markup precisely so that refusing
+    // this leaves the operator able to select and copy by hand rather than
+    // stranded.
+    error.value = 'تعذّر النسخ تلقائياً — حدّد المفتاح وانسخه يدوياً.'
+  }
+}
+
 const columns = [
   { key: 'key', label: 'المفتاح' },
   { key: 'customer', label: 'العميل' },
@@ -100,6 +125,22 @@ async function act(license: License, action: string) {
   }
 }
 
+/**
+ * Regenerating is destructive to every activated till, so it says so first.
+ *
+ * `window.confirm` rather than a modal because the sentence is the whole point
+ * and a bespoke dialog would only be a nicer frame around the same words.
+ */
+async function regenerate(license: License) {
+  const ok = window.confirm(
+    `توليد مفتاح جديد لـ «${license.customer_name || license.customer_email}»؟\n\n` +
+      'المفتاح الحالي سيتوقف فوراً، وكل جهاز مفعَّل به سيحتاج إعادة تفعيل.\n' +
+      'المفتاح الجديد يظهر مرة واحدة فقط.',
+  )
+  if (!ok) return
+  await act(license, 'regenerate-key')
+}
+
 onMounted(load)
 </script>
 
@@ -116,8 +157,20 @@ onMounted(load)
 
     <UiAlert v-if="revealedKey" tone="warning">
       <p class="font-semibold">احفظ هذا المفتاح الآن — لن يظهر مرة أخرى.</p>
+      <!--
+        `select-all` stays on the key itself. The copy button is the fast path;
+        this is the one that still works when the clipboard API is refused, which
+        it is on any insecure origin.
+      -->
       <p class="mt-2 select-all font-mono text-lg tracking-wider" dir="ltr">{{ revealedKey }}</p>
-      <button class="mt-2 text-sm underline" @click="revealedKey = ''">إخفاء</button>
+      <div class="mt-3 flex items-center gap-2">
+        <UiButton size="sm" @click="copyKey">
+          {{ copied ? 'تم النسخ' : 'نسخ المفتاح' }}
+        </UiButton>
+        <button class="text-sm underline" @click="((revealedKey = ''), (copied = false))">
+          إخفاء
+        </button>
+      </div>
     </UiAlert>
 
     <UiSkeleton v-if="loading" :rows="5" />
@@ -164,6 +217,24 @@ onMounted(load)
                   @click="act(license, 'resume')"
                 >
                   استئناف
+                </UiButton>
+
+                <!--
+                  The way back from a lost key. The backend has had
+                  `regenerate-key` all along and nothing on this screen reached
+                  it, so an owner who mislaid a key had no route that did not
+                  involve a shell.
+
+                  It asks first, and names the real consequence rather than a
+                  generic "are you sure": the old key stops working, so every
+                  till already activated against it must be activated again.
+                -->
+                <UiButton
+                  variant="ghost"
+                  size="sm"
+                  @click="regenerate(license)"
+                >
+                  مفتاح جديد
                 </UiButton>
               </template>
             </div>
