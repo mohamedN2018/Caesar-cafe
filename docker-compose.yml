@@ -300,7 +300,24 @@ services:
     # this container over the proxy network; publishing a host port beside that is
     # pure liability, and it is what broke the deploy twice.
     networks: [internal, edge, proxy]
-    depends_on: [api]
+    # **Healthy**, not merely started.
+    #
+    # This was `depends_on: [api]`, which waits only for the container to exist.
+    # So Caddy came up, answered its own /healthz, and Dokploy reported a
+    # SUCCESSFUL deploy — while every /api/* request returned 502 because gunicorn
+    # was not listening. Hours went into reading Caddy logs that were working
+    # perfectly and describing a failure one container over.
+    #
+    # A deploy that half-works is worse than one that fails: the failure is real
+    # either way, but only one of them tells you. With `service_healthy` the api
+    # must actually answer /api/v1/system/health/ — database probe and all — before
+    # the site is served at all. Dokploy then marks the deploy failed, which is the
+    # truth, and the old deployment keeps serving until the new one earns the swap.
+    #
+    # The api gets 240s of start_period first, so a slow first boot is not mistaken
+    # for a broken one.
+    depends_on:
+      api: {condition: service_healthy}
     deploy:
       resources:
         limits: {memory: 128M}
@@ -387,6 +404,7 @@ services:
       # scripts/check_compose_ports.py checks it rather than a reviewer.
       - "127.0.0.1:${HTTP_PORT:-8080}:80"
     networks: [internal, edge]
+    # Plain: this one is a local convenience, not the thing being deployed.
     depends_on: [api]
     deploy:
       resources:
