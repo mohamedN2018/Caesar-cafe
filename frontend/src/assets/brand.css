@@ -24,16 +24,16 @@
      cream surfaces (#fbf7f0, #f4ede1). A pink patch on cream is the single
      thing that made the sidebar look wrong: it reads as a different palette
      rather than a lighter one. Warmed to share the surfaces' hue. */
-  --brand-50: #fbf2ee;
-  --brand-100: #f4dfd9;
-  --brand-200: #f3c4c7;
-  --brand-300: #e59aa0;
-  --brand-400: #d06a74;
-  --brand-500: #b3454f;
-  --brand-600: #94303a;
-  --brand-700: #7b1e28; /* the brand colour */
-  --brand-800: #611720;
-  --brand-900: #4a121a;
+  --brand-50: #f1f4fa;
+  --brand-100: #dfe6f3;
+  --brand-200: #c2d0e8;
+  --brand-300: #94aad4;
+  --brand-400: #6480bb;
+  --brand-500: #425e9e;
+  --brand-600: #2d4680;
+  --brand-700: #1f3363; /* the brand colour — navy, paired with gold */
+  --brand-800: #16264d;
+  --brand-900: #101b38;
 
   /* Gold. Used for emphasis and never for a whole surface: a gold background
      with dark text is legible, but gold text on white is not, at any weight. */
@@ -82,7 +82,7 @@
   --wood-dark: #7d5029;
   --wood-edge: #6a421f;
   --chair: #8a5a33;
-  --chair-occupied: #7b1e28;
+  --chair-occupied: var(--brand-700);
   --table-free: #ffffff;
   --table-busy: #f3c4c7;
   --table-ready: #cfe8da;
@@ -108,7 +108,7 @@
   --shadow-xl: 0 8px 16px rgba(42, 26, 22, 0.10), 0 28px 60px rgba(42, 26, 22, 0.13);
 
   /* A brand-tinted glow, for the one element on a screen that is the action. */
-  --shadow-brand: 0 2px 4px rgba(123, 30, 40, 0.18), 0 10px 24px rgba(123, 30, 40, 0.20);
+  --shadow-brand: 0 2px 4px rgba(31, 51, 99, 0.18), 0 10px 24px rgba(31, 51, 99, 0.20);
 
   /* The scrim behind a modal. A token rather than `bg-black/40` at each call
      site, because the ones written by hand drifted between 0.4 and 0.6 and a
@@ -118,7 +118,7 @@
   /* ── surface treatments ────────────────────────────────────────────────── */
   /*
      Gradients, not flat fills, on the two places that carry the brand: the
-     sidebar and a primary button. A flat #7b1e28 panel the height of a screen
+     sidebar and a primary button. A flat #1f3363 panel the height of a screen
      is a large area of one value, and large flat areas are what make an
      interface look unfinished — the eye expects a surface to catch light
      unevenly. These stay within one hue, so it still reads as the brand rather
@@ -131,7 +131,7 @@
      reading as one undifferentiated sheet. */
   --page-wash: radial-gradient(
       1200px 600px at 100% -10%,
-      rgba(123, 30, 40, 0.05) 0%,
+      rgba(31, 51, 99, 0.05) 0%,
       transparent 60%
     ),
     radial-gradient(900px 500px at -10% 110%, rgba(201, 162, 39, 0.07) 0%, transparent 60%);
@@ -164,12 +164,12 @@
   /*
      The alphas are checked, not chosen by eye.
 
-     Composited over `--brand-700` (#7b1e28) — the LIGHTEST point of the sidebar
-     gradient, so the worst case — against a #7b1e28 ground:
+     Composited over `--brand-700` (#1f3363) — the LIGHTEST point of the sidebar
+     gradient, so the worst case — against a #1f3363 ground:
 
-       0.74 → #dcc4c7, contrast 6.3:1  ✓
-       0.62 → #cba9ad, contrast 4.8:1  ✓
-       0.48 → #ba8a8f, contrast 3.5:1  ✗
+       0.74 → #7e8ba9, contrast 7.5:1  ✓
+       0.62 → #a3adc4, contrast 5.7:1  ✓
+       0.48 → #8f9ab5, contrast 4.0:1  ✗
 
      `faint` started at 0.48 and had to come up. It carries the group headings and
      the login footnote, both 12px, where AA wants 4.5:1 — and the header of this
@@ -228,11 +228,11 @@
 
   /* Magnitude, not identity: ONE hue, light to dark. A rainbow ramp implies
      categories where the data has only "more" and "less". */
-  --chart-seq-1: #f4dfd9;
-  --chart-seq-2: #e59aa0;
-  --chart-seq-3: #c44553;
-  --chart-seq-4: #94303a;
-  --chart-seq-5: #611720;
+  --chart-seq-1: #dfe6f3;
+  --chart-seq-2: #94aad4;
+  --chart-seq-3: #425e9e;
+  --chart-seq-4: #2d4680;
+  --chart-seq-5: #16264d;
 
   /* Chart furniture. Recessive on purpose — a gridline that competes with the
      data is a gridline that hides it. */
