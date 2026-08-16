@@ -44,14 +44,14 @@ GOLD_700 = "#876d23"
 
 # ── surfaces ─────────────────────────────────────────────────────────────────
 SURFACE = "#ffffff"
-SURFACE_MUTED = "#fbf7f0"
-SURFACE_SUNKEN = "#f4ede1"
-BORDER = "#e7ddcc"
-BORDER_STRONG = "#d3c4ab"
+SURFACE_MUTED = "#f5f7fa"
+SURFACE_SUNKEN = "#eef2f7"
+BORDER = "#c8d0dd"
+BORDER_STRONG = "#8592ab"
 
-INK = "#2a1a16"
-INK_MUTED = "#6b5a52"
-INK_FAINT = "#9a8b83"
+INK = "#151d2e"
+INK_MUTED = "#57637a"
+INK_FAINT = "#616e87"
 FG_ON_BRAND = "#ffffff"
 FG_ON_GOLD = "#2a1a16"
 

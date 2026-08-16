@@ -27,7 +27,7 @@ const model = defineModel<string | number | null>()
       :required="required"
       :disabled="disabled"
       :dir="ltr ? 'ltr' : undefined"
-      class="ui-input w-full rounded-lg border-line bg-surface px-3.5 py-2.5 text-[15px] min-h-[44px]
+      class="ui-input w-full rounded-lg border-line-strong bg-surface px-3.5 py-2.5 text-[15px] min-h-[44px]
              placeholder:text-ink-faint disabled:bg-surface-muted disabled:text-ink-faint
              focus:outline-none"
       :class="error ? 'border-danger' : 'border-line-strong'"

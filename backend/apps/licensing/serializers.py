@@ -59,6 +59,20 @@ class HeartbeatResponseSerializer(serializers.Serializer):
 
 class LicenseSerializer(serializers.ModelSerializer):
     masked_key = serializers.CharField(read_only=True)
+
+    #: The readable key, or an empty string.
+    #:
+    #: Populated only while `DEMO_MODE` is on — see `License.key_plaintext`. It is
+    #: a serializer method rather than the plain field so that turning DEMO_MODE
+    #: off hides keys that were written while it was on, without a data migration:
+    #: the switch governs what is SHOWN as well as what is stored, and the two
+    #: cannot fall out of step.
+    readable_key = serializers.SerializerMethodField()
+
+    def get_readable_key(self, obj) -> str:
+        from django.conf import settings
+
+        return obj.key_plaintext if getattr(settings, "DEMO_MODE", False) else ""
     active_device_count = serializers.IntegerField(read_only=True)
     seats_available = serializers.IntegerField(read_only=True)
     branch_name = serializers.CharField(source="branch.name_ar", read_only=True, default=None)
@@ -68,6 +82,7 @@ class LicenseSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "masked_key",
+            "readable_key",
             "key_prefix",
             "key_last4",
             "customer_email",

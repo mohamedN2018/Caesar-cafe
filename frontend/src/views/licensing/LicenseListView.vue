@@ -23,6 +23,14 @@ import { dateTime } from '@/lib/format'
 interface License {
   id: string
   masked_key: string
+  /**
+   * The readable key — a non-empty string only while the server has DEMO_MODE on.
+   *
+   * The server decides, not this screen. A real installation stores nothing to
+   * show, so there is no way to leak a key here by getting a `v-if` wrong: the
+   * field simply arrives empty.
+   */
+  readable_key: string
   customer_email: string
   customer_name: string
   license_type: string
@@ -61,6 +69,19 @@ const revealedKey = ref('')
  * till already activated against the old key.
  */
 const copied = ref(false)
+
+/** Which key was last copied, so the button can confirm it. */
+const copiedKey = ref('')
+
+async function copy(value: string) {
+  try {
+    await navigator.clipboard.writeText(value)
+    copiedKey.value = value
+    setTimeout(() => (copiedKey.value = ''), 2500)
+  } catch {
+    error.value = 'تعذّر النسخ تلقائياً — حدّد المفتاح وانسخه يدوياً.'
+  }
+}
 
 async function copyKey() {
   try {
@@ -216,7 +237,27 @@ onMounted(load)
       />
       <UiTable v-else :columns="columns">
         <tr v-for="license in licenses" :key="license.id" class="hover:bg-surface-muted">
-          <td class="px-4 py-3 font-mono text-sm" dir="ltr">{{ license.masked_key }}</td>
+          <!--
+            The readable key when the server sends one, the masked one otherwise.
+
+            `readable_key` is non-empty only while DEMO_MODE is on — the server
+            decides and a real installation stores nothing to show, so there is
+            no way to leak a key here by getting a condition wrong. Selectable so
+            it can be copied without a button, and with one for the common case.
+          -->
+          <td class="px-4 py-3 font-mono text-sm" dir="ltr">
+            <template v-if="license.readable_key">
+              <span class="select-all text-ink">{{ license.readable_key }}</span>
+              <button
+                type="button"
+                class="ms-2 text-xs text-brand-700 underline"
+                @click="copy(license.readable_key)"
+              >
+                {{ copiedKey === license.readable_key ? 'تم النسخ' : 'نسخ' }}
+              </button>
+            </template>
+            <span v-else class="text-ink-muted">{{ license.masked_key }}</span>
+          </td>
           <td class="px-4 py-3">
             <p class="text-ink">{{ license.customer_name || '—' }}</p>
             <p class="text-xs text-ink-muted" dir="ltr">{{ license.customer_email }}</p>

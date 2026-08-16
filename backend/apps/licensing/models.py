@@ -62,6 +62,26 @@ class License(BaseModel):
 
     key_hash = models.CharField(max_length=64, unique=True, db_index=True)
     key_prefix = models.CharField(max_length=16, help_text="QSR-7X29, for display.")
+
+    #: The readable key — written ONLY when `settings.DEMO_MODE` is on.
+    #:
+    #: A licence key is a credential, and the reason this model stores an HMAC is
+    #: that a copied database should yield nothing that opens a till. That is the
+    #: right default and it stays the default: with DEMO_MODE off this column is
+    #: never written, `test_plaintext_key_is_never_stored` still passes unchanged,
+    #: and a real installation behaves exactly as it did.
+    #:
+    #: A demo is a different situation with a different cost. There, the key
+    #: vanishing after one render is the problem — somebody is showing the product
+    #: and needs to activate a second browser without regenerating and
+    #: invalidating the first. So it is kept, deliberately, behind the same switch
+    #: that already publishes the demo staff logins.
+    key_plaintext = models.CharField(
+        max_length=32,
+        blank=True,
+        default="",
+        help_text="Demo mode only. Empty on any real installation.",
+    )
     key_last4 = models.CharField(max_length=8)
 
     customer_email = models.EmailField()

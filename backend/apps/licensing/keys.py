@@ -24,6 +24,8 @@ This module is deliberately Django-free so it can be exercised in isolation.
 
 from __future__ import annotations
 
+import base64
+import binascii
 import re
 import secrets
 
@@ -107,3 +109,57 @@ def prefix_of(key: str) -> str:
 
 def last4_of(key: str) -> str:
     return normalize(key).split("-")[-1]
+
+
+# ── the offline-token signing key ────────────────────────────────────────────
+#
+# Here rather than in `services` for one concrete reason: the production settings
+# have to run this check at STARTUP, and `services` imports models. Importing a
+# module that touches models from a settings file runs before Django has loaded
+# its apps, and the container crash-loops on
+# `AppRegistryNotReady: Apps aren't loaded yet`.
+#
+# This module imports `base64`, `binascii`, `re` and `secrets`. Nothing else. That
+# is what makes it safe to call from anywhere in the boot, including the point
+# before anything is served — which is the only point where refusing is useful.
+
+#: An Ed25519 private key is exactly this many bytes. Nothing else will sign.
+SIGNING_KEY_BYTES = 32
+
+
+def validate_signing_key(raw: str) -> bytes:
+    """
+    Decode the signing key, or say precisely what is wrong with it.
+
+    Split out of `_signing_key` so the production settings can run it at STARTUP.
+    It was only ever run at signing time, which meant a bad key booted fine,
+    served fine, and then failed on the device-activation screen with
+    `binascii.Error: Incorrect padding` — a stack trace from the one screen whose
+    entire job is onboarding a terminal.
+
+    The trap is that this secret does not look like the others. They are random
+    strings and any random string does. This one is a KEY: 32 bytes, standard
+    base64. A value that is random and wrong is indistinguishable by eye from one
+    that is random and right, so it has to be checked rather than looked at.
+    """
+    if not raw:
+        raise ValueError("LICENSE_SIGNING_KEY is not configured.")
+
+    try:
+        key = base64.b64decode(raw, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        raise ValueError(
+            "LICENSE_SIGNING_KEY is not valid base64, so no offline token can be "
+            "signed and device activation fails at the first attempt. Generate one "
+            f"with `python manage.py generate_signing_key` — a random string will "
+            f"not do. ({exc})"
+        ) from exc
+
+    if len(key) != SIGNING_KEY_BYTES:
+        raise ValueError(
+            f"LICENSE_SIGNING_KEY must decode to exactly {SIGNING_KEY_BYTES} bytes "
+            f"(an Ed25519 private key); this one is {len(key)}. Generate one with "
+            "`python manage.py generate_signing_key`."
+        )
+
+    return key

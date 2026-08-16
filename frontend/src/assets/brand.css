@@ -48,15 +48,41 @@
   /* ── surfaces ──────────────────────────────────────────────────────────── */
   /* Warm rather than blue-grey. Beside burgundy and gold, a cool grey reads as
      dirty; the ivory keeps the room feeling like the room. */
-  --surface: #ffffff;
-  --surface-muted: #fbf7f0;
-  --surface-sunken: #f4ede1;
-  --border: #e7ddcc;
-  --border-strong: #d3c4ab;
+  /* ── neutrals ─────────────────────────────────────────────────────────────
+     Cool, because the brand is navy.
 
-  --ink: #2a1a16;
-  --ink-muted: #6b5a52;
-  --ink-faint: #9a8b83;
+     These were chosen for burgundy — beige lines, a brown-black ink, a cream
+     muted surface — and changing the brand ramp without them left the product
+     half warm and half cool. That is not only a mismatch: `--border` was
+     #e7ddcc, which is **1.35:1 on white**, so a form field's edge was invisible
+     and an input looked like white on white. That was the reported bug.
+
+     Two of these were failing before the brand ever moved:
+
+       --border    #e7ddcc  1.35:1   a control boundary, and WCAG 1.4.11 wants 3:1
+       --ink-faint #9a8b83  3.28:1   body-size text, and AA wants 4.5:1
+
+     Now:
+
+       --border         #c8d0dd  1.55:1  dividers and card edges — quiet on purpose
+       --border-strong  #8592ab  3.14:1  FORM FIELDS and control boundaries
+       --ink            #151d2e 16.84:1
+       --ink-muted      #57637a  6.05:1
+       --ink-faint      #616e87  5.14:1
+
+     `--border` stays quiet deliberately: it draws table rules and card edges,
+     where 3:1 would turn a page into a spreadsheet. Anything that BOUNDS A
+     CONTROL uses `--border-strong`, which is the one that clears 1.4.11 — the
+     contrast belongs to the component that needs it, not to every hairline. */
+  --surface: #ffffff;
+  --surface-muted: #f5f7fa;
+  --surface-sunken: #eef2f7;
+  --border: #c8d0dd;
+  --border-strong: #8592ab;
+
+  --ink: #151d2e;
+  --ink-muted: #57637a;
+  --ink-faint: #616e87;
   --fg-on-brand: #ffffff;
   /* ── the focus ring ──────────────────────────────────────────────────────
      Gold, and two of them, because one ring cannot serve both grounds.

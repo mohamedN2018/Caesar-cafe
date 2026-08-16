@@ -4,7 +4,6 @@ Licence issuance, activation, and the graduated expiry policy.
 
 from __future__ import annotations
 
-import base64
 import hashlib
 import hmac
 import logging
@@ -150,6 +149,8 @@ def issue_license(
         organization=organization,
         branch=branch,
         key_hash=hash_key(plaintext),
+        # Readable only in demo mode; empty everywhere else. See the field.
+        key_plaintext=plaintext if getattr(settings, "DEMO_MODE", False) else "",
         key_prefix=keys.prefix_of(plaintext),
         key_last4=keys.last4_of(plaintext),
         customer_email=customer_email.strip().lower(),
@@ -183,7 +184,12 @@ def regenerate_key(license_obj: License, *, actor=None, ip_address=None) -> Issu
     license_obj.key_hash = hash_key(plaintext)
     license_obj.key_prefix = keys.prefix_of(plaintext)
     license_obj.key_last4 = keys.last4_of(plaintext)
-    license_obj.save(update_fields=["key_hash", "key_prefix", "key_last4", "updated_at"])
+    # Kept in step with issuance: readable in demo mode, and CLEARED otherwise —
+    # so turning DEMO_MODE off and regenerating leaves nothing readable behind.
+    license_obj.key_plaintext = plaintext if getattr(settings, "DEMO_MODE", False) else ""
+    license_obj.save(
+        update_fields=["key_hash", "key_prefix", "key_last4", "key_plaintext", "updated_at"]
+    )
 
     _record(license_obj, LicenseEvent.Event.KEY_REGENERATED, actor=actor, ip_address=ip_address)
     return IssuedLicense(license=license_obj, plaintext_key=plaintext)
@@ -552,10 +558,7 @@ def evaluate_state(license_obj: License, *, now=None) -> LicenseState:
 
 
 def _signing_key() -> bytes:
-    raw = settings.LICENSE_SIGNING_KEY
-    if not raw:
-        raise RuntimeError("LICENSE_SIGNING_KEY is not configured.")
-    return base64.b64decode(raw)
+    return keys.validate_signing_key(settings.LICENSE_SIGNING_KEY)
 
 
 def public_key_bytes() -> bytes:

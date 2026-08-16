@@ -33,8 +33,28 @@ if _missing:
         + ", ".join(sorted(_missing))
     )
 
-if not ALLOWED_HOSTS or ALLOWED_HOSTS == ["*"]:
-    raise ImproperlyConfigured("DJANGO_ALLOWED_HOSTS must be set explicitly in production.")
+# ── the signing key has to be USABLE, not merely present ─────────────────────
+#
+# Every other secret above is a random string and any random string does. This
+# one is an Ed25519 private key — 32 bytes, standard base64 — and a value that is
+# random and wrong is indistinguishable by eye from one that is random and right.
+#
+# It was wrong, and how that presented is the reason this runs at startup: the
+# server booted, served for as long as nobody activated a till, and then returned
+# 500 from the device-activation screen. Presence was checked; validity was not.
+#
+# The check itself lives beside the code that uses the key, so it cannot drift
+# from it, and so it is testable without reloading a settings module.
+if LICENSE_SIGNING_KEY:
+    # `keys` imports no models, so this is safe before the app registry loads.
+    # Importing `services` here instead crash-looped the container on
+    # `AppRegistryNotReady` — the check has to run before apps are ready.
+    from apps.licensing.keys import validate_signing_key as _validate_signing_key
+
+    try:
+        _validate_signing_key(LICENSE_SIGNING_KEY)
+    except ValueError as _exc:
+        raise ImproperlyConfigured(f"Refusing to start: {_exc}") from _exc
 
 # ── TLS / headers ────────────────────────────────────────────────────────────
 # TLS terminates at the reverse proxy; trust its forwarded scheme header.
