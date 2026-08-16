@@ -376,8 +376,65 @@ describe('the plan is drawn, not listed', () => {
     get.mockResolvedValue([table(), table({ table_id: 't2', number: '11', area: 'التراس' })])
 
     const wrapper = await mountTables()
+    const all = wrapper.findAll('.area-tab').find((b) => b.text() === 'الكل')
+    await all!.trigger('click')
 
     expect(wrapper.findAll('.plan-grid')).toHaveLength(2)
+  })
+
+  it('opens on ONE room, so that room gets the whole till', async () => {
+    /**
+     * A screen split three ways is three plans too small to read, and this shell
+     * does not scroll — so the space is all there is. A waiter works one room at
+     * a time; seeing the rest is a tap.
+     */
+    get.mockResolvedValue([table(), table({ table_id: 't2', number: '11', area: 'التراس' })])
+
+    const wrapper = await mountTables()
+
+    expect(wrapper.findAll('.plan-grid')).toHaveLength(1)
+    expect(wrapper.find('.area-tab-on').text()).toBe('الصالة الداخلية')
+  })
+
+  it('does not overrule a room somebody chose, on the next refresh', async () => {
+    /**
+     * The board reloads every ten seconds. Re-applying the default on each one
+     * would snap "الكل" back to a single room under somebody's hand, repeatedly,
+     * with nothing on screen admitting it.
+     */
+    get.mockResolvedValue([table(), table({ table_id: 't2', number: '11', area: 'التراس' })])
+
+    const wrapper = await mountTables()
+    const all = wrapper.findAll('.area-tab').find((b) => b.text() === 'الكل')
+    await all!.trigger('click')
+    expect(wrapper.findAll('.plan-grid')).toHaveLength(2)
+
+    // A refresh lands.
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.findAll('.plan-grid')).toHaveLength(2)
+  })
+
+  it('collapses the tracks nothing sits on, and keeps them', async () => {
+    /**
+     * A room's coordinates are sparse — tables cluster on the walls and whole
+     * rows in the middle hold nothing. Drawing every track full size spent most
+     * of a screen that cannot scroll on floor nobody sits on.
+     *
+     * Collapsed, not deleted. A gap between two clusters is the aisle, and
+     * removing it would make this plan disagree with the admin's drawing of the
+     * same room — the one thing a second view of a floor must never do.
+     */
+    get.mockResolvedValue([table({ pos_x: 2, pos_y: 0, span_x: 1, span_y: 1 })])
+
+    const wrapper = await mountTables()
+    const style = wrapper.find('.plan-grid').attributes('style') ?? ''
+
+    // Four columns: two empty, the table's, and the trailing one.
+    expect(style).toContain('grid-template-columns: 0.34fr 0.34fr 1fr 0.34fr')
+    // Still four tracks — the aisle is narrow, not gone.
+    expect(style.match(/fr/g)).toHaveLength(6)
   })
 
   it('keeps the full detail reachable when the cell is too small to show it', async () => {

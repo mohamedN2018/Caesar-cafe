@@ -2762,6 +2762,86 @@ backend 1177 passed; frontend 171 → 173.
 
 ---
 
+## The room, inside one screen ✅ COMPLETE (2026-08-16)
+
+### It was overflowing a shell that hides overflow
+
+`PosLayout` is exactly one viewport tall, `overflow: hidden`, and lays its body
+out as a flex ROW. This screen never claimed that slot — as a plain block it took
+its width from its content and its height from the plan, so the bottom of the room
+was clipped by a shell doing exactly what it was told. The tables were rendered
+and could not be reached.
+
+Claiming it is `flex: 1` plus `min-height: 0` and `min-width: 0`. Without the mins
+a flex item refuses to shrink below its content and the overflow comes straight
+back — which is the whole difficulty with "make it fit" in flexbox: the default is
+to not fit.
+
+### Four things had to change for the room to actually fit
+
+  * **The chrome went to one line.** A title, a subtitle, a button row and a tab
+    row were four rows off the top of a screen that has no spare rows. The counts
+    are chips, the rooms are on the same line, and quick-sell sits at the end.
+  * **The rooms sit side by side**, each taking width in proportion to how wide
+    the room really is. Stacked, a second area pushed the first off the bottom.
+  * **Empty tracks collapse to a third.** Coordinates are sparse — tables cluster
+    on the walls and whole rows in the middle hold nothing. Drawing every track
+    full size spent most of the screen on floor nobody sits on. Collapsed rather
+    than removed: a gap between clusters is the aisle, and deleting it would make
+    this plan disagree with the admin's drawing of the same room, which is the one
+    thing a second view of a floor must never do.
+  * **Each cell shows a number and two lines**, not six. The order count, the
+    sitting time and the waiter moved into the sheet, where there is room to read
+    them.
+
+Cells went from 119px to 175px on a 1440×900 till, and 121px on a 1024×768 tablet.
+Nothing scrolls on either.
+
+### The three defects only a browser could see
+
+The unit suite passed throughout. It always would have: happy-dom has no layout
+engine, so every rectangle it reports is a zero nobody computed. So the screen was
+rendered in real Chrome, driven over the DevTools protocol, and measured.
+
+  1. **The overflow above** — invisible to a DOM test by construction.
+  2. **A bar seat's label floated above the stool.** The shape was inset 32% from
+     the top and the text was centred in the whole cell, so the number straddled
+     the counter edge. Obvious in a picture, unrepresentable in a unit test.
+  3. **Two rooms side by side had cells 93px wide and 171px tall.** `aspect-ratio`
+     with `height: 100%` and `max-width: 100%` LOOKS like it fits a box and does
+     not: an explicit height beats the ratio, so when width binds, the cells
+     stretch instead of the plan shrinking. Replaced with a size container and
+     `min(100cqw, 100cqh × ratio)`, which is sized against both axes at once.
+
+Two more came out of the same pass: `{{ area }} · {{ seats }} مقاعد` rendered as
+"60 مقاعد" once bidi ran the interpunct against the number — a seat count wrong by
+a factor of ten on the screen where somebody decides whether a party fits — and the
+guest chips wrapped so the seventh sat alone at one-sixth width, then, after the
+first fix, as a full-width banner.
+
+The harness is kept as `tools/render_screen.js`. No puppeteer, nothing installed —
+it speaks CDP over raw WebSocket frames. It prints scroll overflow first, because
+that is the measurement that is never acceptable.
+
+### One room by default
+
+Opening on "الكل" split the screen between every area, and a screen split three
+ways is three plans too small to read. It opens on the first room now, and only
+until somebody chooses otherwise — re-applying the default on each ten-second
+refresh would snap "الكل" back under their hand, repeatedly, silently.
+
+### Also fixed: a guard that reported a wrong answer
+
+`tokens.test.ts` checks every `var(--x)` resolves. It read definitions as CSS
+declarations only, so a property set from a `:style` binding — a quoted object key —
+looked undefined, and it reported a component computing its own variable as a typo.
+A guard whose report is wrong is worse than no guard: it teaches people to stop
+believing it. Widened, and re-proven against a real misspelling.
+
+frontend 173 → 176.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

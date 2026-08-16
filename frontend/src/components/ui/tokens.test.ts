@@ -106,9 +106,18 @@ describe('colour comes from the brand tokens', () => {
     const files = filesMatching(SRC, /\.(?:vue|css)$/)
     const code = new Map(files.map((path) => [path, withoutComments(readFileSync(path, 'utf8'))]))
 
+    /**
+     * A property counts as defined wherever it is SET — including from a
+     * `:style` binding, where it is a quoted object key rather than a CSS
+     * declaration: `:style="{ '--ratio': room.ratio }"`.
+     *
+     * Without the optional quote this reported a component computing its own
+     * variable as an undefined token. That is the worst kind of guard failure:
+     * the report is wrong, so the habit it teaches is to stop believing it.
+     */
     const defined = new Set<string>()
     for (const source of code.values()) {
-      for (const match of source.matchAll(/(--[a-z0-9-]+)\s*:/g)) defined.add(match[1])
+      for (const match of source.matchAll(/(--[a-z0-9-]+)['"]?\s*:/g)) defined.add(match[1])
     }
 
     // Guard the guard: if the palette stopped being found, every reference
