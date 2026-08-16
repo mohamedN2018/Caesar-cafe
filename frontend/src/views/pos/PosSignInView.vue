@@ -90,6 +90,16 @@ function press(key: string) {
  * Called after every pad interaction, so the invariant the comment claims is
  * actually maintained.
  */
+/**
+ * Whether the badge sink currently holds focus.
+ *
+ * This is the scanner's real state: it is a keyboard, so it reaches the app only
+ * while that field is focused. Tracking it lets the screen say so — the
+ * alternative is a permanently optimistic "ready" label, which is worse than no
+ * label because it is believed.
+ */
+const scannerLive = ref(false)
+
 function keepScannerReady() {
   scanner.value?.focus()
 }
@@ -156,7 +166,12 @@ async function submitEnrolment() {
 
 onMounted(() => {
   // Focus follows the scanner so a badge works the moment the screen appears.
-  if (terminal.isEnrolled) scanner.value?.focus()
+  if (terminal.isEnrolled) {
+    scanner.value?.focus()
+    // The dot reflects real focus, so it has to be seeded — otherwise the screen
+    // opens with a working scanner reported as idle.
+    scannerLive.value = document.activeElement === scanner.value
+  }
 })
 </script>
 
@@ -226,7 +241,24 @@ onMounted(() => {
 
         <label class="scan">
           <UiIcon name="key" size="1rem" />
-          <span>أو امسح البطاقة</span>
+          <!--
+            The scanner's state, shown because the field cannot be.
+
+            A working scanner and a dead one look the same against an invisible
+            input. The dot follows focus rather than assuming it: an optimistic
+            "ready" that is sometimes false is worse than nothing, because it is
+            believed. Tapping restores focus, which is the fix for the only way
+            this goes wrong in practice — something else took it.
+          -->
+          <button
+            type="button"
+            class="scan-state"
+            :class="scannerLive ? 'is-live' : 'is-idle'"
+            @click="keepScannerReady"
+          >
+            <span class="scan-dot" aria-hidden="true" />
+            {{ scannerLive ? 'الماسح جاهز — امسح البطاقة' : 'اضغط هنا لتفعيل الماسح' }}
+          </button>
           <!--
             Off-screen rather than `type=hidden`: a scanner types into whatever
             has focus, so the field must be focusable and must not be visible.
@@ -238,7 +270,8 @@ onMounted(() => {
             autocomplete="off"
             aria-label="امسح بطاقة الموظف"
             @keyup.enter="submitScanned"
-            @blur="keepScannerReady"
+            @focus="scannerLive = true"
+            @blur="((scannerLive = false), keepScannerReady())"
           />
         </label>
       </template>
@@ -375,6 +408,48 @@ onMounted(() => {
 }
 
 .scan-input {
+.scan-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  color: var(--fg-on-brand-muted, rgba(255, 255, 255, 0.74));
+}
+.scan-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  flex: none;
+  background: currentColor;
+}
+.scan-state.is-live .scan-dot {
+  background: var(--gold-400);
+  /* A slow pulse, so "listening" reads as a state rather than a decoration. */
+  animation: scan-pulse 1.8s var(--ease-out) infinite;
+}
+.scan-state.is-idle {
+  color: var(--fg-on-brand-faint, rgba(255, 255, 255, 0.62));
+  text-decoration: underline;
+}
+
+@keyframes scan-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+/* Respect a stated preference: a pulsing dot is exactly what this setting is
+   for, and the colour alone still distinguishes the two states. */
+@media (prefers-reduced-motion: reduce) {
+  .scan-state.is-live .scan-dot {
+    animation: none;
+  }
+}
+
   /* Focusable but not visible: a scanner is a keyboard and types into focus. */
   position: absolute;
   width: 1px;

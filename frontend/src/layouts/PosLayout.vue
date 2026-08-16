@@ -46,6 +46,15 @@ const time = computed(() =>
 const shiftOpen = computed(() => pos.shift !== null)
 
 /**
+ * The person signed in at this till.
+ *
+ * Arabic name first because that is what the rest of the product shows and what
+ * a colleague would say out loud; the email is the fallback rather than the
+ * label, since nobody at a till thinks of a waiter as an address.
+ */
+const cashier = computed(() => auth.me?.full_name_ar || auth.me?.email || '')
+
+/**
  * What this person is allowed to do at the till.
  *
  * Ordered by how often it is touched, not by importance: the till first because
@@ -103,6 +112,21 @@ async function leave() {
           drawer is short.
         -->
         <span v-if="terminal.deviceName" class="pos-where">{{ terminal.deviceName }}</span>
+
+        <!--
+          WHO is on the till, which the header never said.
+
+          It named the device and the time and stopped there. But a shift belongs
+          to a person, a drawer is counted against a person, and every question
+          asked of an audit trail starts with "who" — and the screen where that is
+          decided showed a clock. A cashier walking up to a terminal somebody else
+          left signed in had no way to notice.
+        -->
+        <span v-if="cashier" class="pos-who" :title="`الكاشير الحالي: ${cashier}`">
+          <span class="pos-who-dot" aria-hidden="true" />
+          {{ cashier }}
+        </span>
+
         <span class="pos-clock tabular-nums">{{ time }}</span>
       </div>
 
@@ -232,6 +256,30 @@ async function leave() {
 .pos-tab.is-active {
   background: rgb(255 255 255 / 0.16);
   color: #fff;
+}
+
+/*
+  The person, marked with a small live dot. Deliberately quieter than the tabs —
+  it is an answer to "who am I signed in as", not a control, and a cashier should
+  read it once at the start of a shift and then forget it.
+*/
+.pos-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: 12rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.8rem;
+  color: var(--fg-on-brand-muted, rgba(255, 255, 255, 0.74));
+}
+.pos-who-dot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--gold-400);
+  flex: none;
 }
 
 .pos-shift {

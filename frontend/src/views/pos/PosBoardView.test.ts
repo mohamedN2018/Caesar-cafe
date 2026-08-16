@@ -69,6 +69,20 @@ const PRODUCT = {
   ],
 }
 
+/**
+ * The route the board reads its table from.
+ *
+ * Overridable per test: the board's job now depends on whether a table came with
+ * it, so "no table" and "table 2" are two different screens and both need
+ * covering.
+ */
+let routeQuery: Record<string, string> = {}
+
+vi.mock('vue-router', async (original) => ({
+  ...(await original<Record<string, unknown>>()),
+  useRoute: () => ({ query: routeQuery }),
+}))
+
 async function mountBoard() {
   const { mount } = await import('@vue/test-utils')
   const { default: PosBoardView } = await import('./PosBoardView.vue')
@@ -98,6 +112,7 @@ async function mountBoard() {
 }
 
 beforeEach(() => {
+  routeQuery = {}
   setActivePinia(createPinia())
   get.mockReset()
   post.mockReset()
@@ -217,5 +232,86 @@ describe('no shift open', () => {
 
     expect(wrapper.text()).not.toContain('لازم تفتح وردية')
     expect(wrapper.findAll('.tile').length).toBeGreaterThan(0)
+  })
+})
+
+describe('the table the floor sent with the order', () => {
+  /**
+   * The floor has been sending `?table=&session=&number=` since it became the
+   * till's landing screen, and this board ignored all three: it opened a plain
+   * DINE_IN order with no session, so tapping table 2 and ringing a coffee
+   * produced a bill attached to nobody.
+   *
+   * That is the worst shape a gap can take. The flow looked correct end to end —
+   * you tapped a table, you got an order screen, you rang items — and the wrong
+   * bill was only discoverable at closing, when nobody can reconstruct it.
+   */
+
+  it('names the table on the bill screen', async () => {
+    // The cashier's confirmation that the order went where they tapped.
+    routeQuery = { table: 't1', number: '2' }
+
+    const wrapper = await mountBoard()
+
+    expect(wrapper.text()).toContain('طاولة 2')
+  })
+
+  it('says nothing about a table when there is none', async () => {
+    // Takeaway and the counter are not table service; a stray "طاولة" here would
+    // be a claim about a bill that has no table.
+    routeQuery = {}
+
+    const wrapper = await mountBoard()
+
+    expect(wrapper.text()).not.toContain('طاولة')
+  })
+
+  it('opens a session for a FREE table before the first sale', async () => {
+    /**
+     * Seating and ordering are one gesture at a till — nobody taps "seat this
+     * party" and then "take their order". A free table arrives with no session,
+     * so one is opened on the way.
+     */
+    routeQuery = { table: 't1', number: '2' }
+    // A session, then an order — both go through `post`, so the mock has to
+    // answer plausibly for each rather than returning one shape for both.
+    post.mockImplementation((url: string) =>
+      url === '/floor/sessions/'
+        ? Promise.resolve({ id: 'new-session' })
+        : Promise.resolve({ id: 'order-1', items: [], status: 'OPEN' }),
+    )
+
+    const wrapper = await mountBoard()
+    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
+    await fresh!.trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(post).toHaveBeenCalledWith('/floor/sessions/', { table: 't1', guest_count: 1 })
+  })
+
+  it('reuses the session a seated table already has', async () => {
+    // A party already sitting must not be seated twice — that is two bills for
+    // one table, which is exactly what this whole flow exists to prevent.
+    routeQuery = { table: 't1', number: '2', session: 'existing' }
+    post.mockResolvedValue({ id: 'order-1', items: [], status: 'OPEN' })
+
+    const wrapper = await mountBoard()
+    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
+    await fresh!.trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    const sessionCalls = post.mock.calls.filter((c) => c[0] === '/floor/sessions/')
+    expect(sessionCalls).toHaveLength(0)
+  })
+
+  it('opens no session at all without a table', async () => {
+    routeQuery = {}
+
+    const wrapper = await mountBoard()
+    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
+    await fresh!.trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(post.mock.calls.filter((c) => c[0] === '/floor/sessions/')).toHaveLength(0)
   })
 })

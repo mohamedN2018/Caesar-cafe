@@ -19,8 +19,9 @@
  *     wet one. A mis-tap on a till is a wrong item on a bill.
  */
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { RouterLink, useRoute } from 'vue-router'
 
+import { api } from '@/api/client'
 import UiAlert from '@/components/ui/UiAlert.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import ItemSheet from '@/modules/pos/ItemSheet.vue'
@@ -51,12 +52,61 @@ const sheetProduct = ref<Product | null>(null)
 const paying = ref(false)
 const orderType = ref<string>('DINE_IN')
 
-/** Locked once the bill has a line on it — see the note on ORDER_TYPES. */
-const typeLocked = computed(() => pos.order !== null && pos.order.items.length > 0)
+/**
+ * The table this order belongs to, carried from the floor.
+ *
+ * The floor screen has been sending `?table=&session=&number=` since it became
+ * the till's landing screen, and this board ignored all three — so tapping table
+ * 2 and ringing a coffee produced a bill attached to nobody. The flow looked
+ * correct and did nothing, which is worse than an obvious gap because it is
+ * trusted.
+ *
+ * Read from the route rather than kept in a store: a reload, or a second device
+ * opening the same URL, then lands on the same table instead of a blank order.
+ */
+const route = useRoute()
+
+const tableId = computed(() => (route.query.table as string) || '')
+const tableNumber = computed(() => (route.query.number as string) || '')
+/** Empty for a free table — one is opened on the first sale. See `sessionFor`. */
+const sessionId = ref<string>((route.query.session as string) || '')
+
+/**
+ * The session to hang this order on, opening one if the table is free.
+ *
+ * Seating and ordering are one gesture at a till: nobody taps "seat this party"
+ * and then "take their order". Opening it on the first SALE rather than on the
+ * tap matters too — walking over to check a bill should not seat a party that
+ * does not exist.
+ */
+async function sessionFor(): Promise<string | null> {
+  if (!tableId.value) return null
+  if (sessionId.value) return sessionId.value
+
+  const opened = await api.post<{ id: string }>('/floor/sessions/', {
+    table: tableId.value,
+    guest_count: 1,
+  })
+  sessionId.value = opened.id
+  return opened.id
+}
+
+/**
+ * Locked once the bill has a line on it — see the note on ORDER_TYPES.
+ *
+ * `?.length` because this is a COMPUTED: an order that arrives without an
+ * `items` array makes it throw, and a throwing computed does not fail politely —
+ * Vue reports "Unhandled error during component update" and the screen stops
+ * updating. Guarding the read costs a character; not guarding it costs the till.
+ */
+const typeLocked = computed(() => (pos.order?.items?.length ?? 0) > 0)
 
 async function startNew() {
   pos.clear()
-  await pos.openOrder({ order_type: orderType.value })
+  await pos.openOrder({
+    order_type: orderType.value,
+    table_session: await sessionFor(),
+  })
 }
 
 function chooseType(value: string) {
@@ -95,7 +145,9 @@ function isChannelPriced(product: Product): boolean {
 }
 
 async function tap(product: Product) {
-  if (!pos.order) await pos.openOrder({ order_type: orderType.value })
+  if (!pos.order) {
+    await pos.openOrder({ order_type: orderType.value, table_session: await sessionFor() })
+  }
   if (!pos.order) return
 
   if (needsChoice(product)) {
@@ -116,6 +168,21 @@ onMounted(async () => {
     <!-- Menu -->
     <section class="menu">
       <div class="menu-top">
+        <!--
+          Which table this bill is for.
+
+          The single most important thing on this screen once it is reached from
+          the floor, and it was not on it at all: a cashier ringing items had no
+          confirmation the order was attached to the table they tapped. A wrong
+          bill is discovered at closing, when nobody can reconstruct it.
+
+          A link back rather than a label, because the other thing somebody wants
+          here is the room again.
+        -->
+        <RouterLink v-if="tableNumber" to="/pos" class="for-table">
+          طاولة {{ tableNumber }}
+        </RouterLink>
+
         <div class="types">
           <button
             v-for="option in ORDER_TYPES"
@@ -301,6 +368,18 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 0.6rem;
   flex-wrap: wrap;
+}
+
+/* Prominent on purpose: it is the answer to "whose bill is this". */
+.for-table {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  background: var(--brand-700);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
 }
 
 .types {
