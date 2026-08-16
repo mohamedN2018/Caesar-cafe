@@ -459,6 +459,20 @@ function walkIn() {
   border-top-width: 3px;
   border-top-color: var(--gold-500);
 }
+/*
+  A bar seat is a stool at a counter, not a table. Drawn as a narrow rounded
+  slab against one edge so it reads as "along the bar" rather than "a small
+  square table that happens to be there".
+
+  This was missing on the first pass — the enum has five shapes and I wrote four,
+  so the three BAR seats in the seeded room rendered as unstyled rectangles. The
+  test below now fails if a sixth is ever added without a rule.
+*/
+.shape-bar .table-shape {
+  inset: 1.1rem 0.25rem 0.25rem;
+  border-radius: 0.4rem;
+  border-top: 3px solid var(--gold-600);
+}
 .table-card:active {
   transform: scale(0.96);
 }

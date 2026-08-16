@@ -2444,6 +2444,104 @@ expect to take effect.
 
 ---
 
+## The till opens on the room ✅ COMPLETE (2026-08-16)
+
+### The first question a café asks
+
+The POS landed on the product board, so the first thing it asked was "what are you
+selling?" That is the second question. In table service the first is always "who is
+this for?", and answering it late is how a round of coffees lands on the wrong bill
+and is discovered at closing.
+
+`/pos` is the floor now. Tap table 2, the order screen opens carrying table 2.
+
+### The data had been there the whole time
+
+`pos_x`, `pos_y`, `span_x`, `span_y`, `shape` and `rotation` have been in
+`/floor/status/` since the floor module was built — under `test_floor_geometry.py`
+in CI the entire time — and **nothing had ever drawn them**. Not the till, and not
+the admin's own `FloorPlanView`, which is also a sorted list. `TableShape`'s
+docstring even says "the floor view draws the room rather than a grid of squares".
+The data was right, the guard was green, and no one had looked.
+
+No backend work was needed for any of this, including `order_count` and
+`total_due` — the till just never asked.
+
+### Two things the audit caught, one of them mine
+
+Before building more, the write endpoints in the generated schema were
+cross-referenced against the shipped frontend. **113 write endpoints, one with no
+caller**: `renew`. So `regenerate-key` was the exception rather than the pattern,
+and the screens are in better shape than the `set-active` hunch suggested. Worth
+having checked instead of assuming — the assumption would have produced a week of
+"adding" buttons that already existed.
+
+`renew` is wired. An expired licence locks every till on it, so the remedy has to
+be findable at the moment it happens rather than a call to whoever has shell
+access. It asks for the date rather than defaulting to a year: a default is a
+guess about somebody's commercial terms, and a wrong expiry is a till that stops
+on a day nobody expected.
+
+**And the audit caught my own mistake.** `FloorPlanView` records why a drawn room
+was removed once before — *"the tables were the size the layout dictated rather
+than the size their information needed"* — and I had walked straight back into it.
+The inside room is nine columns; at a 5.5rem minimum that is 792px before anything
+else, and I had put six lines of text in each 88px cell.
+
+The plan stays, because a waiter's question is spatial in a way a manager's is
+not — which is also why **the admin screen remains a ranked list and should**. But
+three lines fit a table-sized cell, not six. Number, occupancy and money-or-status
+always; order count, seated time and waiter appear at 1280px and up. Nothing is
+lost: `summary()` puts the whole table in the title, which is what a screen reader
+gets anyway.
+
+### A fifth shape nobody was drawing
+
+`TableShape` has five members and the plan was written with four, so the three BAR
+seats in the seeded room rendered as unstyled rectangles — present, tappable, and
+not looking like anything.
+
+Nothing catches that on its own: the enum is Python, the drawing is CSS, and no
+type system spans the two. A sixth would land the same way and be noticed by
+whoever was standing at the bar. `test_floor_shapes.py` now compares them in both
+directions — a shape with no rule fails, and a rule for a shape the model dropped
+fails too, because dead CSS reads as support for something the product cannot
+produce.
+
+### Navy and gold
+
+The brand moved from burgundy to navy, gold kept, applied to the web tokens and
+the desktop palette together because `test_brand_parity.py` compares them.
+
+The ramp was computed rather than picked: `--brand-700` carries white button text
+and the whole rail, so a new hue either clears the same bars or the interface
+drops below AA everywhere at once. White on navy 12.27:1, the 62% on-brand faint
+5.72:1 at 12px, **gold on navy 4.84:1 against burgundy's 3.6** — the pairing that
+was asked for is also the stronger one.
+
+The gold was defined and barely deployed: seven files. The ramp is warmer now
+(amber-leaning, which is what separates metallic gold from mustard at the same
+lightness), `gold-500` deliberately unchanged because everything already refers
+to it.
+
+**The focus ring was `brand-700`.** Navy. On the page that is fine; on the navy
+rail it is navy on navy — the focus indicator vanishing exactly where somebody
+tabbing through the sidebar needs it. Not cosmetic: a keyboard user losing their
+place. It is gold now, and there are two of them because one ring cannot serve
+both grounds — WCAG 2.2 wants 3:1 against the surround, and `gold-500` is 2.4:1
+on white. Light grounds get gold-600 (3.30:1), brand grounds gold-300 (7.49:1).
+
+One token, exposed as a Tailwind colour, which is also the cheapest way to put the
+gold on every interactive element in the product at once.
+
+### Verified
+
+frontend 132 → 148 passing. Both UI guards earned their keep again: the token
+guard caught `var(--line)` (the token is `--border`), the icon guard caught a
+`✓` in a button label. Backend gains `test_floor_shapes.py`.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the
