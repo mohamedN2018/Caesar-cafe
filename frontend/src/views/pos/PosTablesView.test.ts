@@ -185,3 +185,78 @@ describe('when the floor cannot be refreshed', () => {
     expect(wrapper.text()).toContain('لا توجد طاولات')
   })
 })
+
+describe('the plan is drawn, not listed', () => {
+  it('places a table where the floor plan puts it', async () => {
+    /**
+     * `pos_x`/`pos_y` had been in the payload — under a CI geometry guard — since
+     * the floor module was built, and nothing drew them. A list tells you a table
+     * exists; a plan tells you which one the customer is waving from.
+     */
+    get.mockResolvedValue({ tables: [table({ pos_x: 3, pos_y: 1, span_x: 2, span_y: 1 })] })
+
+    const wrapper = await mountTables()
+
+    const style = wrapper.find('.table-card').attributes('style') ?? ''
+    expect(style).toContain('grid-column: 4 / span 2')
+    expect(style).toContain('grid-row: 2 / span 1')
+  })
+
+  it('gives each table its own shape', async () => {
+    get.mockResolvedValue({
+      tables: [table({ shape: 'ROUND' }), table({ table_id: 't2', number: '5', shape: 'BOOTH' })],
+    })
+
+    const wrapper = await mountTables()
+    const classes = wrapper.findAll('.table-card').map((c) => c.classes())
+
+    expect(classes[0]).toContain('shape-round')
+    expect(classes[1]).toContain('shape-booth')
+  })
+
+  it('rotates the furniture but never the number', async () => {
+    // A number turned 15 degrees is a number you tilt your head to read, and
+    // reading at a glance is the entire point of a plan.
+    get.mockResolvedValue({ tables: [table({ rotation: 15 })] })
+
+    const wrapper = await mountTables()
+
+    expect(wrapper.find('.table-shape').attributes('style')).toContain('rotate(15deg)')
+    expect(wrapper.find('.table-number').attributes('style') ?? '').not.toContain('rotate')
+  })
+
+  it('draws each area as its own room', async () => {
+    // Two rooms have two coordinate systems. Overlaying them puts table 11 on
+    // top of table 1.
+    get.mockResolvedValue({
+      tables: [table(), table({ table_id: 't2', number: '11', area: 'التراس' })],
+    })
+
+    const wrapper = await mountTables()
+
+    expect(wrapper.findAll('.plan-grid')).toHaveLength(2)
+  })
+
+  it('keeps the full detail reachable when the cell is too small to show it', async () => {
+    /**
+     * The failure `FloorPlanView` recorded when a drawn room was removed before:
+     * tables ended up the size the layout dictated rather than the size their
+     * information needed. Nine columns on a tablet is ~88px a table — three
+     * lines, not six. The rest lives in the title, which is also what a screen
+     * reader reads, so nothing is lost.
+     */
+    get.mockResolvedValue({
+      tables: [
+        table({ session_id: 's1', seated_count: 3, order_count: 2, total_due: '210.00', seated_minutes: 25, waiter: 'يوسف' }),
+      ],
+    })
+
+    const wrapper = await mountTables()
+    const title = wrapper.find('.table-card').attributes('title') ?? ''
+
+    expect(title).toContain('طاولة 3')
+    expect(title).toContain('210.00')
+    expect(title).toContain('يوسف')
+    expect(title).toContain('منذ')
+  })
+})

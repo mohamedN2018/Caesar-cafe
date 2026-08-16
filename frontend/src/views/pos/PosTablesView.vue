@@ -172,6 +172,26 @@ function minutes(value: number | null): string {
 }
 
 /**
+ * Everything about a table, in one line.
+ *
+ * The plan shows three facts per table because that is what fits in a cell the
+ * size of a table; the rest is here, on hover and to a screen reader, so the
+ * detail is never actually lost — only kept out of a space that cannot hold it.
+ */
+function summary(table: FloorTable): string {
+  const bits = [`طاولة ${table.number}`, table.area, `${table.seats} مقاعد`]
+  if (isBusy(table)) {
+    bits.push(`${table.seated_count} جالسين`)
+    bits.push(table.order_count ? `${table.order_count} طلب · ${money(table.total_due)}` : 'لم يطلب بعد')
+    if (table.seated_minutes !== null) bits.push(`منذ ${minutes(table.seated_minutes)}`)
+    if (table.waiter) bits.push(table.waiter)
+  } else {
+    bits.push('متاحة')
+  }
+  return bits.join(' · ')
+}
+
+/**
  * Tapping a table goes to the order screen carrying the table with it.
  *
  * The table id travels in the query rather than the board keeping it in memory,
@@ -272,6 +292,7 @@ function walkIn() {
               { 'table-busy': isBusy(table), 'table-neglected': isNeglected(table) },
             ]"
             :style="place(table)"
+            :title="summary(table)"
             @click="open(table)"
           >
             <!-- The shape carries the rotation; the label never does. -->
@@ -288,16 +309,16 @@ function walkIn() {
               <span v-if="isBusy(table)" class="table-state">
                 <span v-if="table.order_count" class="table-due">{{ money(table.total_due) }}</span>
                 <span v-else class="table-noorder">لم يطلب بعد</span>
-                <span v-if="table.order_count" class="table-orders">
+                <span v-if="table.order_count" class="table-orders table-detail">
                   {{ table.order_count }} طلب
                 </span>
-                <span v-if="table.seated_minutes !== null" class="table-time">
+                <span v-if="table.seated_minutes !== null" class="table-time table-detail">
                   {{ minutes(table.seated_minutes) }}
                 </span>
               </span>
               <span v-else class="table-free">متاحة</span>
 
-              <span v-if="table.waiter" class="table-waiter">{{ table.waiter }}</span>
+              <span v-if="table.waiter" class="table-waiter table-detail">{{ table.waiter }}</span>
             </span>
           </button>
         </div>
@@ -490,6 +511,26 @@ function walkIn() {
 .table-orders {
   font-size: 0.7rem;
   color: var(--ink-muted);
+}
+
+/*
+  Secondary detail, hidden until the screen is wide enough to hold it.
+
+  `FloorPlanView` recorded why a drawn room was removed once before: the tables
+  ended up the size the layout dictated rather than the size their information
+  needed. The inside room is nine columns wide, so on a 10" tablet each table is
+  about 88px — room for three lines, not six. These are the other three.
+
+  Nothing is lost: `summary()` puts the whole table in the title, which is also
+  what a screen reader reads.
+*/
+.table-detail {
+  display: none;
+}
+@media (min-width: 1280px) {
+  .table-detail {
+    display: block;
+  }
 }
 .table-time {
   font-size: 0.7rem;

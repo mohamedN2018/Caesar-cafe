@@ -111,18 +111,50 @@ async function load() {
   }
 }
 
-async function act(license: License, action: string) {
+async function act(license: License, action: string, body: Record<string, unknown> = {}) {
   error.value = ''
   try {
     const result = await api.post<{ license_key?: string }>(
       `/licensing/licenses/${license.id}/${action}/`,
-      {},
+      body,
     )
     if (result.license_key) revealedKey.value = result.license_key
     await load()
   } catch (caught) {
     error.value = caught instanceof ApiError ? caught.message : 'تعذر تنفيذ الإجراء'
   }
+}
+
+/**
+ * Renewal — the one licence action the backend had and no screen reached.
+ *
+ * An expired licence locks every till on it, so the remedy needs to be a button
+ * an owner can find at the moment it happens, not a call to whoever has shell
+ * access. `renew` also revives an EXPIRED or PENDING licence to ACTIVE, which is
+ * exactly the state somebody is in when they come looking for it.
+ *
+ * The date is asked for rather than assumed. A default of "a year from today"
+ * would be a guess about somebody's commercial terms, and a wrong expiry is a
+ * till that stops on a day nobody expected.
+ */
+async function renew(license: License) {
+  const current = license.expires_at ? license.expires_at.slice(0, 10) : 'مدى الحياة'
+  const answer = window.prompt(
+    `تجديد ترخيص «${license.customer_name || license.customer_email}»\n\n` +
+      `ينتهي حالياً: ${current}\n` +
+      'اكتب تاريخ الانتهاء الجديد بالصيغة YYYY-MM-DD:',
+    license.expires_at ? license.expires_at.slice(0, 10) : '',
+  )
+  if (!answer) return
+
+  // Checked here as well as on the server: a malformed date would come back as a
+  // field error the operator has to decode, and the format is the whole input.
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(answer.trim())) {
+    error.value = 'صيغة التاريخ غير صحيحة — استخدم YYYY-MM-DD.'
+    return
+  }
+
+  await act(license, 'renew', { expires_at: answer.trim() })
 }
 
 /**
@@ -235,6 +267,15 @@ onMounted(load)
                   @click="regenerate(license)"
                 >
                   مفتاح جديد
+                </UiButton>
+
+                <!--
+                  Renewal. Also revives an expired or pending licence to active,
+                  which is the state somebody is in when they come looking for
+                  this button.
+                -->
+                <UiButton variant="ghost" size="sm" @click="renew(license)">
+                  تجديد
                 </UiButton>
               </template>
             </div>
