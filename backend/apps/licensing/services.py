@@ -621,11 +621,35 @@ def allocate_invoice_block(device: Device, *, size: int = INVOICE_BLOCK_SIZE) ->
     the first.
     """
     from apps.organizations.models import Branch
+    from apps.payments.models import Invoice
 
     Branch.objects.select_for_update().get(pk=device.branch_id)
 
-    highest = InvoiceBlock.objects.filter(branch_id=device.branch_id).order_by("-range_end").first()
-    start = (highest.range_end + 1) if highest else 1
+    highest_block = (
+        InvoiceBlock.objects.filter(branch_id=device.branch_id).order_by("-range_end").first()
+    )
+
+    # Numbers issued WITHOUT a block count too.
+    #
+    # `_next_invoice_number` has two routes: a device consumes from its block, and
+    # an order with no device takes `max(invoice_number) + 1` for the branch. This
+    # function used to consider only the first, so a branch that had sold over the
+    # web — or been seeded — and then activated its first till was handed a block
+    # starting at 1, and the first payment on that till died on
+    # `uniq_invoice_serial`. A 500 at the moment of taking money, and a
+    # self-concealing one: the transaction rolls back, the offending block
+    # vanishes, and the table looks innocent afterwards.
+    #
+    # A block is a promise that a range is untouched. It cannot be made against
+    # half the evidence.
+    highest_invoice = (
+        Invoice.objects.filter(order__branch_id=device.branch_id)
+        .order_by("-invoice_number")
+        .values_list("invoice_number", flat=True)
+        .first()
+    )
+
+    start = max(highest_block.range_end if highest_block else 0, highest_invoice or 0) + 1
 
     return InvoiceBlock.objects.create(
         branch=device.branch,
