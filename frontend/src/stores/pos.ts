@@ -247,6 +247,14 @@ export const usePosStore = defineStore('pos', () => {
           order_id: newId(),
           order_type: payload.order_type ?? 'DINE_IN',
           table_session: payload.table_session ?? null,
+          // The drawer this till is showing, said out loud.
+          //
+          // The server can infer it from a registered device, but a browser has
+          // none — so a web login had no shift and every sale came back
+          // "يجب فتح وردية قبل البيع" while the header showed a shift open.
+          // Naming it also settles the case the server cannot: with two drawers
+          // open in one branch, the sale belongs to the one on screen.
+          shift: shift.value?.id ?? null,
         }),
       'تعذّر فتح الطلب.',
     )

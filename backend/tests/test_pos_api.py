@@ -110,6 +110,61 @@ class TestShiftEndpoints:
         assert response.status_code == 400
         assert response.json()["code"] == "SHIFT_REQUIRED"
 
+    def test_a_browser_till_sells_on_the_branch_shift(self, authed, cashier, branch, pos) -> None:
+        """
+        The disagreement that blocked every web sale.
+
+        `/shifts/current/` answers by BRANCH and narrows to the device only when
+        there is one — so a browser login saw the open shift and the header said
+        "وردية مفتوحة". Opening an order resolved the shift from the DEVICE only,
+        found none, and refused with "يجب فتح وردية قبل البيع".
+
+        Two views, two definitions of "the current shift", and a cashier caught
+        between them with no way to sell and nothing on screen explaining why.
+
+        `pos` opens the branch's shift; this client is the same person in a
+        browser, with no device.
+        """
+        web = authed(cashier, branch=branch, kind="WEB")
+
+        current = web.get("/api/v1/shifts/current/").json()["data"]["shift"]
+        assert current is not None, "the screen shows a shift open"
+
+        response = web.post("/api/v1/orders/", {"order_type": "DINE_IN"}, format="json")
+
+        assert response.status_code == 201, response.json()
+        assert response.json()["data"]["shift"] == current["id"], "sold onto the shift on screen"
+
+    def test_two_open_drawers_will_not_be_guessed_between(
+        self, authed, cashier, make_user, branch, pos
+    ) -> None:
+        """
+        With a second drawer open, a browser sale must NAME its shift.
+
+        Picking one is not a smaller error than refusing: a sale on the wrong
+        drawer is found at close, as a difference nobody can explain, in the one
+        record whose whole purpose is being reconcilable.
+        """
+        second = make_user(email="till2@caesar.test", role="CASHIER", branch=branch)
+        other = authed(second, branch=branch, kind="POS", device_id=uuid.uuid4())
+        opened = other.post("/api/v1/shifts/open/", {"opening_cash": "300"}, format="json")
+        assert opened.status_code == 201, opened.json()
+
+        web = authed(cashier, branch=branch, kind="WEB")
+        refused = web.post("/api/v1/orders/", {"order_type": "DINE_IN"}, format="json")
+
+        assert refused.status_code == 400
+        assert refused.json()["code"] == "SHIFT_AMBIGUOUS"
+
+        # Naming it is the way through — and the way the SPA calls it.
+        named = web.post(
+            "/api/v1/orders/",
+            {"order_type": "DINE_IN", "shift": str(pos.shift_id)},
+            format="json",
+        )
+        assert named.status_code == 201, named.json()
+        assert named.json()["data"]["shift"] == str(pos.shift_id)
+
     def test_cash_movement_shifts_the_expectation(self, pos) -> None:
         response = pos.post(
             f"/api/v1/shifts/{pos.shift_id}/cash-movements/",

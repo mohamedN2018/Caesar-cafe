@@ -142,6 +142,21 @@ def _resolve_shift(request: Request, shift_id):
 
     Without a shift, a sale belongs to nobody and the cash count at close has
     nothing to reconcile against.
+
+    Three ways in, most explicit first:
+
+      1. The caller names the shift. The till knows which drawer it is on.
+      2. A registered DEVICE — its own open shift, and no other.
+      3. No device at all: a browser till. This is the case that was missing, and
+         it refused **every** sale on a web login. `/shifts/current/` answers by
+         BRANCH and narrows to the device only when there is one, so the screen
+         showed "وردية مفتوحة" and then the sale came back
+         "يجب فتح وردية قبل البيع" — the two views disagreed about what the
+         current shift is, and the cashier was caught between them.
+
+    A browser sale only resolves when exactly ONE shift is open in the branch. With
+    two drawers open, guessing which one a sale belongs to is the error that makes
+    the close-out unreconcilable — the sale must say which, and refusing says so.
     """
     from apps.configuration import resolver
     from apps.configuration.resolver import ScopeContext
@@ -149,14 +164,28 @@ def _resolve_shift(request: Request, shift_id):
 
     principal = auth_context(request)
     shift = None
+    ambiguous = False
 
     if shift_id:
         shift = Shift.objects.filter(id=shift_id, branch_id=principal.branch_id).first()
     elif principal.device_id:
         shift = Shift.objects.filter(device_id=principal.device_id, status=ShiftStatus.OPEN).first()
+    else:
+        open_in_branch = list(
+            Shift.objects.filter(branch_id=principal.branch_id, status=ShiftStatus.OPEN)[:2]
+        )
+        if len(open_in_branch) == 1:
+            shift = open_in_branch[0]
+        elif len(open_in_branch) > 1:
+            ambiguous = True
 
     context = ScopeContext(organization_id=principal.organization_id, branch_id=principal.branch_id)
     if shift is None and resolver.get("shifts.required_to_sell", context):
+        if ambiguous:
+            raise AppError(
+                "أكثر من وردية مفتوحة في الفرع — حدِّد الوردية قبل البيع",
+                code="SHIFT_AMBIGUOUS",
+            )
         raise AppError("يجب فتح وردية قبل البيع", code="SHIFT_REQUIRED")
     return shift
 

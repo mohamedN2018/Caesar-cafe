@@ -332,4 +332,36 @@ describe('the current shift', () => {
 
     expect(pos.shift).toBeNull()
   })
+
+  it('sells onto the drawer the screen is showing', async () => {
+    /**
+     * The order used to go up with no shift at all. The server could infer one
+     * from a registered DEVICE — but a browser has none, so every web sale came
+     * back "يجب فتح وردية قبل البيع" while the header showed a shift open: two
+     * views with two definitions of "the current shift".
+     *
+     * Naming it also settles what the server cannot. With two drawers open in a
+     * branch, the sale belongs to the one on screen, not to whichever row the
+     * database returned first.
+     */
+    get.mockResolvedValue({ shift: { id: 's1', opening_cash: '500.00', status: 'OPEN' } })
+    post.mockResolvedValue(order())
+
+    const pos = usePosStore()
+    await pos.loadShift()
+    await pos.openOrder({ order_type: 'DINE_IN', table_session: 'sess-1' })
+
+    expect(post).toHaveBeenCalledWith('/orders/', expect.objectContaining({ shift: 's1' }))
+  })
+
+  it('leaves the shift to the server when none is loaded', async () => {
+    // Null, not omitted: with one drawer open the server resolves it, and a
+    // guessed id would be worse than no id.
+    post.mockResolvedValue(order())
+
+    const pos = usePosStore()
+    await pos.openOrder({ order_type: 'TAKEAWAY' })
+
+    expect(post).toHaveBeenCalledWith('/orders/', expect.objectContaining({ shift: null }))
+  })
 })

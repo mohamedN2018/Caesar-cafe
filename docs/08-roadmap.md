@@ -2700,6 +2700,68 @@ backend 1175 passed; frontend 160 → 171.
 
 ---
 
+## Two views, two definitions of "the current shift" ✅ COMPLETE (2026-08-16)
+
+### The audit that came first
+
+The blank floor screen raised a question worth answering properly: how many OTHER
+screens read a shape the server does not send? A unit test cannot answer it — the
+mocks are written by the same hand as the bug.
+
+So the running server was asked. Fifty-one endpoints, every GET the SPA makes, each
+one called with a real token and compared against what the source says it expects.
+**All fifty-one match**, and the audit is kept as `tools/api_shape_audit.py` so the
+question can be re-asked in a minute rather than by reading every view. The floor screen was the only one of its family.
+
+### Then the till refused to sell
+
+Walking the whole journey against the live server — seat a party, ring an item,
+pay, read the invoice back — stopped at the second step: `SHIFT_REQUIRED`,
+"يجب فتح وردية قبل البيع", on a branch with a shift **open**.
+
+Two views disagreed about what the current shift is:
+
+  * `/shifts/current/` filters by BRANCH and narrows to the device only when there
+    is one. A browser login sees the branch's open shift, and the till header says
+    so.
+  * `_resolve_shift` on a new order looked at the DEVICE only. A browser has none,
+    so it found nothing and refused.
+
+The cashier was caught between them: a screen saying a shift is open, and every
+sale coming back saying it is not. Nothing on either screen could explain it,
+because each was internally consistent — the contradiction only exists between
+them.
+
+### The fix, and the case it refuses
+
+Three ways in, most explicit first: the caller names the shift; a registered device
+uses its own; a browser falls back to the branch's open shift — **only when exactly
+one is open.**
+
+With two drawers open, it refuses with `SHIFT_AMBIGUOUS` and says so in words.
+Picking one is not the smaller error: a sale on the wrong drawer is discovered at
+close, as a difference nobody can explain, in the one record whose entire purpose
+is being reconcilable.
+
+And the SPA now sends the shift it is displaying. That settles what the server
+cannot — with two drawers open, the sale belongs to the one on screen, not to
+whichever row came back first.
+
+### Verified
+
+Both tests proven by reverting the fix: with the branch fallback removed, the
+browser sale fails and the ambiguity case fails. A test that cannot fail protects
+nothing.
+
+Live, end to end on the running stack: 16 tables → seat a party of 3 on free table
+12 → free drops to 6 → open the order → add the item as an EVENT → total 79.80 →
+pay → **PAID**, invoice `MB-2026-000059` issued → close the session → free back to
+7. Every session the run opened, it closed.
+
+backend 1177 passed; frontend 171 → 173.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the
