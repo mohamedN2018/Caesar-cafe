@@ -289,6 +289,45 @@ describe('the table the floor sent with the order', () => {
     expect(post).toHaveBeenCalledWith('/floor/sessions/', { table: 't1', guest_count: 1 })
   })
 
+  it('seats the number of people the floor screen actually counted', async () => {
+    /**
+     * This was hard-coded to one. A party of four opened a session claiming a
+     * single guest, so the board reported "1 من 4" and the room read emptier than
+     * it was — a floor screen quietly lying about the only thing it exists to say.
+     */
+    routeQuery = { table: 't1', number: '7', guests: '4' }
+    post.mockImplementation((url: string) =>
+      url === '/floor/sessions/'
+        ? Promise.resolve({ id: 'new-session' })
+        : Promise.resolve({ id: 'order-1', items: [], status: 'OPEN' }),
+    )
+
+    const wrapper = await mountBoard()
+    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
+    await fresh!.trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(post).toHaveBeenCalledWith('/floor/sessions/', { table: 't1', guest_count: 4 })
+  })
+
+  it('falls back to one when nobody was asked', async () => {
+    // A URL typed by hand, or an older link. One guest is wrong less often than
+    // refusing to open the session at all.
+    routeQuery = { table: 't1', number: '7', guests: 'abc' }
+    post.mockImplementation((url: string) =>
+      url === '/floor/sessions/'
+        ? Promise.resolve({ id: 'new-session' })
+        : Promise.resolve({ id: 'order-1', items: [], status: 'OPEN' }),
+    )
+
+    const wrapper = await mountBoard()
+    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
+    await fresh!.trigger('click')
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(post).toHaveBeenCalledWith('/floor/sessions/', { table: 't1', guest_count: 1 })
+  })
+
   it('reuses the session a seated table already has', async () => {
     // A party already sitting must not be seated twice — that is two bills for
     // one table, which is exactly what this whole flow exists to prevent.

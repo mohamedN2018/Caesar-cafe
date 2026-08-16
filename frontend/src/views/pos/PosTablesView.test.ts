@@ -51,10 +51,16 @@ async function mountTables() {
   return wrapper
 }
 
+/** Tap a party size in the sheet a free table opens. */
+async function pickGuests(wrapper: { findAll: (s: string) => { text: () => string; trigger: (e: string) => Promise<void> }[] }, n: string) {
+  const choice = wrapper.findAll('.guest-choice').find((b) => b.text() === n)
+  await choice!.trigger('click')
+}
+
 beforeEach(() => {
   get.mockReset()
   push.mockReset()
-  get.mockResolvedValue({ tables: [table()] })
+  get.mockResolvedValue([table()])
 })
 
 describe('the floor as the till’s landing screen', () => {
@@ -83,30 +89,146 @@ describe('the floor as the till’s landing screen', () => {
     const wrapper = await mountTables()
 
     await wrapper.find('.table-card').trigger('click')
+    await pickGuests(wrapper, '2')
 
     expect(push).toHaveBeenCalledWith({
       name: 'pos-order',
-      query: { table: 't1', session: undefined, number: '3' },
+      query: { table: 't1', session: undefined, number: '3', guests: '2' },
     })
   })
 
-  it('still allows selling without a table', async () => {
-    // Takeaway, delivery and the counter are not table service and must not be
-    // forced through a table that does not exist.
+  it('offers quick sell on the floor itself, not only in the tab bar', async () => {
+    /**
+     * A counter sale happens while somebody is standing at THIS screen. Takeaway,
+     * delivery and the till are not table service and must not be routed through
+     * a table that does not exist.
+     */
     const wrapper = await mountTables()
 
-    const walkIn = wrapper.findAll('button').find((b) => b.text().includes('سفري'))
+    const walkIn = wrapper.findAll('button').find((b) => b.text().includes('بيع سريع'))
     await walkIn!.trigger('click')
 
     expect(push).toHaveBeenCalledWith({ name: 'pos-order' })
+  })
+
+  it('counts the FREE tables, which is the number somebody is looking for', async () => {
+    /**
+     * The header counted occupied — the same arithmetic seen from the wrong end.
+     * Somebody standing at the door with a party of four is not counting the
+     * tables they cannot seat them at.
+     */
+    get.mockResolvedValue([
+        table(),
+        table({ table_id: 't2', number: '4' }),
+        table({ table_id: 't3', number: '5', session_id: 's1' }),
+      ])
+
+    const wrapper = await mountTables()
+
+    expect(wrapper.text()).toContain('2 فاضية')
+    expect(wrapper.text()).toContain('1 مشغولة')
+  })
+})
+
+describe('picking a table', () => {
+  it('says whether anyone is on it before anything is added', async () => {
+    /**
+     * Adding to a bill that already belongs to somebody is the mistake that
+     * surfaces at closing, when there is no way left to work out which items
+     * were whose. So the state is stated, not inferred from a fill colour.
+     */
+    get.mockResolvedValue([
+        table({
+          session_id: 's1',
+          seated_count: 3,
+          order_count: 2,
+          total_due: '210.00',
+          seated_minutes: 25,
+          waiter: 'يوسف',
+        }),
+      ])
+
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+
+    const sheet = wrapper.find('.picked')
+    expect(sheet.exists()).toBe(true)
+    expect(sheet.text()).toContain('عليها ناس')
+    expect(sheet.text()).toContain('210.00')
+    expect(sheet.text()).toContain('يوسف')
+    expect(push).not.toHaveBeenCalled()
+  })
+
+  it('adds to the session already open rather than starting a second one', async () => {
+    get.mockResolvedValue([table({ session_id: 's1', seated_count: 3, order_count: 2 })])
+
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+    const add = wrapper.findAll('button').find((b) => b.text().includes('إضافة إلى'))
+    await add!.trigger('click')
+
+    expect(push).toHaveBeenCalledWith({
+      name: 'pos-order',
+      // No `guests`: the party was counted when they sat, and re-sending it here
+      // would silently rewrite a number somebody already took.
+      query: { table: 't1', session: 's1', number: '3', guests: undefined },
+    })
+  })
+
+  it('says a free table is free, and asks the one thing worth asking', async () => {
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+
+    const sheet = wrapper.find('.picked')
+    expect(sheet.text()).toContain('فاضية')
+    expect(sheet.text()).toContain('كم شخص؟')
+  })
+
+  it('records how many actually sat down', async () => {
+    /**
+     * The bug this closes: every session opened claiming ONE guest, so a party of
+     * four showed as "1 من 4" and the room read emptier than it was. One tap is
+     * the whole cost of the truth.
+     */
+    get.mockResolvedValue([table({ number: '7', seats: 6 })])
+
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+    await pickGuests(wrapper, '4')
+
+    expect(push).toHaveBeenCalledWith({
+      name: 'pos-order',
+      query: { table: 't1', session: undefined, number: '7', guests: '4' },
+    })
+  })
+
+  it('lets a party squeeze one more chair in than the table has', async () => {
+    // A picker that cannot express what happened sends the waiter to the wrong
+    // number rather than to the right one.
+    get.mockResolvedValue([table({ seats: 4 })])
+
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+
+    const offered = wrapper.findAll('.guest-choice').map((b) => b.text())
+    expect(offered).toEqual(['1', '2', '3', '4', '5'])
+  })
+
+  it('closes without seating anybody when cancelled', async () => {
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+
+    const cancel = wrapper.findAll('button').find((b) => b.text().includes('إلغاء'))
+    await cancel!.trigger('click')
+
+    expect(wrapper.find('.picked').exists()).toBe(false)
+    expect(push).not.toHaveBeenCalled()
   })
 })
 
 describe('what a table shows', () => {
   it('shows what is owed when the party has ordered', async () => {
-    get.mockResolvedValue({
-      tables: [table({ session_id: 's1', seated_count: 2, order_count: 2, total_due: '184.50' })],
-    })
+    get.mockResolvedValue([table({ session_id: 's1', seated_count: 2, order_count: 2, total_due: '184.50' })])
 
     const wrapper = await mountTables()
 
@@ -116,9 +238,7 @@ describe('what a table shows', () => {
 
   it('says so when a party is seated with nothing ordered', async () => {
     // A blank where a total goes reads as zero owed; it needs to say why.
-    get.mockResolvedValue({
-      tables: [table({ session_id: 's1', seated_count: 2, order_count: 0, seated_minutes: 3 })],
-    })
+    get.mockResolvedValue([table({ session_id: 's1', seated_count: 2, order_count: 0, seated_minutes: 3 })])
 
     const wrapper = await mountTables()
 
@@ -131,9 +251,7 @@ describe('what a table shows', () => {
      * taken is a table somebody has forgotten, and it is the difference between
      * a slow service and a walked customer.
      */
-    get.mockResolvedValue({
-      tables: [table({ session_id: 's1', order_count: 0, seated_minutes: 14 })],
-    })
+    get.mockResolvedValue([table({ session_id: 's1', order_count: 0, seated_minutes: 14 })])
 
     const wrapper = await mountTables()
 
@@ -141,9 +259,7 @@ describe('what a table shows', () => {
   })
 
   it('does not flag a table that has ordered, however long it has sat', async () => {
-    get.mockResolvedValue({
-      tables: [table({ session_id: 's1', order_count: 3, seated_minutes: 90 })],
-    })
+    get.mockResolvedValue([table({ session_id: 's1', order_count: 3, seated_minutes: 90 })])
 
     const wrapper = await mountTables()
 
@@ -153,12 +269,43 @@ describe('what a table shows', () => {
   it('marks free and busy by more than colour', async () => {
     // The room is read at a glance by people who may not separate two hues, so
     // the state is in the words as well as the fill.
-    get.mockResolvedValue({ tables: [table(), table({ table_id: 't2', number: '4', session_id: 's1', order_count: 1, total_due: '50.00' })] })
+    get.mockResolvedValue([table(), table({ table_id: 't2', number: '4', session_id: 's1', order_count: 1, total_due: '50.00' })])
 
     const wrapper = await mountTables()
 
     expect(wrapper.text()).toContain('متاحة')
     expect(wrapper.text()).toContain('50.00')
+  })
+})
+
+describe('the shape the server actually sends', () => {
+  /**
+   * `/floor/status/` answers with a bare ARRAY — the client strips the
+   * `{success, data}` envelope, so `data` IS the list. This screen read
+   * `payload.tables`, which is `undefined` against the real server: a full room
+   * came back and rendered as "لا توجد طاولات معرَّفة".
+   *
+   * The old tests agreed with the mistake, because they mocked the shape the
+   * CODE expected rather than the shape the SERVER sends. A whole screen was
+   * blank in production and green in CI. Every mock in this file is now the
+   * array, and these two say so out loud.
+   */
+  it('renders the room from a bare array', async () => {
+    get.mockResolvedValue([table({ number: '9' })])
+
+    const wrapper = await mountTables()
+
+    expect(wrapper.find('.table-card').exists()).toBe(true)
+    expect(wrapper.find('.table-number').text()).toBe('9')
+  })
+
+  it('does not read a `tables` key that never arrives', async () => {
+    // The exact old bug, pinned: this payload must NOT produce a room.
+    get.mockResolvedValue({ tables: [table()] } as unknown as never)
+
+    const wrapper = await mountTables()
+
+    expect(wrapper.find('.table-card').exists()).toBe(false)
   })
 })
 
@@ -178,7 +325,7 @@ describe('when the floor cannot be refreshed', () => {
   })
 
   it('says the room is empty rather than pretending it is loading', async () => {
-    get.mockResolvedValue({ tables: [] })
+    get.mockResolvedValue([])
 
     const wrapper = await mountTables()
 
@@ -193,7 +340,7 @@ describe('the plan is drawn, not listed', () => {
      * the floor module was built, and nothing drew them. A list tells you a table
      * exists; a plan tells you which one the customer is waving from.
      */
-    get.mockResolvedValue({ tables: [table({ pos_x: 3, pos_y: 1, span_x: 2, span_y: 1 })] })
+    get.mockResolvedValue([table({ pos_x: 3, pos_y: 1, span_x: 2, span_y: 1 })])
 
     const wrapper = await mountTables()
 
@@ -203,9 +350,7 @@ describe('the plan is drawn, not listed', () => {
   })
 
   it('gives each table its own shape', async () => {
-    get.mockResolvedValue({
-      tables: [table({ shape: 'ROUND' }), table({ table_id: 't2', number: '5', shape: 'BOOTH' })],
-    })
+    get.mockResolvedValue([table({ shape: 'ROUND' }), table({ table_id: 't2', number: '5', shape: 'BOOTH' })])
 
     const wrapper = await mountTables()
     const classes = wrapper.findAll('.table-card').map((c) => c.classes())
@@ -217,7 +362,7 @@ describe('the plan is drawn, not listed', () => {
   it('rotates the furniture but never the number', async () => {
     // A number turned 15 degrees is a number you tilt your head to read, and
     // reading at a glance is the entire point of a plan.
-    get.mockResolvedValue({ tables: [table({ rotation: 15 })] })
+    get.mockResolvedValue([table({ rotation: 15 })])
 
     const wrapper = await mountTables()
 
@@ -228,9 +373,7 @@ describe('the plan is drawn, not listed', () => {
   it('draws each area as its own room', async () => {
     // Two rooms have two coordinate systems. Overlaying them puts table 11 on
     // top of table 1.
-    get.mockResolvedValue({
-      tables: [table(), table({ table_id: 't2', number: '11', area: 'التراس' })],
-    })
+    get.mockResolvedValue([table(), table({ table_id: 't2', number: '11', area: 'التراس' })])
 
     const wrapper = await mountTables()
 
@@ -245,11 +388,9 @@ describe('the plan is drawn, not listed', () => {
      * lines, not six. The rest lives in the title, which is also what a screen
      * reader reads, so nothing is lost.
      */
-    get.mockResolvedValue({
-      tables: [
+    get.mockResolvedValue([
         table({ session_id: 's1', seated_count: 3, order_count: 2, total_due: '210.00', seated_minutes: 25, waiter: 'يوسف' }),
-      ],
-    })
+      ])
 
     const wrapper = await mountTables()
     const title = wrapper.find('.table-card').attributes('title') ?? ''

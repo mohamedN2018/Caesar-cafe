@@ -72,6 +72,18 @@ const tableNumber = computed(() => (route.query.number as string) || '')
 const sessionId = ref<string>((route.query.session as string) || '')
 
 /**
+ * How many people sat down, as counted on the floor screen.
+ *
+ * Defaults to one only when nobody was asked. Hard-coding one here — which is
+ * what this did — made a party of four open a session claiming a single guest,
+ * so the floor board reported "1 من 4" and the room read emptier than it was.
+ */
+const guestCount = computed(() => {
+  const raw = Number(route.query.guests)
+  return Number.isFinite(raw) && raw > 0 ? Math.floor(raw) : 1
+})
+
+/**
  * The session to hang this order on, opening one if the table is free.
  *
  * Seating and ordering are one gesture at a till: nobody taps "seat this party"
@@ -85,7 +97,7 @@ async function sessionFor(): Promise<string | null> {
 
   const opened = await api.post<{ id: string }>('/floor/sessions/', {
     table: tableId.value,
-    guest_count: 1,
+    guest_count: guestCount.value,
   })
   sessionId.value = opened.id
   return opened.id

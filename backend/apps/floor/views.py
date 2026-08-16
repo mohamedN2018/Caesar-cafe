@@ -116,7 +116,11 @@ class FloorStatusView(APIView):
                     # The party, not the furniture. Two people at a six-top is a
                     # table that looks busy on a board and is mostly empty in the
                     # room, and only one of those numbers seats a walk-in.
-                    "seated_count": min(session.guest_count, table.seats) if session else 0,
+                    #
+                    # Not capped at `seats`: parties squeeze an extra chair in,
+                    # and a five rendered as "4 من 4" hides the one case where
+                    # the difference matters.
+                    "seated_count": session.guest_count if session else 0,
                     "status": table.status,
                     "pos_x": table.pos_x,
                     "pos_y": table.pos_y,

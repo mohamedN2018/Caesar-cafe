@@ -97,9 +97,13 @@ class Table(BaseModel, SoftDeletableModel):
         a table that looks busy on a status board and is mostly empty in the
         room, and only one of those two numbers tells a waiter where to seat a
         walk-in.
+
+        Reported as counted, NOT capped at `seats`. Parties do squeeze an extra
+        chair in, and a five that renders as "4 من 4" hides the one case where
+        the difference matters — the table nobody can add a sixth to.
         """
         session = self.open_session
-        return min(session.guest_count, self.seats) if session else 0
+        return session.guest_count if session else 0
 
 
 class TableSession(BaseModel):

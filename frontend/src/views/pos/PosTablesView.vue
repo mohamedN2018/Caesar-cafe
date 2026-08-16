@@ -70,8 +70,16 @@ let timer: ReturnType<typeof setInterval> | undefined
 async function load(showSpinner = false) {
   if (showSpinner) loading.value = true
   try {
-    const payload = await api.get<{ tables: FloorTable[] }>('/floor/status/')
-    tables.value = payload.tables ?? []
+    // `/floor/status/` answers with a bare ARRAY of tables — the client already
+    // strips the `{success, data}` envelope, so `data` IS the list.
+    //
+    // This read `payload.tables`, which is `undefined` against the real server:
+    // the room came back full and rendered as "لا توجد طاولات معرَّفة". The unit
+    // tests agreed with the mistake because they mocked the shape the code
+    // expected instead of the shape the server sends, so a whole screen was
+    // empty in production and green in CI. `FloorPlanView` had it right.
+    const payload = await api.get<FloorTable[]>('/floor/status/')
+    tables.value = Array.isArray(payload) ? payload : []
     error.value = ''
   } catch (exc) {
     // A refresh that fails leaves the last good board on screen rather than
@@ -152,6 +160,28 @@ function shapeClass(table: FloorTable): string {
 }
 
 const occupied = computed(() => tables.value.filter((t) => t.session_id).length)
+
+/**
+ * Free tables — the number a waiter is actually looking for.
+ *
+ * The header counted occupied, which is the same arithmetic seen from the wrong
+ * end: somebody standing at the door with a party of four is not counting the
+ * tables they cannot seat them at.
+ */
+const free = computed(() => tables.value.length - occupied.value)
+
+/**
+ * The table somebody just tapped, if any.
+ *
+ * One sheet, two jobs, because the two questions asked at this moment are the
+ * same shape. On a FREE table it asks how many sat down — a single tap that the
+ * old path skipped, and skipping it made every session claim one guest, so the
+ * board reported "1 من 4" for a party of four and the room read as emptier than
+ * it was. On an OCCUPIED table it shows what is already on the bill first,
+ * because adding to somebody else's tab is discovered at closing, when there is
+ * no way left to work out which items were whose.
+ */
+const picked = ref<FloorTable | null>(null)
 const owed = computed(() =>
   tables.value.reduce((sum, t) => sum + Number(t.total_due || 0), 0),
 )
@@ -191,20 +221,41 @@ function summary(table: FloorTable): string {
   return bits.join(' · ')
 }
 
+/** Tapping a table opens the sheet; the sheet decides what it is asking. */
+function pick(table: FloorTable) {
+  picked.value = table
+}
+
 /**
- * Tapping a table goes to the order screen carrying the table with it.
+ * How many people to offer, for a free table.
  *
- * The table id travels in the query rather than the board keeping it in memory,
- * so a reload — or a second device opening the same URL — lands on the same
- * table instead of on a blank order that belongs to nobody.
+ * Capped at the seats the table actually has plus one, because parties do squeeze
+ * an extra chair in and a picker that cannot express what happened sends the
+ * waiter to the wrong number rather than to the right one.
  */
-function open(table: FloorTable) {
+const guestChoices = computed(() => {
+  const seats = picked.value?.seats ?? 4
+  return Array.from({ length: Math.max(seats, 1) + 1 }, (_, i) => i + 1)
+})
+
+/**
+ * Go to the order screen carrying the table with it.
+ *
+ * Everything travels in the query rather than in this board's memory, so a reload
+ * — or a second device opening the same URL — lands on the same table instead of
+ * on a blank order that belongs to nobody. `guests` is only sent for a table with
+ * no session yet: it is what opens the session, and passing it for an occupied
+ * table would silently rewrite a party somebody already counted.
+ */
+function open(table: FloorTable, guests?: number) {
+  picked.value = null
   router.push({
     name: 'pos-order',
     query: {
       table: table.table_id,
       session: table.session_id ?? undefined,
       number: table.number,
+      guests: table.session_id ? undefined : String(guests ?? 1),
     },
   })
 }
@@ -222,14 +273,23 @@ function walkIn() {
         <h1 class="tables-title">الصالة</h1>
         <p class="tables-sub">
           <template v-if="!loading">
-            {{ occupied }} من {{ tables.length }} مشغولة · مستحق {{ money(owed) }}
+            <!-- Free first: it is the number somebody is looking for. -->
+            <strong class="count-free">{{ free }} فاضية</strong>
+            · {{ occupied }} مشغولة · مستحق {{ money(owed) }}
           </template>
         </p>
       </div>
 
       <div class="tables-actions">
+        <!--
+          Quick sell, on the floor rather than only in the tab bar.
+
+          A counter sale happens while somebody is standing at this screen — the
+          till is not always table service, and making them leave the room to
+          reach the menu is a step that exists for no reason.
+        -->
         <UiButton variant="secondary" size="lg" @click="walkIn">
-          طلب سفري / بدون طاولة
+          بيع سريع · بدون طاولة
         </UiButton>
       </div>
     </header>
@@ -293,7 +353,7 @@ function walkIn() {
             ]"
             :style="place(table)"
             :title="summary(table)"
-            @click="open(table)"
+            @click="pick(table)"
           >
             <!-- The shape carries the rotation; the label never does. -->
             <span class="table-shape" :style="shapeStyle(table)" aria-hidden="true" />
@@ -324,7 +384,86 @@ function walkIn() {
         </div>
       </section>
     </div>
-</div>
+    <!--
+      One sheet, two questions — whichever the tapped table raises.
+
+      FREE: how many sat down. One tap, and it is the tap that was missing: every
+      session used to open claiming a single guest, so a party of four showed as
+      "1 من 4" and the room read emptier than it was.
+
+      OCCUPIED: what is already on the bill, before anything is added to it. The
+      amount due, how long they have been sitting and who is serving them are the
+      three facts that say whether this is the right table — and getting that
+      wrong writes a round of coffees onto somebody else's tab.
+    -->
+    <div v-if="picked" class="picked-scrim" @click="picked = null">
+      <div
+        class="picked"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="`طاولة ${picked.number}`"
+        @click.stop
+      >
+        <header class="picked-head">
+          <h2 class="picked-title">طاولة {{ picked.number }}</h2>
+          <span class="picked-state" :class="isBusy(picked) ? 'is-busy' : 'is-free'">
+            {{ isBusy(picked) ? 'عليها ناس' : 'فاضية' }}
+          </span>
+        </header>
+        <p class="picked-where">{{ picked.area }} · {{ picked.seats }} مقاعد</p>
+
+        <!-- Free: the one thing worth asking before the menu. -->
+        <template v-if="!isBusy(picked)">
+          <p class="picked-ask">كم شخص؟</p>
+          <div class="guest-choices">
+            <button
+              v-for="n in guestChoices"
+              :key="n"
+              type="button"
+              class="guest-choice"
+              @click="open(picked, n)"
+            >
+              {{ n }}
+            </button>
+          </div>
+          <UiButton variant="ghost" size="lg" block @click="picked = null">إلغاء</UiButton>
+        </template>
+
+        <!-- Occupied: what is on it now. -->
+        <template v-else>
+          <dl class="picked-facts">
+            <div>
+              <dt>الجالسون</dt>
+              <dd>{{ picked.seated_count }} من {{ picked.seats }}</dd>
+            </div>
+            <div v-if="picked.seated_minutes !== null">
+              <dt>منذ</dt>
+              <dd>{{ minutes(picked.seated_minutes) }}</dd>
+            </div>
+            <div>
+              <dt>الطلبات</dt>
+              <dd>{{ picked.order_count || 'لم تطلب بعد' }}</dd>
+            </div>
+            <div>
+              <dt>المستحق</dt>
+              <dd class="picked-due">{{ money(picked.total_due) }}</dd>
+            </div>
+            <div v-if="picked.waiter">
+              <dt>الويتر</dt>
+              <dd>{{ picked.waiter }}</dd>
+            </div>
+          </dl>
+
+          <div class="picked-actions">
+            <UiButton size="lg" block @click="open(picked)">
+              {{ picked.order_count ? 'إضافة إلى هذه الطاولة' : 'تسجيل طلب' }}
+            </UiButton>
+            <UiButton variant="ghost" size="lg" block @click="picked = null">إلغاء</UiButton>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
 </template>
 
 <style scoped>
@@ -349,6 +488,120 @@ function walkIn() {
   font-size: 0.85rem;
   color: var(--ink-muted);
   min-height: 1.2em;
+}
+
+.count-free {
+  color: var(--brand-700);
+  font-weight: 700;
+}
+
+/*
+  A sheet rather than a corner popover: this is used standing up, and a small
+  target that has to be dismissed accurately is the wrong shape for a thumb.
+*/
+.picked-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--scrim, rgba(0, 0, 0, 0.45));
+}
+.picked {
+  width: min(28rem, 100%);
+  padding: 1.25rem;
+  border-radius: 1rem 1rem 0 0;
+  background: var(--surface);
+  box-shadow: var(--shadow-xl);
+}
+.picked-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.picked-title {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+/* The answer to "is anyone on it", stated rather than inferred from a colour. */
+.picked-state {
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+.picked-state.is-busy {
+  background: var(--gold-100);
+  color: var(--gold-700);
+}
+.picked-state.is-free {
+  background: var(--brand-50);
+  color: var(--brand-700);
+}
+.picked-where {
+  margin-top: 0.25rem;
+  font-size: 0.85rem;
+  color: var(--ink-muted);
+}
+.picked-ask {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.95rem;
+  color: var(--ink);
+}
+/*
+  Numbers, not a stepper. A party size is known the moment it walks in, so one
+  tap on the right number beats holding "+" four times.
+*/
+.guest-choices {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(3.25rem, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.guest-choice {
+  min-height: 3.25rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 0.65rem;
+  background: var(--surface);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.guest-choice:hover {
+  border-color: var(--brand-700);
+  background: var(--brand-50);
+}
+.guest-choice:focus-visible {
+  outline: 3px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+.picked-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+  gap: 0.75rem;
+  margin: 1rem 0 1.25rem;
+}
+.picked-facts dt {
+  font-size: 0.75rem;
+  color: var(--ink-faint);
+}
+.picked-facts dd {
+  font-size: 1rem;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.picked-due {
+  font-weight: 700;
+  color: var(--brand-700);
+}
+.picked-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
 .area-tabs {

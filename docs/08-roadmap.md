@@ -2632,6 +2632,74 @@ backend +8 tests; frontend 153 → 160.
 
 ---
 
+## The floor screen answers the two questions asked at it ✅ COMPLETE (2026-08-16)
+
+### First, the screen was blank
+
+Building this found something worse than the feature that was missing.
+`/floor/status/` answers with a bare ARRAY — the API client strips the
+`{success, data}` envelope, so `data` IS the list. This screen read
+`payload.tables`, which is `undefined` against the real server.
+
+So the till's landing screen — the one everything else was built on top of —
+rendered **"لا توجد طاولات معرَّفة"** on a floor with sixteen tables.
+
+It was green in CI the whole time. Every mock in the test file supplied
+`{ tables: [...] }`: the shape the CODE expected, not the shape the SERVER sends.
+The tests agreed with the bug, so nothing could ever have caught it. `FloorPlanView`
+in the admin had it right all along, which is the part worth sitting with — the
+correct call was already in the codebase, eight files away.
+
+Fixed, every mock rewritten to the array, and two guards added that pin the real
+shape. **Proven by reverting the fix:** "renders the room from a bare array" fails,
+the other twenty-four pass. A test that cannot fail is not protecting anything.
+
+### The two questions
+
+  * **"How many are free?"** The header counted OCCUPIED — the same arithmetic
+    seen from the wrong end. Somebody standing at the door with a party of four is
+    not counting the tables they cannot use. Free is now first and bold.
+  * **"Is anyone on this one?"** Tapping a table opens a sheet that says so in
+    words, not by hue: `عليها ناس` with the amount due, how long they have sat,
+    the order count and the waiter — or `فاضية`, and one question.
+
+### One sheet, two jobs
+
+The first version sent free tables straight through to the menu and stopped only
+on occupied ones. That asymmetry was defensible and it hid a real bug: every
+session opened claiming **one** guest, because the guest count was hard-coded at
+the call site. A party of four showed as "1 من 4", and the floor screen — whose
+entire job is saying how full the room is — quietly reported the room emptier than
+it was.
+
+So the free path asks, once, with number chips rather than a stepper: a party size
+is known the moment it walks in, and one tap on the right number beats holding "+"
+four times. The chips run to `seats + 1`, because parties do squeeze an extra chair
+in, and a picker that cannot express what happened sends the waiter to the wrong
+number rather than the right one.
+
+That made a backend clamp wrong, too. `seated_count` was `min(guest_count, seats)`,
+so a five at a four-top rendered "4 من 4" — hiding the one case where the
+difference matters, the table nobody can add a sixth to. Now reported as counted.
+
+### Quick sell, on the floor
+
+`بيع سريع · بدون طاولة` sits on the floor screen itself, not only in the tab bar.
+A counter sale happens while somebody is standing at this screen; making them leave
+the room to reach the menu is a step that exists for no reason.
+
+### Verified
+
+Live, through the real API on the running stack: sixteen tables, 7 free / 9 busy.
+Seated a party of **five** on free table 12 — free went to 6, the table reported
+`seated 5 of 4` with its waiter, and closing the session put it back to 7 free. The
+served bundle was checked to carry the fix (`Array.isArray`, `guest-choice`,
+`count-free`, `picked-scrim`), not just the source tree.
+
+backend 1175 passed; frontend 160 → 171.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the
