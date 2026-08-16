@@ -350,8 +350,20 @@ class TestNightlyTask:
 
 class TestAPI:
     def test_it_needs_the_backups_permission(self, branch, make_user, authed) -> None:
+        """
+        `backups.manage` still gates this, and the gate still bites.
+
+        The refused role used to be BRANCH_MANAGER, which proves nothing now: on
+        a single-café install that role holds every permission on purpose — the
+        manager and the owner are the same person. Pointed at a cashier instead.
+        The POLICY changed; the enforcement must not, and a test that moved with
+        the policy would leave nothing checking the mechanism.
+        """
+        cashier = authed(make_user(email="c@caesar.test", role="CASHIER"), branch=branch)
+        assert cashier.get("/api/v1/ops/backups/").status_code == 403
+
         manager = authed(make_user(email="m@caesar.test", role="BRANCH_MANAGER"), branch=branch)
-        assert manager.get("/api/v1/ops/backups/").status_code == 403
+        assert manager.get("/api/v1/ops/backups/").status_code == 200
 
         admin = make_user(email="admin@caesar.test", role="SUPER_ADMIN")
         assert authed(admin, branch=branch).get("/api/v1/ops/backups/").status_code == 200

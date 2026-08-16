@@ -31,8 +31,6 @@ def issue(organization, branch=None):
     return services.issue_license(
         organization=organization,
         branch=branch,
-        customer_email="owner@caesar.test",
-        customer_name="القيصر",
         license_type="YEARLY",
         max_devices=3,
         expires_at=timezone.now() + timedelta(days=365),
@@ -125,7 +123,6 @@ class TestWithDemoModeOn:
 
         activation = services.activate(
             license_key=issued.license.key_plaintext,
-            email=issued.license.customer_email,
             device_name="كاشير الباب",
             branch=None,
             mode="POS",

@@ -191,6 +191,12 @@ def by_group() -> dict[str, list[PermissionDef]]:
 # The matrix from docs/05. These ship as is_system=True: their permissions are
 # editable, but they cannot be deleted — losing the Cashier role at 8am on a
 # Friday is unrecoverable in a way nothing else in the product is.
+#
+# Two roles hold everything: SUPER_ADMIN and BRANCH_MANAGER. That is not an
+# oversight of the split — it is what a single-café install means. The people
+# this product calls a manager, an operator and an HR lead are one or two people
+# who between them run the place, and a permission held back from them is a
+# screen with a name and no door.
 
 SYSTEM_ROLES: dict[str, dict] = {
     "SUPER_ADMIN": {
@@ -198,92 +204,26 @@ SYSTEM_ROLES: dict[str, dict] = {
         "permissions": sorted(PERMISSION_CODES),  # everything
     },
     "BRANCH_MANAGER": {
-        "name_ar": "مدير فرع",
-        # Listed explicitly rather than "everything except N". A subtractive
-        # definition silently grants every permission added later — including
-        # ones a branch manager should never hold. Note the deliberate absences:
-        #   system.settings        → they get branch.edit_settings only, so they
-        #                            cannot weaken security.* or licensing
-        #   staff.manage_roles     → step-up only, never held directly
-        #   devices.manage         → step-up only
-        #   orders.change_price    → step-up only
-        #   licenses.manage        → Super Admin only
-        #   backups.manage         → Super Admin only
-        "permissions": [
-            "orders.view",
-            "orders.create",
-            "orders.edit_items",
-            "orders.void_item",
-            "orders.void_after_fire",
-            "orders.void_order",
-            "orders.discount",
-            "orders.discount_unlimited",
-            "orders.refund",
-            "orders.reprint",
-            "payments.take",
-            "payments.split",
-            "payments.view_all",
-            "floor.view",
-            "floor.open_table",
-            "floor.transfer",
-            "floor.merge",
-            "kitchen.view",
-            "kitchen.update_status",
-            "kitchen.recall",
-            "kitchen.manage_stations",
-            "kids.view",
-            "kids.checkin",
-            "kids.checkout",
-            "kids.release_to_other",
-            "kids.override_charge",
-            "kids.extend_session",
-            "kids.manage_tariffs",
-            "kids.manage_areas",
-            "kids.log_incident",
-            "kids.view_reports",
-            "catalog.view",
-            "catalog.create",
-            "catalog.edit",
-            "catalog.change_price",
-            "catalog.manage_recipes",
-            "inventory.view",
-            "inventory.adjust",
-            "inventory.waste",
-            "inventory.count",
-            "inventory.post_count",
-            "purchasing.view",
-            "purchasing.create_po",
-            "purchasing.receive",
-            "purchasing.manage_suppliers",
-            "purchasing.pay_supplier",
-            "shifts.open",
-            "shifts.close",
-            "shifts.close_with_variance",
-            "shifts.cash_movement",
-            "shifts.view_all",
-            "reports.sales",
-            "reports.products",
-            "reports.inventory",
-            "reports.financial",
-            "reports.employees",
-            "reports.export",
-            "staff.view",
-            "staff.manage_users",
-            "staff.reset_pin",
-            "hr.view",
-            "hr.manage_roster",
-            "hr.record_attendance",
-            "hr.amend_attendance",
-            "branch.view",
-            "branch.edit_settings",
-            "branch.manage_tables",
-            "branch.manage_printers",
-            "devices.view",
-            "licenses.view",
-            "sync.view",
-            "sync.resolve_conflicts",
-            "audit.view",
-        ],
+        "name_ar": "مدير الكافيه",
+        # Everything, deliberately.
+        #
+        # This role used to be an explicit list with careful absences — licences,
+        # backups, role management, device revocation and `system.settings` were
+        # Super Admin only, on the reasoning that a branch manager in a chain
+        # should not be able to weaken security or shut a sibling branch's tills.
+        #
+        # That reasoning belongs to a chain. **This product runs one café**, where
+        # the manager, the operator and whoever handles HR are the owner or answer
+        # to them across a room. Holding back the licence screen from the person
+        # who bought the licence did not protect anybody; it produced a screen
+        # they could see the name of and not open, and a support call.
+        #
+        # Written as `sorted(PERMISSION_CODES)` rather than as a copy of the list,
+        # so a permission added next year is held here too. The subtractive risk
+        # that the old comment warned about is real and is accepted here on
+        # purpose: on a single-café install, "everything" is the intent, and a
+        # list that silently falls behind the product is the worse failure.
+        "permissions": sorted(PERMISSION_CODES),
     },
     "CASHIER": {
         "name_ar": "كاشير",

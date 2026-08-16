@@ -25,7 +25,6 @@ def issued(organization, branch):
     return services.issue_license(
         organization=organization,
         branch=branch,
-        customer_email="owner@caesar.test",
         license_type="YEARLY",
         max_devices=3,
         expires_at=timezone.now() + timedelta(days=365),
@@ -36,7 +35,6 @@ def issued(organization, branch):
 def activated(issued):
     return services.activate(
         license_key=issued.plaintext_key,
-        email="owner@caesar.test",
         device_name="Cashier-01",
     )
 
@@ -194,7 +192,6 @@ class TestInvoiceBlocks:
         devices = [
             services.activate(
                 license_key=issued.plaintext_key,
-                email="owner@caesar.test",
                 device_name=f"T{i}",
             ).device
             for i in range(3)
@@ -236,7 +233,6 @@ class TestLicensingAPI:
             "/api/v1/licensing/activate/",
             {
                 "license_key": issued.plaintext_key,
-                "email": "owner@caesar.test",
                 "device_name": "Cashier-01",
                 "mode": "POS",
                 "app_version": "0.1.0",
@@ -254,7 +250,6 @@ class TestLicensingAPI:
             "/api/v1/licensing/activate/",
             {
                 "license_key": issued.plaintext_key,
-                "email": "owner@caesar.test",
                 "device_name": "Cashier-01",
             },
             format="json",
@@ -266,7 +261,6 @@ class TestLicensingAPI:
             "/api/v1/licensing/activate/",
             {
                 "license_key": "QSR-0000-0000-0000-0000",
-                "email": "owner@caesar.test",
                 "device_name": "X",
             },
             format="json",
@@ -294,7 +288,6 @@ class TestLicensingAPI:
         created = client.post(
             "/api/v1/licensing/licenses/",
             {
-                "customer_email": "cafe@example.test",
                 "license_type": "YEARLY",
                 "max_devices": 2,
                 "expires_at": (timezone.now() + timedelta(days=365)).isoformat(),
@@ -312,7 +305,7 @@ class TestLicensingAPI:
         client = authed(make_user(role="SUPER_ADMIN"))
         response = client.post(
             "/api/v1/licensing/licenses/",
-            {"customer_email": "cafe@example.test", "license_type": "LIFETIME"},
+            {"license_type": "LIFETIME"},
             format="json",
         )
         assert response.status_code == 201
@@ -321,7 +314,7 @@ class TestLicensingAPI:
         client = authed(make_user(role="SUPER_ADMIN"))
         response = client.post(
             "/api/v1/licensing/licenses/",
-            {"customer_email": "cafe@example.test", "license_type": "YEARLY"},
+            {"license_type": "YEARLY"},
             format="json",
         )
         assert response.status_code == 400
@@ -331,16 +324,30 @@ class TestLicensingAPI:
         client = authed(make_user(role="CASHIER"))
         assert client.get("/api/v1/licensing/licenses/").status_code == 403
 
-    def test_branch_manager_can_view_but_not_issue(self, make_user, authed, branch) -> None:
-        client = authed(make_user(role="BRANCH_MANAGER"), branch=branch)
-        assert client.get("/api/v1/licensing/licenses/").status_code == 200
+    def test_issuing_still_needs_licenses_manage(self, make_user, authed, branch) -> None:
+        """
+        `licenses.manage` gates issuing, and the gate still bites.
+
+        This was asserted against BRANCH_MANAGER, which proves nothing now: on a
+        single-café install that role holds every permission on purpose — holding
+        the licence screen back from the person who BOUGHT the licence protected
+        nobody and produced a support call.
+
+        Pointed at a cashier instead. The policy moved; the enforcement did not,
+        and a test that moved with the policy would leave the gate unchecked.
+        """
+        cashier = authed(make_user(email="till@caesar.test", role="CASHIER"), branch=branch)
+        assert cashier.get("/api/v1/licensing/licenses/").status_code == 403
+
+        manager = authed(make_user(email="boss@caesar.test", role="BRANCH_MANAGER"), branch=branch)
+        assert manager.get("/api/v1/licensing/licenses/").status_code == 200
         assert (
-            client.post(
+            manager.post(
                 "/api/v1/licensing/licenses/",
-                {"customer_email": "x@y.test", "license_type": "LIFETIME"},
+                {"license_type": "LIFETIME"},
                 format="json",
             ).status_code
-            == 403
+            == 201
         )
 
     def test_revoking_a_licence_kills_every_device(
@@ -372,8 +379,8 @@ class TestLicensingAPI:
         assert new_key != old_key
 
         with pytest.raises(services.LicenseNotFound):
-            services.activate(license_key=old_key, email="owner@caesar.test", device_name="X")
-        assert services.activate(license_key=new_key, email="owner@caesar.test", device_name="X")
+            services.activate(license_key=old_key, device_name="X")
+        assert services.activate(license_key=new_key, device_name="X")
 
     def test_device_reset_frees_a_seat(self, issued, activated, make_user, authed) -> None:
         client = authed(make_user(role="SUPER_ADMIN"))
@@ -398,9 +405,7 @@ class TestLicensingAPI:
     def test_licences_are_scoped_to_the_organization(
         self, issued, make_user, authed, other_organization
     ) -> None:
-        outsider = make_user(
-            email="outsider@other.test", role="SUPER_ADMIN", org=other_organization
-        )
+        outsider = make_user(role="SUPER_ADMIN", org=other_organization)
         client = authed(outsider)
 
         assert client.get("/api/v1/licensing/licenses/").json()["data"] == []

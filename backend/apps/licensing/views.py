@@ -91,7 +91,6 @@ class ActivateView(PublicEndpointMixin, APIView):
 
         activation = services.activate(
             license_key=data["license_key"],
-            email=data["email"],
             device_name=data["device_name"],
             mode=data.get("mode", "POS"),
             platform=data.get("platform", ""),
@@ -283,10 +282,8 @@ class LicenseListView(APIView):
         issued = services.issue_license(
             organization=organization,
             branch=branch,
-            customer_email=data["customer_email"],
-            customer_name=data.get("customer_name", ""),
             license_type=data["license_type"],
-            max_devices=data.get("max_devices", 3),
+            max_devices=data.get("max_devices", 8),
             expires_at=data.get("expires_at"),
             notes=data.get("notes", ""),
             actor=_acting_user(request),

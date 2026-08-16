@@ -48,7 +48,7 @@ from apps.kids.models import PlayArea, PlayTariff, TariffMode
 from apps.kitchen.models import Station
 from apps.licensing import services as licensing_services
 from apps.licensing.models import Device, InvoiceBlock, License, LicenseEvent, LicenseType
-from apps.orders.models import EventType, Order
+from apps.orders.models import EventType, Order, OrderType
 from apps.organizations.models import Branch, Organization
 from apps.payments.models import PaymentMethod
 from apps.printing.models import Printer
@@ -708,13 +708,13 @@ class Command(BaseCommand):
         issued = licensing_services.issue_license(
             organization=org,
             branch=branch,
-            customer_email=owner.email,
-            customer_name="كافيه القيصر — Demo",
             license_type=LicenseType.LIFETIME,
-            # Three, because the room the demo draws has a door till, an inside
-            # till and a KDS, and a seat limit of one turns "activate the second
-            # terminal" into a support question on the first day.
-            max_devices=3,
+            # Eight. One café runs on more machines than people expect — two
+            # tills, the office, the manager's laptop, a kitchen screen — and a
+            # tight seat limit turns "activate the second terminal" into a
+            # support question on the first day. Seats exist to stop one licence
+            # running two cafés, not to ration a café's own machines.
+            max_devices=8,
             notes="Seeded by seed_demo. Demo use only.",
             actor=owner,
         )
@@ -723,7 +723,6 @@ class Command(BaseCommand):
         # nobody can ever activate against.
         self.license_key = issued.plaintext_key
         self.license_keys[branch.code] = issued.plaintext_key
-        self.license_email = issued.license.customer_email
 
     def _stations(self, org, branch) -> dict[str, Station]:
         """
@@ -1299,9 +1298,21 @@ class Command(BaseCommand):
         placed = timezone.make_aware(
             datetime.combine(day, time(hour=hour, minute=self.random.randint(0, 59)))
         )
-        order_type = self.random.choices(["DINE_IN", "TAKEAWAY", "DELIVERY"], weights=[70, 25, 5])[
-            0
-        ]
+        # From the enum, never a string literal.
+        #
+        # This read "TAKEAWAY" — no underscore — and the enum member is
+        # TAKE_AWAY. Nothing rejected it: `order_type` is a CharField with
+        # choices, and Django does not enforce choices on `.create()`. So a
+        # quarter of every seeded day carried a channel that matches no channel
+        # price, groups under no channel in a report, and renders in the SPA as
+        # the raw word TAKEAWAY. It survived because it looked right in a diff.
+        #
+        # Found by the check that now refuses a disabled channel — the first
+        # thing that ever compared this string against the real set.
+        order_type = self.random.choices(
+            [OrderType.DINE_IN, OrderType.TAKE_AWAY, OrderType.DELIVERY, OrderType.EXTERNAL],
+            weights=[64, 22, 6, 8],
+        )[0]
 
         # Numbered explicitly. The server's generator counts today's orders, and
         # these are backdated after creation — so left to itself it would hand
@@ -1536,7 +1547,6 @@ class Command(BaseCommand):
         # past unread is a licence nobody can activate against, and the only
         # remedy is for an owner to regenerate it.
         write(ok("  Activate a till — the POS opens for nothing without this:"))
-        write(f"      licence email {self.license_email}")
         # One key per branch, because a licence is issued per branch and a till
         # activated against the wrong one is refused. Printing only the last would
         # leave two branches full of data and no way to open a till in either.

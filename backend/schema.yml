@@ -7047,6 +7047,46 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/orders/types/:
+    get:
+      operationId: orders_types_list
+      description: |-
+        The channels this till may open an order on.
+
+        Read from `orders.enabled_types`, which had been in the settings registry
+        since it was built with **nothing reading it** — the till showed a hardcoded
+        three whatever the branch had configured. Served from here rather than from
+        `/settings/` because a cashier holds `orders.create` and not
+        `system.settings`, and a till that has to be an administrator to know which
+        buttons to draw is a till that draws the wrong ones.
+      summary: Order channels enabled for this branch
+      tags:
+      - orders
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrderType'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/payments/:
     get:
       operationId: payments_list
@@ -10126,6 +10166,117 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/schema/:
+    get:
+      operationId: schema_retrieve
+      description: |-
+        OpenApi3 schema for this API. Format can be selected via content negotiation.
+
+        - YAML: application/vnd.oai.openapi
+        - JSON: application/vnd.oai.openapi+json
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - json
+          - yaml
+      - in: query
+        name: lang
+        schema:
+          type: string
+          enum:
+          - ar
+          - en
+      tags:
+      - schema
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/vnd.oai.openapi:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/yaml:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/vnd.oai.openapi+json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: object
+                    additionalProperties: {}
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/settings/:
     get:
       operationId: settings_retrieve
@@ -11905,18 +12056,27 @@ components:
   schemas:
     ActivationRequestRequest:
       type: object
+      description: |-
+        What it takes to turn a machine into a till: the key, and a name for it.
+
+        The email is gone. This product is **one café on several machines** — two
+        tills, the office, the manager — and there is no customer directory to check
+        an address against; the owner holds the key and installs on their own
+        hardware. Asking for a registered email meant somebody standing at a new till
+        had to remember which address the licence was issued under, and getting it
+        wrong looked identical to a wrong key.
+
+        The key is the credential, and it is the only one. It carries enough entropy
+        to be one, and the endpoint is rate-limited to 5/hour/IP.
       properties:
         license_key:
           type: string
           minLength: 1
           description: QSR-XXXX-XXXX-XXXX-XXXX. Case and dashes are normalized.
-        email:
-          type: string
-          format: email
-          minLength: 1
         device_name:
           type: string
           minLength: 1
+          description: What this machine is called — «كاشير ١», «مكتب المدير».
           maxLength: 100
         mode:
           allOf:
@@ -11934,7 +12094,6 @@ components:
           maxLength: 128
       required:
       - device_name
-      - email
       - license_key
     ActivationResponse:
       type: object
@@ -13794,21 +13953,26 @@ components:
       - snapshot
     IssueLicenseRequest:
       type: object
+      description: |-
+        Issuing a licence for this café.
+
+        No customer fields. There is one café and one organisation, and the
+        organisation IS the customer — a name and an address recorded a second time
+        on the licence were two copies of the same fact, free to drift apart, and
+        nothing read them except the activation check that no longer exists.
+
+        `max_devices` defaults to eight rather than three: two tills, the office, the
+        manager's laptop, a kitchen screen and room to replace one without first
+        revoking another. Seats exist to stop a licence being shared between cafés,
+        not to ration a café's own machines.
       properties:
-        customer_email:
-          type: string
-          format: email
-          minLength: 1
-        customer_name:
-          type: string
-          maxLength: 200
         license_type:
           $ref: '#/components/schemas/LicenseTypeEnum'
         max_devices:
           type: integer
           maximum: 100
           minimum: 1
-          default: 3
+          default: 8
         expires_at:
           type: string
           format: date-time
@@ -13821,7 +13985,6 @@ components:
         notes:
           type: string
       required:
-      - customer_email
       - license_type
     IssuedLicense:
       type: object
@@ -13841,13 +14004,6 @@ components:
           readOnly: true
           description: QSR-7X29, for display.
         key_last4:
-          type: string
-          readOnly: true
-        customer_email:
-          type: string
-          format: email
-          readOnly: true
-        customer_name:
           type: string
           readOnly: true
         license_type:
@@ -13913,8 +14069,6 @@ components:
       - branch
       - branch_name
       - created_at
-      - customer_email
-      - customer_name
       - expires_at
       - id
       - key_last4
@@ -13974,13 +14128,6 @@ components:
         key_last4:
           type: string
           readOnly: true
-        customer_email:
-          type: string
-          format: email
-          readOnly: true
-        customer_name:
-          type: string
-          readOnly: true
         license_type:
           allOf:
           - $ref: '#/components/schemas/LicenseTypeEnum'
@@ -14038,8 +14185,6 @@ components:
       - branch
       - branch_name
       - created_at
-      - customer_email
-      - customer_name
       - expires_at
       - id
       - key_last4
@@ -14863,16 +15008,34 @@ components:
       - paid_total
       - status
       - table_number
+    OrderType:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+        is_default:
+          type: boolean
+        needs_table:
+          type: boolean
+      required:
+      - is_default
+      - label
+      - needs_table
+      - value
     OrderTypeEnum:
       enum:
       - DINE_IN
       - TAKE_AWAY
       - DELIVERY
+      - EXTERNAL
       type: string
       description: |-
         * `DINE_IN` - DINE_IN
         * `TAKE_AWAY` - TAKE_AWAY
         * `DELIVERY` - DELIVERY
+        * `EXTERNAL` - EXTERNAL
     OriginEnum:
       enum:
       - ORGANIZATION

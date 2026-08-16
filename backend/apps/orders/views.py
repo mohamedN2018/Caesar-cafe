@@ -13,7 +13,7 @@ import logging
 from django.db.models import Count, Q
 from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -24,7 +24,7 @@ from apps.authz.drf import HasPermission, IsAuthenticatedPrincipal, RequiresHuma
 from apps.core.exceptions import AppError, NotFoundError, PermissionDeniedError
 
 from . import services, state
-from .models import ItemStatus, Order
+from .models import ItemStatus, Order, OrderType
 from .serializers import (
     ApplyResultSerializer,
     EventBatchSerializer,
@@ -188,6 +188,77 @@ def _resolve_shift(request: Request, shift_id):
             )
         raise AppError("يجب فتح وردية قبل البيع", code="SHIFT_REQUIRED")
     return shift
+
+
+#: What each channel is called on screen, in one place.
+#:
+#: Arabic lives here rather than in the model's `TextChoices` labels — those are
+#: the wire values, read by the Desktop and the sync log, and translating them
+#: would put a display decision inside the protocol. It lives here rather than in
+#: the SPA because the till, the orders list and the receipt all need the same
+#: word, and three copies of "طلب خارجي" is three chances to disagree.
+ORDER_TYPE_LABELS = {
+    "DINE_IN": "صالة",
+    "TAKE_AWAY": "تيك أواي",
+    "DELIVERY": "توصيل",
+    "EXTERNAL": "طلب خارجي",
+}
+
+
+class OrderTypeSerializer(serializers.Serializer):
+    value = serializers.CharField()
+    label = serializers.CharField()
+    is_default = serializers.BooleanField()
+    needs_table = serializers.BooleanField()
+
+
+class OrderTypeListView(APIView):
+    """
+    The channels this till may open an order on.
+
+    Read from `orders.enabled_types`, which had been in the settings registry
+    since it was built with **nothing reading it** — the till showed a hardcoded
+    three whatever the branch had configured. Served from here rather than from
+    `/settings/` because a cashier holds `orders.create` and not
+    `system.settings`, and a till that has to be an administrator to know which
+    buttons to draw is a till that draws the wrong ones.
+    """
+
+    permission_classes = [IsAuthenticatedPrincipal, HasPermission]
+    required_permission = "orders.create"
+
+    @extend_schema(
+        summary="Order channels enabled for this branch",
+        responses={200: OrderTypeSerializer(many=True)},
+    )
+    def get(self, request: Request) -> Response:
+        from apps.configuration import resolver
+        from apps.configuration.resolver import ScopeContext
+
+        branch = _branch(request)
+        enabled = services.enabled_order_types(branch)
+
+        context = ScopeContext(organization_id=branch.organization_id, branch_id=branch.id)
+        default = resolver.get("orders.default_type", context)
+        # A default that is switched off would leave the till preselecting a
+        # channel the server then refuses — so it falls back to the first
+        # channel that IS enabled rather than to a constant.
+        if default not in enabled:
+            default = enabled[0]
+
+        return Response(
+            [
+                {
+                    "value": value,
+                    "label": ORDER_TYPE_LABELS.get(value, value),
+                    "is_default": value == default,
+                    # Only the room needs one. A phone order has no table and
+                    # asking for one is how a takeaway ends up on table 4.
+                    "needs_table": value == OrderType.DINE_IN,
+                }
+                for value in enabled
+            ]
+        )
 
 
 class OrderDetailView(APIView):

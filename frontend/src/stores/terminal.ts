@@ -67,7 +67,6 @@ export const useTerminalStore = defineStore('terminal', () => {
    */
   async function enrol(payload: {
     license_key: string
-    email: string
     device_name: string
   }): Promise<boolean> {
     busy.value = true

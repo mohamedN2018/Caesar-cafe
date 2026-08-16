@@ -31,8 +31,6 @@ interface License {
    * field simply arrives empty.
    */
   readable_key: string
-  customer_email: string
-  customer_name: string
   license_type: string
   status: string
   starts_at: string
@@ -99,7 +97,6 @@ async function copyKey() {
 
 const columns = [
   { key: 'key', label: 'المفتاح' },
-  { key: 'customer', label: 'العميل' },
   { key: 'type', label: 'النوع' },
   { key: 'seats', label: 'الأجهزة', align: 'end' as const },
   { key: 'expires', label: 'ينتهي' },
@@ -161,7 +158,7 @@ async function act(license: License, action: string, body: Record<string, unknow
 async function renew(license: License) {
   const current = license.expires_at ? license.expires_at.slice(0, 10) : 'مدى الحياة'
   const answer = window.prompt(
-    `تجديد ترخيص «${license.customer_name || license.customer_email}»\n\n` +
+    `تجديد الترخيص «${license.masked_key}»\n\n` +
       `ينتهي حالياً: ${current}\n` +
       'اكتب تاريخ الانتهاء الجديد بالصيغة YYYY-MM-DD:',
     license.expires_at ? license.expires_at.slice(0, 10) : '',
@@ -186,7 +183,7 @@ async function renew(license: License) {
  */
 async function regenerate(license: License) {
   const ok = window.confirm(
-    `توليد مفتاح جديد لـ «${license.customer_name || license.customer_email}»؟\n\n` +
+    `توليد مفتاح جديد للترخيص «${license.masked_key}»؟\n\n` +
       'المفتاح الحالي سيتوقف فوراً، وكل جهاز مفعَّل به سيحتاج إعادة تفعيل.\n' +
       'المفتاح الجديد يظهر مرة واحدة فقط.',
   )
@@ -257,10 +254,6 @@ onMounted(load)
               </button>
             </template>
             <span v-else class="text-ink-muted">{{ license.masked_key }}</span>
-          </td>
-          <td class="px-4 py-3">
-            <p class="text-ink">{{ license.customer_name || '—' }}</p>
-            <p class="text-xs text-ink-muted" dir="ltr">{{ license.customer_email }}</p>
           </td>
           <td class="px-4 py-3 text-ink-muted">{{ license.license_type }}</td>
           <td class="px-4 py-3 text-end tabular-nums">

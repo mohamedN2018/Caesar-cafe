@@ -9,6 +9,7 @@ import UiEmpty from '@/components/ui/UiEmpty.vue'
 import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import UiTable from '@/components/ui/UiTable.vue'
 import { dateTime, money } from '@/lib/format'
+import { orderTypeLabel } from '@/lib/orderTypes'
 
 interface OrderRow {
   id: string
@@ -33,12 +34,6 @@ const STATUSES: Record<string, { label: string; tone: Tone }> = {
   PAID: { label: 'مدفوع', tone: 'success' },
   CANCELLED: { label: 'ملغي', tone: 'danger' },
   REFUNDED: { label: 'مسترجع', tone: 'danger' },
-}
-
-const TYPES: Record<string, string> = {
-  DINE_IN: 'صالة',
-  TAKE_AWAY: 'تيك أواي',
-  DELIVERY: 'توصيل',
 }
 
 const orders = ref<OrderRow[]>([])
@@ -119,7 +114,7 @@ onMounted(load)
               طاولة {{ order.table_number }}
             </p>
           </td>
-          <td class="px-4 py-3 text-ink-muted">{{ TYPES[order.order_type] ?? order.order_type }}</td>
+          <td class="px-4 py-3 text-ink-muted">{{ orderTypeLabel(order.order_type) }}</td>
           <td class="px-4 py-3 text-end tabular-nums text-ink-muted">{{ order.item_count }}</td>
           <td class="px-4 py-3 text-end font-medium tabular-nums">{{ money(order.grand_total) }}</td>
           <td class="px-4 py-3">

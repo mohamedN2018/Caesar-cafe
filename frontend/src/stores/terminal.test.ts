@@ -74,7 +74,6 @@ describe('enrolling the machine', () => {
     const terminal = await store()
     const ok = await terminal.enrol({
       license_key: 'QSR-AAAA-BBBB-CCCC-DDDD',
-      email: 'owner@caesar.test',
       device_name: 'كاشير الباب',
     })
 
@@ -94,7 +93,6 @@ describe('enrolling the machine', () => {
     const terminal = await store()
     const ok = await terminal.enrol({
       license_key: 'nope',
-      email: 'owner@caesar.test',
       device_name: 'كاشير',
     })
 

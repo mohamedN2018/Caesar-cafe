@@ -86,6 +86,37 @@ def _rules_from_order(order: Order) -> TaxRules:
 # ── opening ──────────────────────────────────────────────────────────────────
 
 
+def enabled_order_types(branch) -> list[str]:
+    """
+    The channels this café actually sells on.
+
+    `orders.enabled_types` has been in the settings registry since it was built
+    and **nothing read it**. It appeared on the settings screen, took a value,
+    saved it, and changed nothing: the till showed a hardcoded three regardless.
+    So a café that does not deliver had a delivery button it could not remove,
+    and a café that does had a setting that did not turn one on.
+
+    Filtered against the model's own choices, so a value left in the database by
+    a rename cannot make a channel appear that the rest of the system does not
+    know about.
+    """
+    context = ScopeContext(organization_id=branch.organization_id, branch_id=branch.id)
+    configured = resolver.get("orders.enabled_types", context) or []
+    known = [t for t in OrderType.values if t in configured]
+    # Never empty. A branch whose setting was cleared would otherwise be a till
+    # that cannot open any order at all, which is a worse outcome than ignoring
+    # a value nobody meant to set.
+    return known or [OrderType.DINE_IN]
+
+
+def _assert_channel_enabled(branch, order_type: str) -> None:
+    if order_type not in enabled_order_types(branch):
+        raise AppError(
+            f"نوع الطلب «{order_type}» غير مفعّل لهذا الفرع.",
+            code="ORDER_TYPE_DISABLED",
+        )
+
+
 @transaction.atomic
 def open_order(
     *,
@@ -98,6 +129,8 @@ def open_order(
     device_id=None,
     user=None,
 ) -> Order:
+    _assert_channel_enabled(branch, order_type)
+
     rules = tax_rules_for(branch)
     service_applies = order_type in (rules["service_applies_to"] or [])
 

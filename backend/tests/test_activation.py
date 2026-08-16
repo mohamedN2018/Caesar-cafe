@@ -24,7 +24,6 @@ def issued(organization, branch):
     return services.issue_license(
         organization=organization,
         branch=branch,
-        customer_email="owner@caesar.test",
         license_type="YEARLY",
         max_devices=3,
         expires_at=timezone.now() + timedelta(days=365),
@@ -58,7 +57,6 @@ class TestActivation:
     def _activate(self, issued, name="Cashier-01", **kwargs):
         return services.activate(
             license_key=kwargs.pop("license_key", issued.plaintext_key),
-            email=kwargs.pop("email", "owner@caesar.test"),
             device_name=name,
             **kwargs,
         )
@@ -100,13 +98,6 @@ class TestActivation:
         with pytest.raises(services.LicenseNotFound):
             self._activate(issued, license_key="not-a-key")
 
-    def test_email_must_match(self, issued) -> None:
-        with pytest.raises(services.LicenseEmailMismatch):
-            self._activate(issued, email="someone-else@caesar.test")
-
-    def test_email_match_is_case_insensitive(self, issued) -> None:
-        assert self._activate(issued, email="OWNER@CAESAR.TEST").device is not None
-
     def test_suspended_licence_is_refused(self, issued) -> None:
         License.objects.filter(pk=issued.license.pk).update(status=LicenseStatus.SUSPENDED)
         with pytest.raises(services.LicenseSuspended):
@@ -132,13 +123,30 @@ class TestActivation:
         with pytest.raises(services.ActivationError):
             self._activate(issued)
 
+    def test_the_key_is_the_whole_credential(self, issued) -> None:
+        """
+        Activation asks for the key and a device name, and nothing else.
+
+        It used to check a registered email too. On a single-café product that
+        was a question with no good answer at the counter — the person standing
+        at a new till is a manager, not whoever the licence was issued to — and a
+        wrong address failed identically to a wrong key.
+        """
+        activation = services.activate(license_key=issued.plaintext_key, device_name="مكتب المدير")
+
+        assert activation.device.status == DeviceStatus.ACTIVE
+        assert not hasattr(services, "LicenseEmailMismatch")
+
     def test_failures_are_recorded(self, issued) -> None:
-        with pytest.raises(services.LicenseEmailMismatch):
-            self._activate(issued, email="wrong@caesar.test")
+        # A suspended licence rather than a bad key: only a licence that RESOLVES
+        # can have the failure written against it.
+        License.objects.filter(pk=issued.license.pk).update(status=LicenseStatus.SUSPENDED)
+        with pytest.raises(services.LicenseSuspended):
+            self._activate(issued)
 
         event = issued.license.events.filter(event=LicenseEvent.Event.ACTIVATION_FAILED).first()
         assert event is not None
-        assert event.detail["reason"] == "LICENSE_EMAIL_MISMATCH"
+        assert event.detail["reason"] == "LICENSE_SUSPENDED"
 
     def test_reactivating_the_same_device_reuses_its_seat(self, issued) -> None:
         """Reinstalling Windows must not burn a seat."""
@@ -171,7 +179,6 @@ class TestSeatLimit:
         return [
             services.activate(
                 license_key=issued.plaintext_key,
-                email="owner@caesar.test",
                 device_name=f"{prefix}-{i}",
             )
             for i in range(count)
@@ -190,7 +197,6 @@ class TestSeatLimit:
         with pytest.raises(services.DeviceLimitReached) as exc:
             services.activate(
                 license_key=issued.plaintext_key,
-                email="owner@caesar.test",
                 device_name="Terminal-X",
             )
         message = str(exc.value.detail)
@@ -205,7 +211,6 @@ class TestSeatLimit:
         assert issued.license.seats_available == 1
         assert services.activate(
             license_key=issued.plaintext_key,
-            email="owner@caesar.test",
             device_name="Replacement",
         )
 
@@ -225,7 +230,6 @@ class TestConcurrentActivation:
         issued = services.issue_license(
             organization=organization,
             branch=branch,
-            customer_email="owner@caesar.test",
             license_type="YEARLY",
             max_devices=3,
             expires_at=timezone.now() + timedelta(days=365),
@@ -240,7 +244,6 @@ class TestConcurrentActivation:
                 start.wait(timeout=10)
                 services.activate(
                     license_key=issued.plaintext_key,
-                    email="owner@caesar.test",
                     device_name=f"Terminal-{index}",
                 )
                 outcome = "granted"
@@ -271,7 +274,6 @@ class TestConcurrentActivation:
         issued = services.issue_license(
             organization=organization,
             branch=branch,
-            customer_email="owner@caesar.test",
             license_type="YEARLY",
             max_devices=5,
             expires_at=timezone.now() + timedelta(days=365),
@@ -279,7 +281,6 @@ class TestConcurrentActivation:
         devices = [
             services.activate(
                 license_key=issued.plaintext_key,
-                email="owner@caesar.test",
                 device_name=f"Terminal-{i}",
             ).device
             for i in range(4)

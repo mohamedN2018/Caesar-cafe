@@ -40,11 +40,43 @@ const pos = usePosStore()
  * price a line is rung at, and a bill that changed channel halfway would have
  * two prices for the same water.
  */
-const ORDER_TYPES = [
-  { value: 'DINE_IN', label: 'صالة' },
-  { value: 'TAKE_AWAY', label: 'تيك أواي' },
-  { value: 'DELIVERY', label: 'توصيل' },
-] as const
+interface OrderTypeOption {
+  value: string
+  label: string
+  is_default: boolean
+  needs_table: boolean
+}
+
+/**
+ * The channels this branch actually sells on, from the server.
+ *
+ * This was a hardcoded three. `orders.enabled_types` had been in the settings
+ * registry since it was built with **nothing reading it** — so a café that does
+ * not deliver had a delivery button it could not remove, and one that does had a
+ * switch that turned nothing on. The names live on the server too, because the
+ * till, the orders list and the receipt all need the same word and three copies
+ * of «طلب خارجي» is three chances to disagree.
+ *
+ * Seeded with dine-in so the first paint is not an empty strip: it is the
+ * default for nearly every café, and the list corrects itself a moment later.
+ */
+const orderTypes = ref<OrderTypeOption[]>([
+  { value: 'DINE_IN', label: 'صالة', is_default: true, needs_table: true },
+])
+
+async function loadOrderTypes() {
+  // `optional`: a cashier who somehow cannot read this gets the seeded default
+  // rather than a till that will not draw. Selling dine-in beats not selling.
+  const rows = await api.optional<OrderTypeOption[]>('/orders/types/')
+  if (!rows?.length) return
+  orderTypes.value = rows
+
+  // Only before anything is rung. Re-selecting under a cashier mid-order would
+  // change the prices on a bill they are already reading out.
+  if (!pos.order) {
+    orderType.value = (rows.find((r) => r.is_default) ?? rows[0]).value
+  }
+}
 
 const activeCategory = ref<string | null>(null)
 const search = ref('')
@@ -104,7 +136,7 @@ async function sessionFor(): Promise<string | null> {
 }
 
 /**
- * Locked once the bill has a line on it — see the note on ORDER_TYPES.
+ * Locked once the bill has a line on it — see the note on `orderTypes`.
  *
  * `?.length` because this is a COMPUTED: an order that arrives without an
  * `items` array makes it throw, and a throwing computed does not fail politely —
@@ -171,7 +203,7 @@ async function tap(product: Product) {
 }
 
 onMounted(async () => {
-  await Promise.all([pos.loadCatalog(), pos.loadShift()])
+  await Promise.all([pos.loadCatalog(), pos.loadShift(), loadOrderTypes()])
 })
 </script>
 
@@ -197,7 +229,7 @@ onMounted(async () => {
 
         <div class="types">
           <button
-            v-for="option in ORDER_TYPES"
+            v-for="option in orderTypes"
             :key="option.value"
             type="button"
             class="type"

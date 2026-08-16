@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { orderTypeLabel } from '@/lib/orderTypes'
 /**
  * The bill.
  *
@@ -124,7 +125,12 @@ async function discount() {
   <div class="panel">
     <header class="panel-head">
       <span class="number">{{ pos.order?.local_number || 'طلب جديد' }}</span>
-      <span v-if="pos.order" class="kind">{{ pos.order.order_type === 'DINE_IN' ? 'صالة' : pos.order.order_type === 'DELIVERY' ? 'توصيل' : 'تيك أواي' }}</span>
+      <!--
+        A lookup, not a ternary chain. The chain had three arms and a fallback of
+        "تيك أواي", so the fourth channel would have been labelled takeaway on
+        the panel a cashier reads the bill from.
+      -->
+      <span v-if="pos.order" class="kind">{{ orderTypeLabel(pos.order.order_type) }}</span>
     </header>
 
     <div class="lines">

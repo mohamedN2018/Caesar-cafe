@@ -55,11 +55,6 @@ class LicenseNotFound(ActivationError):
     default_detail = "مفتاح الترخيص غير صحيح. تأكد من كتابته بشكل صحيح."
 
 
-class LicenseEmailMismatch(ActivationError):
-    code = "LICENSE_EMAIL_MISMATCH"
-    default_detail = "البريد الإلكتروني لا يطابق الترخيص."
-
-
 class LicenseSuspended(ActivationError):
     code = "LICENSE_SUSPENDED"
     default_detail = "الترخيص موقوف مؤقتاً. تواصل مع مدير النظام."
@@ -133,16 +128,22 @@ class IssuedLicense:
 def issue_license(
     *,
     organization,
-    customer_email: str,
     license_type: str,
-    max_devices: int = 3,
+    max_devices: int = 8,
     expires_at=None,
     branch=None,
-    customer_name: str = "",
     notes: str = "",
     actor=None,
     ip_address: str | None = None,
 ) -> IssuedLicense:
+    """
+    Mint a licence for this café.
+
+    No customer identity is recorded. There is one organisation and it IS the
+    customer; a name and an email copied onto the licence were a second copy of
+    a fact already stored, free to drift, and read by nothing once activation
+    stopped asking for them.
+    """
     plaintext = keys.generate()
 
     license_obj = License.objects.create(
@@ -153,8 +154,6 @@ def issue_license(
         key_plaintext=plaintext if getattr(settings, "DEMO_MODE", False) else "",
         key_prefix=keys.prefix_of(plaintext),
         key_last4=keys.last4_of(plaintext),
-        customer_email=customer_email.strip().lower(),
-        customer_name=customer_name,
         license_type=license_type,
         max_devices=max_devices,
         expires_at=expires_at,
@@ -209,7 +208,6 @@ class Activation:
 def activate(
     *,
     license_key: str,
-    email: str,
     device_name: str,
     branch=None,
     mode: str = "POS",
@@ -244,7 +242,6 @@ def activate(
     try:
         return _activate_locked(
             key_hash=key_hash,
-            email=email,
             device_name=device_name,
             branch=branch,
             mode=mode,
@@ -269,7 +266,6 @@ def activate(
 def _activate_locked(
     *,
     key_hash: str,
-    email: str,
     device_name: str,
     branch,
     mode: str,
@@ -293,10 +289,6 @@ def _activate_locked(
         if license_obj is None:
             _equalize_timing()
             raise LicenseNotFound()
-
-        # Constant-time compare so a near-miss email cannot be probed.
-        if not hmac.compare_digest(license_obj.customer_email.lower(), email.strip().lower()):
-            raise _tagged(LicenseEmailMismatch(), license_obj)
 
         _assert_license_usable(license_obj)
 

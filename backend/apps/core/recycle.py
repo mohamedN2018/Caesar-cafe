@@ -79,9 +79,7 @@ RECYCLABLE: tuple[Recyclable, ...] = (
     Recyclable("printing", "Printer", "الطابعات"),
     Recyclable("suppliers", "Supplier", "الموردون", title_field="name"),
     Recyclable("kids", "PlayArea", "مناطق الأطفال"),
-    Recyclable(
-        "kids", "PlayTariff", "تعريفات الأطفال", organization_path="area__organization_id"
-    ),
+    Recyclable("kids", "PlayTariff", "تعريفات الأطفال", organization_path="area__organization_id"),
     Recyclable("hr", "WorkPattern", "أنماط الدوام"),
     Recyclable("organizations", "Branch", "الفروع"),
 )

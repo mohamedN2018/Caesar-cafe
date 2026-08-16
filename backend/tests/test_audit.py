@@ -638,7 +638,6 @@ class TestCatalogueCoverage:
         issued = licensing_services.issue_license(
             organization=organization,
             branch=branch,
-            customer_email="owner@caesar.test",
             license_type=LicenseType.YEARLY,
             max_devices=2,
         )
@@ -647,7 +646,6 @@ class TestCatalogueCoverage:
         licence = issued.license
         activation = licensing_services.activate(
             license_key=issued.plaintext_key,
-            email="owner@caesar.test",
             device_name="كاشير ١",
             fingerprint="fp-1",
             platform="win32",

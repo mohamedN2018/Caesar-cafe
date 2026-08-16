@@ -26,9 +26,27 @@ from apps.core.precision import MONEY, PERCENT
 
 
 class OrderType(models.TextChoices):
+    """
+    The channel a sale happens on.
+
+    Not decoration: the type decides which price a line is rung at
+    (`VariantChannelPrice`), whether service charge applies
+    (`finance.service_applies_to`), and how the day is split in the reports. It is
+    fixed before the first item because a bill that changed channel halfway would
+    have two prices for the same bottle of water.
+
+    `EXTERNAL` is an order that arrived from outside the café — a phone call, a
+    delivery app — as opposed to `DELIVERY`, which is the café's own driver taking
+    a bill somebody rang for. They are separate because they are reckoned
+    separately: an app takes a commission and sets its own menu price, so the same
+    latte is a different number and a different margin on each, and reporting them
+    as one line makes both wrong.
+    """
+
     DINE_IN = "DINE_IN", "DINE_IN"
     TAKE_AWAY = "TAKE_AWAY", "TAKE_AWAY"
     DELIVERY = "DELIVERY", "DELIVERY"
+    EXTERNAL = "EXTERNAL", "EXTERNAL"
 
 
 class OrderStatus(models.TextChoices):

@@ -259,13 +259,23 @@ class TestPermission:
         order.refresh_from_db()
         assert order.subtotal == Decimal("100.00"), "refused, not merely reported"
 
-    def test_a_branch_manager_cannot_either(self, manager, order) -> None:
-        """The deliberate absence. They approve it; they do not hold it."""
+    def test_a_branch_manager_holds_it_directly_now(self, manager, order) -> None:
+        """
+        It used to be a deliberate absence: the manager APPROVED an override and
+        did not hold it, so a price change always carried two names.
+
+        That split belongs to a chain. Here the manager is the owner, and a
+        step-up approval you grant yourself is a dialog, not a control. The
+        override is still recorded against them and still writes a PriceHistory
+        row — the trail is what makes it accountable, not the second signature.
+
+        The refusal itself is still tested, one test above, against a cashier.
+        """
         response = manager.post(
             f"/api/v1/orders/{order.id}/events/", {"events": [override("50.00")]}, format="json"
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 200
 
     def test_the_owner_holds_it_directly(self, owner, order) -> None:
         response = owner.post(

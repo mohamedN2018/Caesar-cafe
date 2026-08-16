@@ -17,7 +17,9 @@ from decimal import Decimal
 
 from .registry import Range, Scope, SettingType, SubsetOf, register
 
-ORDER_TYPES = ("DINE_IN", "TAKE_AWAY", "DELIVERY")
+#: Kept in step with `orders.OrderType` by `test_order_types.py` — a channel the
+#: model knows and the settings do not is a channel nobody can switch on.
+ORDER_TYPES = ("DINE_IN", "TAKE_AWAY", "DELIVERY", "EXTERNAL")
 WEEKDAYS = (
     "SATURDAY",
     "SUNDAY",
@@ -314,7 +316,13 @@ register(
 register(
     key="orders.enabled_types",
     type=SettingType.LIST,
-    default=["DINE_IN", "TAKE_AWAY"],
+    # All four. The default was DINE_IN and TAKE_AWAY, and since nothing read
+    # this setting the till showed three types regardless — so a café that
+    # delivers had a channel it could not switch off and a channel it could not
+    # switch on, from a screen that offered both. Now it IS read, at the till and
+    # at `open_order`, so the default has to be the honest one: every channel
+    # available, and a café that does not deliver turns delivery off.
+    default=["DINE_IN", "TAKE_AWAY", "DELIVERY", "EXTERNAL"],
     scope=Scope.BRANCH,
     group="orders",
     label_ar="أنواع الطلبات المفعّلة",

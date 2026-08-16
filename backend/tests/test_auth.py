@@ -400,11 +400,22 @@ class TestPermissionEnforcement:
         client = authed(make_user(role="BRANCH_MANAGER"), branch=branch)
         assert client.get("/api/v1/settings/schema/").status_code == 200
 
-    def test_branch_manager_cannot_weaken_security_settings(
+    def test_security_settings_still_need_their_own_permission(
         self, make_user, authed, organization, branch
     ) -> None:
-        """`security.*` needs system.settings, which BRANCH_MANAGER lacks."""
-        client = authed(make_user(role="BRANCH_MANAGER"), branch=branch)
+        """
+        `security.*` needs `system.settings`, and the gate still bites.
+
+        This used to be asserted against BRANCH_MANAGER, which no longer proves
+        anything: on a single-café install that role holds every permission on
+        purpose — the manager, the operator and whoever handles HR are the owner
+        or answer to them across a room.
+
+        Pointed at a role that genuinely lacks it instead. The policy changed;
+        the ENFORCEMENT must not, and a test that moved with the policy would
+        have left nothing checking the mechanism at all.
+        """
+        client = authed(make_user(role="CASHIER"), branch=branch)
         response = client.patch(
             "/api/v1/settings/",
             {
@@ -414,10 +425,30 @@ class TestPermissionEnforcement:
             },
             format="json",
         )
-        assert response.status_code in (207, 400)
-        body = response.json()
-        errors = body.get("data", body).get("errors", body.get("errors", {}))
-        assert "security.require_mfa_for_roles" in errors
+        assert response.status_code in (207, 400, 403)
+        if response.status_code != 403:
+            body = response.json()
+            errors = body.get("data", body).get("errors", body.get("errors", {}))
+            assert "security.require_mfa_for_roles" in errors
+
+    def test_the_cafe_manager_holds_everything_the_admin_does(self, make_user, roles) -> None:
+        """
+        Deliberate, and stated out loud so it cannot become an accident.
+
+        The role was an explicit list with careful absences — licences, backups,
+        role management, device revocation. That reasoning belongs to a chain,
+        where a branch manager could shut a sibling branch's tills. This product
+        runs ONE café, and a permission withheld from the person who bought the
+        licence produced a screen they could see the name of and not open.
+        """
+        from apps.authz import catalog
+
+        assert set(catalog.SYSTEM_ROLES["BRANCH_MANAGER"]["permissions"]) == set(
+            catalog.PERMISSION_CODES
+        )
+        assert set(catalog.SYSTEM_ROLES["CASHIER"]["permissions"]) != set(
+            catalog.PERMISSION_CODES
+        ), "a till is still a till — this is not a blanket amnesty"
 
     def test_permission_cache_invalidates_within_one_request(
         self, make_user, roles, branch

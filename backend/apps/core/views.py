@@ -141,9 +141,7 @@ def _demo_accounts() -> list[dict[str, str]]:
     from apps.accounts.models import User
 
     known = {email for email, _, _, _ in _DEMO_STAFF}
-    live = set(
-        User.objects.filter(email__in=known, is_active=True).values_list("email", flat=True)
-    )
+    live = set(User.objects.filter(email__in=known, is_active=True).values_list("email", flat=True))
 
     accounts = [
         {"email": email, "password": _DEMO_PASSWORD, "name": name, "role": role, "pin": pin}

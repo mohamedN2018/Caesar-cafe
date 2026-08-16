@@ -23,6 +23,7 @@ import UiSkeleton from '@/components/ui/UiSkeleton.vue'
 import UiTable from '@/components/ui/UiTable.vue'
 import { useAuthStore } from '@/stores/auth'
 import { dateTime, money } from '@/lib/format'
+import { orderTypeLabel } from '@/lib/orderTypes'
 
 interface Column {
   key: string
@@ -31,6 +32,14 @@ interface Column {
   /** Render as money. Values arrive as strings and stay strings until here. */
   money?: boolean
   time?: boolean
+  /**
+   * Translate a wire code into the word people use for it.
+   *
+   * Only `orderType` today. The channel arrives as `EXTERNAL`, which is the
+   * value the API, the sync log and the Desktop all agree on — and is not a
+   * thing to print on a report somebody reads at closing.
+   */
+  label_map?: 'orderType'
   /**
    * Include this column in the totals row.
    *
@@ -299,6 +308,31 @@ const TABS: Tab[] = [
     note: 'مطابقة النقدي مع البطاقات — الفرق بينهما هو ما يجب أن يكون في الدرج.',
   },
   {
+    key: 'channels',
+    label: 'قنوات البيع',
+    path: 'sales/by-channel',
+    permission: 'reports.sales',
+    section: 'channels',
+    columns: [
+      { key: 'channel', label: 'القناة', label_map: 'orderType' },
+      { key: 'count', label: 'الطلبات', align: 'end', sum: true },
+      { key: 'amount', label: 'المبلغ', align: 'end', money: true, sum: true },
+      { key: 'average_ticket', label: 'متوسط الطلب', align: 'end', money: true },
+      { key: 'share_percent', label: 'الحصة %', align: 'end' },
+    ],
+    chart: {
+      label: 'channel',
+      value: 'amount',
+      // Share of one total across four categories — the question a doughnut
+      // answers well, and the same reasoning as the payment-methods one.
+      kind: 'share',
+      title: 'حصة كل قناة من المبيعات',
+    },
+    note:
+      'القناة تحدد السعر الذي بيع به الصنف — نفس اللاتيه له سعر في الصالة وسعر على التطبيق. ' +
+      'فصل الطلب الخارجي هنا هو الطريقة الوحيدة لمعرفة ربحه الحقيقي بعد عمولة التطبيق.',
+  },
+  {
     key: 'products',
     label: 'ربحية الأصناف',
     path: 'products/profitability',
@@ -447,6 +481,7 @@ function cell(row: Record<string, string | number>, column: Column): string {
   if (value === null || value === undefined || value === '') return '—'
   if (column.money) return money(String(value))
   if (column.time) return dateTime(String(value))
+  if (column.label_map === 'orderType') return orderTypeLabel(String(value))
   return String(value)
 }
 

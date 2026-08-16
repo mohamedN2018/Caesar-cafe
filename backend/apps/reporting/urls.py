@@ -13,6 +13,7 @@ from .views import (
     PurchasesSummaryView,
     RollupRebuildView,
     SalesByCategoryView,
+    SalesByChannelView,
     SalesByHourView,
     SalesByPaymentMethodView,
     SalesSummaryView,
@@ -28,6 +29,7 @@ urlpatterns = [
     path("sales/by-hour/", SalesByHourView.as_view(), name="sales-by-hour"),
     path("sales/by-category/", SalesByCategoryView.as_view(), name="sales-by-category"),
     path("sales/by-payment-method/", SalesByPaymentMethodView.as_view(), name="sales-by-method"),
+    path("sales/by-channel/", SalesByChannelView.as_view(), name="sales-by-channel"),
     path("products/top/", ProductsTopView.as_view(), name="products-top"),
     path(
         "products/profitability/",

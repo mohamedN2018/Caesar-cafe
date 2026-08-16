@@ -6,11 +6,26 @@ from .models import Device, License, LicenseEvent, LicenseType
 
 
 class ActivationRequestSerializer(serializers.Serializer):
+    """
+    What it takes to turn a machine into a till: the key, and a name for it.
+
+    The email is gone. This product is **one café on several machines** — two
+    tills, the office, the manager — and there is no customer directory to check
+    an address against; the owner holds the key and installs on their own
+    hardware. Asking for a registered email meant somebody standing at a new till
+    had to remember which address the licence was issued under, and getting it
+    wrong looked identical to a wrong key.
+
+    The key is the credential, and it is the only one. It carries enough entropy
+    to be one, and the endpoint is rate-limited to 5/hour/IP.
+    """
+
     license_key = serializers.CharField(
         help_text="QSR-XXXX-XXXX-XXXX-XXXX. Case and dashes are normalized."
     )
-    email = serializers.EmailField()
-    device_name = serializers.CharField(max_length=100)
+    device_name = serializers.CharField(
+        max_length=100, help_text="What this machine is called — «كاشير ١», «مكتب المدير»."
+    )
     mode = serializers.ChoiceField(choices=["POS", "KDS", "BOTH"], default="POS")
     platform = serializers.CharField(required=False, allow_blank=True, max_length=64)
     app_version = serializers.CharField(required=False, allow_blank=True, max_length=32)
@@ -73,6 +88,7 @@ class LicenseSerializer(serializers.ModelSerializer):
         from django.conf import settings
 
         return obj.key_plaintext if getattr(settings, "DEMO_MODE", False) else ""
+
     active_device_count = serializers.IntegerField(read_only=True)
     seats_available = serializers.IntegerField(read_only=True)
     branch_name = serializers.CharField(source="branch.name_ar", read_only=True, default=None)
@@ -85,8 +101,6 @@ class LicenseSerializer(serializers.ModelSerializer):
             "readable_key",
             "key_prefix",
             "key_last4",
-            "customer_email",
-            "customer_name",
             "license_type",
             "status",
             "starts_at",
@@ -113,10 +127,22 @@ class IssuedLicenseSerializer(LicenseSerializer):
 
 
 class IssueLicenseSerializer(serializers.Serializer):
-    customer_email = serializers.EmailField()
-    customer_name = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    """
+    Issuing a licence for this café.
+
+    No customer fields. There is one café and one organisation, and the
+    organisation IS the customer — a name and an address recorded a second time
+    on the licence were two copies of the same fact, free to drift apart, and
+    nothing read them except the activation check that no longer exists.
+
+    `max_devices` defaults to eight rather than three: two tills, the office, the
+    manager's laptop, a kitchen screen and room to replace one without first
+    revoking another. Seats exist to stop a licence being shared between cafés,
+    not to ration a café's own machines.
+    """
+
     license_type = serializers.ChoiceField(choices=LicenseType.choices)
-    max_devices = serializers.IntegerField(min_value=1, max_value=100, default=3)
+    max_devices = serializers.IntegerField(min_value=1, max_value=100, default=8)
     expires_at = serializers.DateTimeField(
         required=False, allow_null=True, help_text="Omit for a LIFETIME licence."
     )

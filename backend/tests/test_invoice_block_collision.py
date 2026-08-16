@@ -39,7 +39,6 @@ def issued(organization, branch):
     return services.issue_license(
         organization=organization,
         branch=branch,
-        customer_email="owner@caesar.test",
         license_type="YEARLY",
         max_devices=3,
         expires_at=timezone.now() + timedelta(days=365),
@@ -50,7 +49,6 @@ def issued(organization, branch):
 def device(issued):
     return services.activate(
         license_key=issued.plaintext_key,
-        email="owner@caesar.test",
         device_name="Cashier-01",
         branch=None,
         mode="POS",

@@ -2842,6 +2842,103 @@ frontend 173 → 176.
 
 ---
 
+## One café, several machines — and a fourth channel ✅ COMPLETE (2026-08-16)
+
+### The licence stopped pretending there is a customer directory
+
+Activation asked for the key, a device name **and the registered email**, and the
+licence carried a customer name and address of its own. All of that is the shape
+of a product sold to many cafés by a vendor who keeps a customer list.
+
+This is one café. The organisation IS the customer, and those columns were a
+second copy of its identity — free to drift from the first, read by nothing except
+an activation check that made a new till ask a question nobody at the counter can
+answer. The person standing at a new machine is a manager, not whoever the licence
+was issued to, and a wrong address failed identically to a wrong key.
+
+**The key is the credential now, and it is the only one.** It carries the entropy
+to be one and the endpoint is rate-limited to 5/hour/IP. Two fields: the key, and
+what to call this machine. It is stored on the device and never asked again.
+
+`max_devices` goes from 3 to 8. Two tills, the office, the manager's laptop, a
+kitchen screen, and room to replace one without revoking another first. Seats
+exist to stop a licence running two cafés — not to ration a café's own machines.
+
+### The manager holds everything
+
+`BRANCH_MANAGER` was an explicit list with careful absences: licences, backups,
+role management, device revocation, `system.settings`. That reasoning belongs to a
+chain, where a branch manager could shut a sibling branch's tills. Here the
+manager, the operator and whoever handles HR are the owner or answer to them
+across a room, and a permission withheld from the person who bought the licence
+produced a screen they could see the name of and not open.
+
+Both enforcement tests were re-pointed at a role that genuinely lacks the
+permission rather than deleted. **The policy changed; the mechanism must not**, and
+a test that moves with the policy leaves nothing checking the gate at all.
+
+### A setting that had never been read
+
+`orders.enabled_types` has been in the registry since it was built. It appeared on
+the settings screen, took a value, saved it — **and nothing read it.** The till
+drew a hardcoded three regardless. So a café that does not deliver had a delivery
+button it could not remove, and one that does had a switch that turned nothing on:
+the worst kind of setting, because it looks like it worked.
+
+It is read now, in two places that cannot disagree — `/orders/types/` tells the
+till what to draw, and `open_order` refuses a channel the branch has switched off.
+Served from its own endpoint rather than from `/settings/` because a cashier holds
+`orders.create` and not `system.settings`, and a till that must be an administrator
+to know which buttons to draw is a till that draws the wrong ones.
+
+### EXTERNAL — an order from outside
+
+A fourth channel beside صالة / تيك أواي / توصيل. Distinct from DELIVERY, which is
+the café's own driver taking out a bill somebody rang for: an app takes a
+commission and sets its own menu price, so the same latte is a different number
+and a different margin on each, and reported as one line both are wrong.
+
+It carries its own `VariantChannelPrice`, takes no service charge (service is for
+table service), and needs no table.
+
+With it comes `reports/sales/by-channel/` — count, takings, share and average
+ticket per channel. The channel decides what a line was rung at; without this
+screen there was no way to see what any of it earned.
+
+### What the new check found the moment it existed
+
+`seed_demo` chose the channel from string literals, one of which read `TAKEAWAY` —
+no underscore. The enum member is `TAKE_AWAY`.
+
+Nothing rejected it. `order_type` is a CharField with choices, and **Django does
+not enforce choices on `.create()`**. So a quarter of every seeded day carried a
+channel that matches no channel price, groups under no channel in a report, and
+renders in the SPA as the raw word TAKEAWAY. It survived because it looked right
+in a diff, and the first thing that ever compared the string against the real set
+was the guard added here.
+
+Twelve rows in the running database. The seed now takes its values from the enum,
+and a data migration repairs what it already wrote — safe anywhere, since
+`TAKEAWAY` was never a value the product could produce by any other route.
+
+Two guards keep the pieces in step: the model's channels and the settings registry
+must be the same set, and every channel must have an Arabic name — checked on the
+server, and on the client against the GENERATED api types, so neither can pass by
+agreeing with itself.
+
+### Verified
+
+Live, through the real API: `/orders/types/` returns four channels with the default
+marked and only dine-in needing a table; a licence issued with no customer fields
+and `max_devices` 8; a device activated with **the key and a name only**, and a
+nameless attempt still refused; an EXTERNAL order opened with no table, rung, and
+taking no service charge; and the channel report splitting the fortnight
+80/19/1 across the room, takeaway and delivery.
+
+backend 1177 → 1190; frontend 176 → 180.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

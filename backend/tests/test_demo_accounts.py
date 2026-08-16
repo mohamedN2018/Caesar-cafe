@@ -121,9 +121,7 @@ class TestWhatItPublishes:
     def test_every_offered_account_carries_a_pin_for_the_till(self, client, settings, org) -> None:
         settings.DEMO_MODE = True
         for email, name, _role, _pin in _DEMO_STAFF:
-            User.objects.create_user(
-                email=email, password="x", organization=org, full_name_ar=name
-            )
+            User.objects.create_user(email=email, password="x", organization=org, full_name_ar=name)
 
         accounts = [a for a in info(client)["demo_accounts"] if a["password"]]
 

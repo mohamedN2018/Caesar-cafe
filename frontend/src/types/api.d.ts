@@ -591,12 +591,30 @@ export interface paths {
          *     leaves a trail that explains why last Monday's total differs from today's.
          */
         get: operations["catalog_variants_retrieve"];
-        put?: never;
+        /**
+         * @description Price changes, always recorded.
+         *
+         *     A receipt is a legal record of what was sold at what price, so every change
+         *     leaves a trail that explains why last Monday's total differs from today's.
+         */
+        put: operations["catalog_variants_update"];
         post?: never;
-        delete?: never;
+        /**
+         * @description Price changes, always recorded.
+         *
+         *     A receipt is a legal record of what was sold at what price, so every change
+         *     leaves a trail that explains why last Monday's total differs from today's.
+         */
+        delete: operations["catalog_variants_destroy"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * @description Price changes, always recorded.
+         *
+         *     A receipt is a legal record of what was sold at what price, so every change
+         *     leaves a trail that explains why last Monday's total differs from today's.
+         */
+        patch: operations["catalog_variants_partial_update"];
         trace?: never;
     };
     "/api/v1/catalog/variants/change/": {
@@ -2428,6 +2446,33 @@ export interface paths {
         put?: never;
         /** Void an order */
         post: operations["orders_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/orders/types/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Order channels enabled for this branch
+         * @description The channels this till may open an order on.
+         *
+         *     Read from `orders.enabled_types`, which had been in the settings registry
+         *     since it was built with **nothing reading it** — the till showed a hardcoded
+         *     three whatever the branch had configured. Served from here rather than from
+         *     `/settings/` because a cashier holds `orders.create` and not
+         *     `system.settings`, and a till that has to be an administrator to know which
+         *     buttons to draw is a till that draws the wrong ones.
+         */
+        get: operations["orders_types_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4272,6 +4317,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/system/deleted/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List deactivated items
+         * @description Rows deleted through the interface. Deleting deactivates rather than removes, so every one of these is recoverable.
+         */
+        get: operations["system_deleted_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/system/deleted/restore/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Restore a deactivated item
+         * @description Reactivate one row.
+         */
+        post: operations["system_deleted_restore_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/system/health/": {
         parameters: {
             query?: never;
@@ -4320,11 +4405,23 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description What it takes to turn a machine into a till: the key, and a name for it.
+         *
+         *     The email is gone. This product is **one café on several machines** — two
+         *     tills, the office, the manager — and there is no customer directory to check
+         *     an address against; the owner holds the key and installs on their own
+         *     hardware. Asking for a registered email meant somebody standing at a new till
+         *     had to remember which address the licence was issued under, and getting it
+         *     wrong looked identical to a wrong key.
+         *
+         *     The key is the credential, and it is the only one. It carries enough entropy
+         *     to be one, and the endpoint is rate-limited to 5/hour/IP.
+         */
         ActivationRequestRequest: {
             /** @description QSR-XXXX-XXXX-XXXX-XXXX. Case and dashes are normalized. */
             license_key: string;
-            /** Format: email */
-            email: string;
+            /** @description What this machine is called — «كاشير ١», «مكتب المدير». */
             device_name: string;
             /** @default POS */
             mode: components["schemas"]["DeviceModeEnum"];
@@ -4733,6 +4830,29 @@ export interface components {
             top_products: components["schemas"]["TopProduct"][];
             by_hour: components["schemas"]["HourBucket"][];
         };
+        DeletedItem: {
+            id: string;
+            /** @description app.Model, e.g. catalog.Product */
+            kind: string;
+            kind_label: string;
+            title: string;
+            /** Format: date-time */
+            deactivated_at: string | null;
+        };
+        DeletedList: {
+            items: components["schemas"]["DeletedItem"][];
+            counts: {
+                [key: string]: number;
+            };
+        };
+        DemoAccount: {
+            email: string;
+            password: string;
+            name: string;
+            role: string;
+            /** @description For the POS keypad. Empty for office-only accounts. */
+            pin: string;
+        };
         /**
          * @description A single human-readable result message.
          *
@@ -5082,12 +5202,22 @@ export interface components {
             readonly grand_total: string;
             readonly snapshot: unknown;
         };
+        /**
+         * @description Issuing a licence for this café.
+         *
+         *     No customer fields. There is one café and one organisation, and the
+         *     organisation IS the customer — a name and an address recorded a second time
+         *     on the licence were two copies of the same fact, free to drift apart, and
+         *     nothing read them except the activation check that no longer exists.
+         *
+         *     `max_devices` defaults to eight rather than three: two tills, the office, the
+         *     manager's laptop, a kitchen screen and room to replace one without first
+         *     revoking another. Seats exist to stop a licence being shared between cafés,
+         *     not to ration a café's own machines.
+         */
         IssueLicenseRequest: {
-            /** Format: email */
-            customer_email: string;
-            customer_name?: string;
             license_type: components["schemas"]["LicenseTypeEnum"];
-            /** @default 3 */
+            /** @default 8 */
             max_devices: number;
             /**
              * Format: date-time
@@ -5102,12 +5232,10 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly masked_key: string;
+            readonly readable_key: string;
             /** @description QSR-7X29, for display. */
             readonly key_prefix: string;
             readonly key_last4: string;
-            /** Format: email */
-            readonly customer_email: string;
-            readonly customer_name: string;
             readonly license_type: components["schemas"]["LicenseTypeEnum"];
             readonly status: components["schemas"]["LicenseStatusEnum"];
             /** Format: date-time */
@@ -5155,12 +5283,10 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly masked_key: string;
+            readonly readable_key: string;
             /** @description QSR-7X29, for display. */
             readonly key_prefix: string;
             readonly key_last4: string;
-            /** Format: email */
-            readonly customer_email: string;
-            readonly customer_name: string;
             readonly license_type: components["schemas"]["LicenseTypeEnum"];
             readonly status: components["schemas"]["LicenseStatusEnum"];
             /** Format: date-time */
@@ -5524,13 +5650,20 @@ export interface components {
             /** @default 0 */
             readonly item_count: number;
         };
+        OrderType: {
+            value: string;
+            label: string;
+            is_default: boolean;
+            needs_table: boolean;
+        };
         /**
          * @description * `DINE_IN` - DINE_IN
          *     * `TAKE_AWAY` - TAKE_AWAY
          *     * `DELIVERY` - DELIVERY
+         *     * `EXTERNAL` - EXTERNAL
          * @enum {string}
          */
-        OrderTypeEnum: "DINE_IN" | "TAKE_AWAY" | "DELIVERY";
+        OrderTypeEnum: "DINE_IN" | "TAKE_AWAY" | "DELIVERY" | "EXTERNAL";
         /**
          * @description * `ORGANIZATION` - ORGANIZATION
          *     * `BRANCH` - BRANCH
@@ -5955,6 +6088,16 @@ export interface components {
             is_sellable?: boolean;
             is_active?: boolean;
             sort_order?: number;
+        };
+        PatchedProductVariantRequest: {
+            /** @description وسط / كبير. Blank if sole. */
+            name_ar?: string;
+            sku?: string;
+            /** Format: decimal */
+            price?: string;
+            is_default?: boolean;
+            sort_order?: number;
+            is_active?: boolean;
         };
         PatchedPurchaseOrderRequest: {
             /** Format: uuid */
@@ -6757,6 +6900,10 @@ export interface components {
             origin: components["schemas"]["OriginEnum"];
             is_default: boolean;
         };
+        RestoreRequestRequest: {
+            kind: string;
+            id: string;
+        };
         Role: {
             /** Format: uuid */
             readonly id: string;
@@ -7299,6 +7446,9 @@ export interface components {
             /** @description Clients below this are refused everything except the heartbeat. */
             min_supported_client_version: string;
             api_version: string;
+            demo_mode: boolean;
+            /** @description Present ONLY when DEMO_MODE is on. Empty everywhere else — this endpoint is unauthenticated, so a populated list on a real install would be the staff login sheet, published. */
+            demo_accounts?: components["schemas"]["DemoAccount"][];
         };
         Table: {
             /** Format: uuid */
@@ -8761,6 +8911,99 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ProductVariant"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_variants_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product variant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProductVariantRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProductVariantRequest"];
+                "multipart/form-data": components["schemas"]["ProductVariantRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["ProductVariant"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    catalog_variants_destroy: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product variant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    catalog_variants_partial_update: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                /** @description نوع نص UUID يحدد هذا product variant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedProductVariantRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["PatchedProductVariantRequest"];
+                "multipart/form-data": components["schemas"]["PatchedProductVariantRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -12703,6 +12946,33 @@ export interface operations {
             };
         };
     };
+    orders_types_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["OrderType"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     payments_list: {
         parameters: {
             query?: never;
@@ -16255,6 +16525,66 @@ export interface operations {
                         /** @enum {boolean} */
                         success: true;
                         data: components["schemas"]["BranchStatus"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    system_deleted_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["DeletedList"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    system_deleted_restore_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RestoreRequestRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["RestoreRequestRequest"];
+                "multipart/form-data": components["schemas"]["RestoreRequestRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["DeletedItem"];
                         meta?: {
                             /** @description Correlates this response with server logs. */
                             request_id?: string;

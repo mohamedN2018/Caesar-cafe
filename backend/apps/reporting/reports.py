@@ -327,6 +327,59 @@ def sales_by_payment_method(branch, date_from: date, date_to: date) -> dict:
     }
 
 
+def sales_by_channel(branch, date_from: date, date_to: date) -> dict:
+    """
+    The day split by the channel each sale came in on.
+
+    The channel is not a label. It decides which price a line is rung at
+    (`VariantChannelPrice`) and whether service applies, so a café selling the
+    same latte at 75 in the room and 95 on an app has two different margins in
+    one total — and no way to see either.
+
+    That mattered more once `EXTERNAL` existed: an order from an app carries a
+    commission the café never sees on this screen, and the only honest way to
+    reason about it is to have its takings on their own line.
+
+    Read from orders rather than the rollup because the rollup does not carry a
+    channel. Restricted to SETTLED orders — an open bill is not takings, and a
+    cancelled one never was.
+    """
+    start, end = business_day.range_window(branch, date_from, date_to)
+
+    buckets: dict = {}
+    for order in Order.objects.filter(
+        branch=branch,
+        opened_at__gte=start,
+        opened_at__lt=end,
+        # `rollups.SETTLED`, the same definition every other report uses. An
+        # invented tuple here would have made this the one report that disagreed
+        # with the summary above it about what a sale is.
+        status__in=rollups.SETTLED,
+    ).only("order_type", "grand_total"):
+        bucket = buckets.setdefault(order.order_type, {"count": 0, "amount": ZERO})
+        bucket["count"] += 1
+        bucket["amount"] += order.grand_total
+
+    total = sum((b["amount"] for b in buckets.values()), ZERO)
+
+    return {
+        "channels": [
+            {
+                "channel": channel,
+                "count": data["count"],
+                "amount": _money(data["amount"]),
+                # The share, computed here rather than on the client: three
+                # screens would each round it differently and the column would
+                # not add to 100.
+                "share_percent": _money((data["amount"] / total * 100) if total else ZERO),
+                "average_ticket": _money(data["amount"] / data["count"] if data["count"] else ZERO),
+            }
+            for channel, data in sorted(buckets.items(), key=lambda kv: -kv[1]["amount"])
+        ],
+        "total": _money(total),
+    }
+
+
 # ── products ─────────────────────────────────────────────────────────────────
 
 

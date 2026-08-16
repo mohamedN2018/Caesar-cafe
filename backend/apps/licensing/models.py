@@ -84,8 +84,16 @@ class License(BaseModel):
     )
     key_last4 = models.CharField(max_length=8)
 
-    customer_email = models.EmailField()
-    customer_name = models.CharField(max_length=200, blank=True)
+    # Kept, unused, and no longer required.
+    #
+    # This is a single-café product: the organisation IS the customer, and these
+    # were a second copy of its identity, free to drift from the first. Nothing
+    # reads them now — activation asks for the key and a device name and nothing
+    # else. Dropped from the forms rather than from the table, because a column
+    # that once held real addresses is not worth deleting to save two rows of
+    # schema.
+    customer_email = models.EmailField(blank=True, default="")
+    customer_name = models.CharField(max_length=200, blank=True, default="")
 
     license_type = models.CharField(
         max_length=16, choices=LicenseType.choices, default=LicenseType.YEARLY

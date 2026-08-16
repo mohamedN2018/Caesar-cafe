@@ -178,6 +178,16 @@ class SalesByPaymentMethodView(ReportView):
         return super().get(request)
 
 
+class SalesByChannelView(ReportView):
+    report_key = "sales/by-channel"
+    required_permission = "reports.sales"
+    compute = staticmethod(reports.sales_by_channel)
+
+    @extend_schema(summary="Sales by channel", parameters=DATE_PARAMS, responses={200: None})
+    def get(self, request: Request):
+        return super().get(request)
+
+
 # ── products ─────────────────────────────────────────────────────────────────
 
 

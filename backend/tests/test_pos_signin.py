@@ -41,7 +41,6 @@ def device(organization, branch) -> Device:
         branch=branch,
         key_hash=uuid.uuid4().hex,
         key_prefix="QSR-TEST",
-        customer_email="owner@caesar.test",
         license_type=LicenseType.YEARLY,
         max_devices=3,
     )

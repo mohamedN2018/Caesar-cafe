@@ -68,7 +68,10 @@ class TestTheDemoIsReachable:
         licence = License.objects.get(branch__code="MB")
         assert licence.branch is not None, "an org-wide licence cannot allocate invoice blocks"
         assert licence.status == LicenseStatus.PENDING
-        assert licence.max_devices == 3
+        # Eight: two tills, the office, the manager, a kitchen screen, and room
+        # to replace one without revoking another first. Seats stop one licence
+        # running two cafés; they do not ration a café's own machines.
+        assert licence.max_devices == 8
 
     def test_the_key_it_prints_actually_activates_a_terminal(self) -> None:
         """
@@ -76,11 +79,9 @@ class TestTheDemoIsReachable:
         demo still unusable if the printed key does not open the till.
         """
         output = seed()
-        licence = License.objects.get(branch__code="MB")
 
         activation = licensing_services.activate(
             license_key=printed_key(output),
-            email=licence.customer_email,
             device_name="كاشير الباب",
             branch=None,
             mode="POS",
@@ -93,15 +94,20 @@ class TestTheDemoIsReachable:
         assert activation.device.status == DeviceStatus.ACTIVE
         assert activation.device_secret, "a terminal with no secret cannot authenticate"
 
-    def test_the_summary_names_the_email_the_key_is_registered_to(self) -> None:
+    def test_the_summary_asks_for_nothing_but_the_key(self) -> None:
         """
-        Activation compares the email in constant time and refuses a mismatch, so
-        a key printed without the address it belongs to is a key that fails with
-        a message about the wrong field.
+        Activation needs the key and a device name. It used to need a registered
+        email too, and the summary printed that address beside the key because a
+        key without it failed with a message about the wrong field.
+
+        Both are gone. This asserts the summary does not resurrect the address —
+        printing a credential nobody is asked for is how a stale instruction
+        survives a simplification.
         """
         output = seed()
 
-        assert License.objects.get(branch__code="MB").customer_email in output
+        assert "licence email" not in output
+        assert "licence key" in output
 
     def test_the_plaintext_key_is_never_stored(self) -> None:
         """
@@ -130,10 +136,8 @@ class TestReseeding:
         reset.
         """
         output = seed()
-        licence = License.objects.get(branch__code="MB")
         licensing_services.activate(
             license_key=printed_key(output),
-            email=licence.customer_email,
             device_name="كاشير الباب",
             branch=None,
             mode="POS",

@@ -44,7 +44,7 @@ const pin = ref('')
 const badge = ref('')
 const scanner = ref<HTMLInputElement | null>(null)
 
-const enrolment = ref({ license_key: '', email: '', device_name: '' })
+const enrolment = ref({ license_key: '', device_name: '' })
 
 /**
  * `back` rather than only `clear`.
@@ -154,12 +154,19 @@ async function submitPin() {
   await finish(await terminal.signIn({ pin: pin.value }))
 }
 
+/**
+ * Two fields, and this machine is a till for good.
+ *
+ * It used to ask for the licence email as well. On a single-café product that
+ * was a question with no good answer at the counter: the person standing at a
+ * new till is a manager, not the person the licence was issued to, and a wrong
+ * address failed exactly like a wrong key.
+ */
 async function submitEnrolment() {
-  const { license_key, email, device_name } = enrolment.value
-  if (!license_key.trim() || !email.trim() || !device_name.trim()) return
+  const { license_key, device_name } = enrolment.value
+  if (!license_key.trim() || !device_name.trim()) return
   await terminal.enrol({
     license_key: license_key.trim(),
-    email: email.trim(),
     device_name: device_name.trim(),
   })
 }
@@ -194,15 +201,14 @@ onMounted(() => {
       <!-- Once, by a manager. -->
       <form v-if="!terminal.isEnrolled" class="enrol" @submit.prevent="submitEnrolment">
         <p class="lead">
-          هذا المتصفح لم يُفعَّل بعد. أدخل مفتاح ترخيص الفرع مرة واحدة، وبعدها يدخل الكاشير
-          برمزه أو ببطاقته فقط.
+          هذا الجهاز لم يُفعَّل بعد. أدخل مفتاح الترخيص مرة واحدة — يُحفظ على هذا الجهاز ولا
+          يُسأل عنه مرة أخرى، وبعدها يدخل الكاشير برمزه أو ببطاقته فقط.
         </p>
         <UiInput v-model="enrolment.license_key" label="مفتاح الترخيص" ltr required />
-        <UiInput v-model="enrolment.email" label="البريد المسجل للترخيص" type="email" ltr required />
         <UiInput
           v-model="enrolment.device_name"
           label="اسم هذا الجهاز"
-          hint="اسم يعرفه الناس — «كاشير الباب»، «كاشير الداخل»."
+          hint="اسم يعرفه الناس — «كاشير ١»، «كاشير ٢»، «مكتب المدير»."
           required
         />
         <button type="submit" class="go" :disabled="terminal.busy">تفعيل الجهاز</button>
