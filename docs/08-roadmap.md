@@ -2542,6 +2542,96 @@ guard caught `var(--line)` (the token is `--border`), the icon guard caught a
 
 ---
 
+## Section by section, and the bin nobody could see ✅ COMPLETE (2026-08-16)
+
+### The audit first, and again it paid
+
+Every write endpoint in the generated schema, cross-referenced against the shipped
+frontend; then every soft-deletable model against the screens that manage it.
+
+**The sections were nearly complete.** Twelve already had list, create, edit and
+delete. The gaps that looked alarming in an earlier pass turned out to be
+deliberate — `audit` is append-only, `orders` is event-sourced, `shifts` are
+financial records, `reports` are computed. Building CRUD into those would have
+broken the property that makes the money trustworthy, so the audit's most useful
+output was the work it prevented.
+
+Two real gaps came out of it.
+
+### A variant could be created and never corrected
+
+`/catalog/products/{id}/variants/` accepted POST, and `/catalog/variants/{id}/`
+answered GET and nothing else. A mis-typed size — wrong name, wrong price, a
+duplicate — was permanent, and the only way out was editing the row in the
+database.
+
+The permissions split rather than sharing one. Renaming or removing a variant is
+`catalog.edit`, ordinary catalogue work. Changing a PRICE stays
+`catalog.change_price`, which is marked sensitive and writes a `PriceHistory`
+row — a receipt is a legal record of what was sold at what price, and that trail
+is what lets last Monday's total be explained.
+
+### Deleting hid things with no way back
+
+The larger one. `perform_destroy` deactivates rather than deletes —
+`is_active = False` — because a product that has ever been sold must not be
+removable, or last quarter's reports silently rewrite themselves. That rule is
+right.
+
+But **deactivated rows became invisible.** A category switched off by accident was
+gone from every screen, still sitting in the database, with no route back that did
+not involve a shell. "Deleted" behaved like deleted while promising it did not,
+which is the worst of both: the safety was paid for and never delivered.
+
+So the bin is not new storage. It is a view of what was already there — fourteen
+models across nine apps, each row restorable, most-recently-deleted first, because
+somebody opening this screen is almost always looking for the thing they removed a
+minute ago.
+
+Decisions worth keeping:
+
+  * **The registry is explicit, not discovered.** Walking `__subclasses__` would
+    silently pick up models that inherit the mixin and have no business being
+    restored from an admin screen. `Organization` is soft-deletable and
+    deliberately absent: restoring a whole tenant from a bin beside "categories"
+    is not a mistake anybody makes and needs undone.
+  * **`system.restore` is its own permission.** Anyone who can manage a catalogue
+    can deactivate a product; putting back what somebody else removed — months
+    ago, possibly for a reason — is a narrower right. It sits with the
+    settings-level permissions, so Super Admin holds it and a branch manager does
+    not.
+  * **Restore is found through the scoped query, never by primary key alone.**
+    Every other error in that module is undoable by deleting again; restoring
+    across tenants puts somebody else's row back into their live catalogue.
+  * **No confirmation on restore.** It IS the undo. Asking "are you sure you want
+    to undo?" is a dialog that only ever gets dismissed, and the action is itself
+    undoable from the row's own screen.
+
+### The test that exists because the first version was wrong
+
+Each registry entry declares how to reach its organisation, and those paths are
+hand-written. Django does not validate a filter keyword until the query runs, so a
+wrong one sits silent until somebody opens the bin — **and they open it after
+deleting something by mistake, which is the worst possible moment to meet a 500.**
+
+The first version shipped `area__branch__organization_id` for tables and a direct
+`organization_id` for play tariffs. Both wrong, both 500ed the screen. A test now
+runs every entry's query and reports all the broken ones at once, alongside guards
+that each title field exists — a missing one falls back to a UUID, and an operator
+cannot restore what they cannot identify — and that every entry is genuinely
+soft-deletable.
+
+### Verified
+
+Live, through the real API: the bin listed 2, deleting a category made it 3 with
+that category first, and restoring it went back to 2 with the category returned to
+the catalogue. The two standing entries are the Zamalek and Smouha branches
+retired earlier in the week — invisible until now, and recoverable.
+
+backend +8 tests; frontend 153 → 160.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

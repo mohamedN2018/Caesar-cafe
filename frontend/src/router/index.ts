@@ -219,6 +219,21 @@ const router = createRouter({
           meta: { permission: 'branch.view' },
         },
         {
+          /**
+           * The recycle bin.
+           *
+           * Deleting deactivates rather than removes, and deactivated rows were
+           * invisible everywhere — recoverable in principle and unreachable in
+           * practice. `system.restore` rather than a catalogue permission:
+           * putting back what somebody else removed, possibly months ago and for
+           * a reason, is a narrower right than deleting.
+           */
+          path: 'deleted',
+          name: 'deleted-items',
+          component: () => import('@/views/settings/DeletedItemsView.vue'),
+          meta: { permission: 'system.restore' },
+        },
+        {
           path: 'printers',
           name: 'printers',
           component: () => import('@/views/settings/PrinterListView.vue'),

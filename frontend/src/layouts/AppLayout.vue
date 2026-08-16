@@ -96,6 +96,7 @@ const groups: NavGroup[] = [
       { label: 'سجل التدقيق', to: '/audit', icon: 'clipboard', permission: 'audit.view' },
       { label: 'النسخ الاحتياطي', to: '/backups', icon: 'save', permission: 'backups.manage' },
       { label: 'الطابعات', to: '/printers', icon: 'printer', permission: 'branch.manage_printers' },
+      { label: 'المحذوفات', to: '/deleted', icon: 'trash', permission: 'system.restore' },
       { label: 'الإعدادات', to: '/settings', icon: 'settings', permission: 'branch.view' },
     ],
   },

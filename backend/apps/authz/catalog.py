@@ -155,6 +155,18 @@ PERMISSIONS: tuple[PermissionDef, ...] = (
     _p("sync.resolve_conflicts", "sync", "حل تعارضات المزامنة", sensitive=True),
     # ── System ───────────────────────────────────────────────────────────────
     _p("system.settings", "system", "إعدادات النظام", sensitive=True),
+    # Restoring is not the same right as deleting, and is deliberately narrower.
+    # Anyone who can manage a catalogue can deactivate a product; putting one back
+    # means reaching into what somebody else removed, possibly months ago and for
+    # a reason, so it sits with the settings-level permissions rather than beside
+    # `catalog.edit`.
+    _p(
+        "system.restore",
+        "system",
+        "استرجاع المحذوفات",
+        "عرض العناصر المعطَّلة وإعادة تفعيلها",
+        sensitive=True,
+    ),
     _p("audit.view", "system", "عرض سجل التدقيق"),
     _p("backups.manage", "system", "إدارة النسخ الاحتياطي", sensitive=True),
 )

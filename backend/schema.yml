@@ -1649,6 +1649,129 @@ paths:
                 - success
                 - data
           description: ''
+    put:
+      operationId: catalog_variants_update
+      description: |-
+        Price changes, always recorded.
+
+        A receipt is a legal record of what was sold at what price, so every change
+        leaves a trail that explains why last Monday's total differs from today's.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product variant.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ProductVariantRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ProductVariant'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    patch:
+      operationId: catalog_variants_partial_update
+      description: |-
+        Price changes, always recorded.
+
+        A receipt is a legal record of what was sold at what price, so every change
+        leaves a trail that explains why last Monday's total differs from today's.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product variant.
+        required: true
+      tags:
+      - catalog
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedProductVariantRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedProductVariantRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedProductVariantRequest'
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/ProductVariant'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    delete:
+      operationId: catalog_variants_destroy
+      description: |-
+        Price changes, always recorded.
+
+        A receipt is a legal record of what was sold at what price, so every change
+        leaves a trail that explains why last Monday's total differs from today's.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: نوع نص UUID يحدد هذا product variant.
+        required: true
+      tags:
+      - catalog
+      responses:
+        '204':
+          description: No response body
   /api/v1/catalog/variants/change/:
     post:
       operationId: catalog_variants_change_create
@@ -11634,6 +11757,79 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/system/deleted/:
+    get:
+      operationId: system_deleted_retrieve
+      description: Rows deleted through the interface. Deleting deactivates rather
+        than removes, so every one of these is recoverable.
+      summary: List deactivated items
+      tags:
+      - system
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/DeletedList'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+  /api/v1/system/deleted/restore/:
+    post:
+      operationId: system_deleted_restore_create
+      description: Reactivate one row.
+      summary: Restore a deactivated item
+      tags:
+      - system
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RestoreRequestRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/RestoreRequestRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/RestoreRequestRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/DeletedItem'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/system/health/:
     get:
       operationId: system_health_retrieve
@@ -12735,6 +12931,42 @@ components:
       - top_products
       - week
       - yesterday_net
+    DeletedItem:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          description: app.Model, e.g. catalog.Product
+        kind_label:
+          type: string
+        title:
+          type: string
+        deactivated_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - deactivated_at
+      - id
+      - kind
+      - kind_label
+      - title
+    DeletedList:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DeletedItem'
+        counts:
+          type: object
+          additionalProperties:
+            type: integer
+      required:
+      - counts
+      - items
     DemoAccount:
       type: object
       properties:
@@ -15431,6 +15663,29 @@ components:
           type: integer
           maximum: 2147483647
           minimum: 0
+    PatchedProductVariantRequest:
+      type: object
+      properties:
+        name_ar:
+          type: string
+          description: وسط / كبير. Blank if sole.
+          maxLength: 100
+        sku:
+          type: string
+          minLength: 1
+          maxLength: 32
+        price:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,10}(?:\.\d{0,2})?$
+        is_default:
+          type: boolean
+        sort_order:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        is_active:
+          type: boolean
     PatchedPurchaseOrderRequest:
       type: object
       properties:
@@ -17285,6 +17540,18 @@ components:
       - is_default
       - origin
       - value
+    RestoreRequestRequest:
+      type: object
+      properties:
+        kind:
+          type: string
+          minLength: 1
+        id:
+          type: string
+          minLength: 1
+      required:
+      - id
+      - kind
     Role:
       type: object
       properties:

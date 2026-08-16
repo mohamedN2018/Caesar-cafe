@@ -57,6 +57,9 @@ const PATHS: Record<string, string[]> = {
   history: ['M3 12a9 9 0 109-9 9 9 0 00-6.4 2.6L3 8', 'M3 3v5h5', 'M12 8v4l3 2'],
   truck: ['M2 7h11v9H2z', 'M13 10h4l3 3v3h-7z', 'M6 19m-1.5 0a1.5 1.5 0 103 0a1.5 1.5 0 10-3 0', 'M17 19m-1.5 0a1.5 1.5 0 103 0a1.5 1.5 0 10-3 0'],
   inbox: ['M4 4h16v10h-5a3 3 0 01-6 0H4z', 'M4 14v6h16v-6'],
+  // A bin with a lid and two staves. Drawn rather than an emoji, like the rest —
+  // an emoji renders in whatever font the machine happens to have.
+  trash: ['M4 7h16', 'M9 7V4h6v3', 'M6 7l1 13h10l1-13', 'M10 11v6M14 11v6'],
   bell: ['M18 15V10a6 6 0 10-12 0v5l-2 3h16z', 'M10 21h4'],
   users: ['M9 10m-4 0a4 4 0 108 0a4 4 0 10-8 0', 'M2 21a7 7 0 0114 0', 'M17 7a4 4 0 010 6', 'M19 21a7 7 0 00-3-5.7'],
   key: ['M15 9m-4 0a4 4 0 108 0a4 4 0 10-8 0', 'M11.5 11.5L3 20v2h3v-2h2v-2h2z'],

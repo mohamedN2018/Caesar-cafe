@@ -84,8 +84,26 @@ class VariantPriceView(BranchScopedViewSet):
 
     queryset = ProductVariant.objects.select_related("product")
     serializer_class = ProductVariantSerializer
-    required_permissions = {"GET": "catalog.view", "default": "catalog.change_price"}
-    http_method_names = ["get", "post", "head", "options"]
+    # Two different risks, two different permissions.
+    #
+    # Renaming a variant or removing one is ordinary catalogue work. Changing a
+    # PRICE is not: it is marked sensitive in the permission catalogue and writes
+    # a `PriceHistory` row, because a receipt is a legal record of what was sold
+    # at what price and that trail is what explains last Monday's total.
+    required_permissions = {
+        "GET": "catalog.view",
+        "PUT": "catalog.edit",
+        "PATCH": "catalog.edit",
+        "DELETE": "catalog.edit",
+        "default": "catalog.change_price",
+    }
+
+    # PUT/PATCH/DELETE were missing entirely, so a variant created with the wrong
+    # name or a duplicate size was permanent — the only way out was editing the
+    # database by hand. DELETE deactivates rather than removes (see
+    # `BranchScopedViewSet.perform_destroy`): a variant that has ever been sold
+    # must survive, or the line items pointing at it lose their name.
+    http_method_names = ["get", "post", "put", "patch", "delete", "head", "options"]
 
     def get_queryset(self):
         principal = auth_context(self.request)
