@@ -3174,6 +3174,52 @@ backend 1202 → 1212; frontend 195.
 
 ---
 
+## Caddy was proxying to another project's container ✅ COMPLETE (2026-08-17)
+
+Every `/api/*` request on the deployed site returned 502:
+
+    dial tcp 10.0.1.121:8000: connect: connection refused
+
+while the api container was **healthy**, had printed all four boot steps, and was
+answering its own probe on `127.0.0.1:8000` with 200 every thirty seconds. Nothing
+was wrong with the application, the migrations or the boot.
+
+Three rounds went into the wrong logs before the ADDRESS was read as evidence.
+`10.0.1.0/24` is Dokploy's shared Traefik network — the same range as the client
+IP in Caddy's own access log. This project's networks are 172.19/172.21 bridges,
+so 10.0.1.121 was never this api on either of them.
+
+`web` must join that shared network for Traefik to reach it, and that also means
+Docker's embedded DNS answers `api` from a network where **every** project's
+containers live together. Caddy asked for `api` and was handed a neighbour, which
+of course refuses connections on 8000.
+
+**The name was the bug.** A service name is not a globally unique identifier, and
+this compose treated it as one the moment `web` joined a shared network. The api
+carries `caesar-cafe-api` as an alias on this project's own `edge` network now, and
+the Caddyfile dials that.
+
+It also explains the demo accounts "disappearing" from the login screen: they are
+served by `/api/v1/system/info/`, which was one of the 502s. Two symptoms, one
+cause, and neither was in the code that looked responsible.
+
+`test_proxy_upstream.py` keeps the two files in step — five assertions that every
+Caddy upstream is a name the api answers to, on the port gunicorn binds, on a
+network `web` shares, and specifically that the bare `api` is not what ships. Two
+files in different languages agreeing on one string, where disagreement presents
+as a total API outage that looks like an application bug.
+
+### The lesson worth keeping
+
+Three deploy failures in a row, and all three were **the environment, not the
+code**: a malformed key in a panel that no push can reach, a seed sharing the
+server's memory and lifecycle, and a service name colliding on a shared network.
+Every one of them presented as "the app is broken", and every one was found only
+by reading what the failing container actually said rather than by reasoning about
+what it should have said.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the
