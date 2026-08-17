@@ -78,7 +78,7 @@
 			max_size 10MB
 		}
 
-		reverse_proxy api:8000 {
+		reverse_proxy caesar-cafe-api:8000 {
 			header_up X-Real-IP {remote_host}
 			# Traefik terminated TLS, so Django must be told the original scheme or
 			# `SECURE_SSL_REDIRECT` sends the browser round a redirect loop.
@@ -93,7 +93,7 @@
 
 	# WebSockets for the kitchen display. Same upstream; Caddy upgrades in place.
 	handle /ws/* {
-		reverse_proxy api:8000 {
+		reverse_proxy caesar-cafe-api:8000 {
 			header_up X-Forwarded-Proto https
 		}
 	}

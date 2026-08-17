@@ -299,7 +299,20 @@ services:
       timeout: 20s
       start_period: 300s
       retries: 6
-    networks: [internal, edge]
+    networks:
+      internal:
+      edge:
+        # A name no neighbour can claim.
+        #
+        # Caddy used to proxy to the bare `api`, and `web` is attached to
+        # Dokploy's SHARED Traefik network so that Traefik can reach it — which
+        # also means Docker's DNS answers `api` from that network, where every
+        # project's containers live together. It resolved to another project's
+        # `api` (10.0.1.121) and every /api/* request 502ed with
+        # `connection refused`, while this api sat healthy answering its own
+        # probe. See `deploy/Caddyfile`; `test_proxy_upstream.py` keeps the two
+        # names in step.
+        aliases: [caesar-cafe-api]
     deploy:
       resources:
         limits: {memory: 1G}
