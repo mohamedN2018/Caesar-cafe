@@ -195,6 +195,19 @@ services:
         #
         # `demo_admin` stays in the foreground because it takes about a second and
         # a login that is not there yet is a demo nobody can enter.
+        # A variable that no longer does anything has to say so.
+        #
+        # `DEMO_SEED=1` used to seed during boot. It is a separate job now, and a
+        # deployment panel keeps its own copy of the env — so the old value sits
+        # there looking like it is working while nothing happens, and the site
+        # comes up correct and empty. That is exactly what happened, and the boot
+        # log is the one place somebody is already looking.
+        if [ "$${DEMO_SEED:-0}" = "1" ]; then
+          echo "[boot] note: DEMO_SEED=1 no longer seeds anything — the seed is its own job."
+          echo "[boot]       Load the demo data from the admin: «بيانات العرض» → «تحميل البيانات»"
+          echo "[boot]       or run: docker compose --profile demo run --rm seed"
+        fi
+
         echo "[boot] 3/4 demo admin (DEMO_ADMIN=$${DEMO_ADMIN:-0})"
         if [ "$${DEMO_ADMIN:-0}" = "1" ]; then
           python manage.py demo_admin ||             echo "demo_admin failed — the site is up, but the admin login was not created"
