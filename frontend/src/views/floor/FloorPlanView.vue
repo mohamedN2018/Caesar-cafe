@@ -66,6 +66,18 @@ const LINGERING_MINUTES = 90
 const auth = useAuthStore()
 const mayEdit = computed(() => auth.can('floor.manage_tables'))
 
+type AreaDraft = { id?: string; name_ar: string; sort_order: number }
+
+const EMPTY_AREA: AreaDraft = { name_ar: '', sort_order: 0 }
+
+const areaDraft = ref<AreaDraft | null>(null)
+const notice = ref('')
+
+function flashArea(message: string) {
+  notice.value = message
+  setTimeout(() => (notice.value = ''), 4000)
+}
+
 const areas = ref<Area[]>([])
 const tables = ref<Table[]>([])
 const live = ref<Record<string, LiveTable>>({})
@@ -76,6 +88,14 @@ const activeArea = ref<string | null>(null)
 const draft = ref<Draft | null>(null)
 
 let polling: number | undefined
+
+/**
+ * The areas a table may be put in.
+ *
+ * `areas` now carries retired ones so this screen can bring one back; every
+ * picker has to use THIS instead, or a table ends up in a room that is closed.
+ */
+const liveAreas = computed(() => areas.value.filter((a) => a.is_active))
 
 const shown = computed(() => {
   const inArea = activeArea.value
@@ -124,7 +144,20 @@ async function load() {
       api.get<Area[]>('/floor/areas/'),
       api.get<Table[]>('/floor/tables/'),
     ])
-    areas.value = a.filter((x) => x.is_active).sort((x, y) => x.sort_order - y.sort_order)
+    // Retired areas included, and sunk to the bottom.
+    //
+    // This filtered them out, which is right for a picker and wrong for the
+    // screen that manages them: an area switched off by accident was invisible
+    // here, so the only way to bring it back was the recycle bin — if somebody
+    // knew to look.
+    areas.value = a
+      .slice()
+      .sort(
+        (x, y) =>
+          Number(y.is_active) - Number(x.is_active) ||
+          x.sort_order - y.sort_order ||
+          x.name_ar.localeCompare(y.name_ar, 'ar'),
+      )
     tables.value = t
     error.value = ''
   } catch (e) {
@@ -173,6 +206,81 @@ async function save() {
   }
 }
 
+/** A room: the terrace, the inside hall, the mezzanine. */
+function addArea() {
+  areaDraft.value = { ...EMPTY_AREA, sort_order: areas.value.length }
+}
+
+function editArea(area: Area) {
+  areaDraft.value = { id: area.id, name_ar: area.name_ar, sort_order: area.sort_order }
+}
+
+async function saveArea() {
+  const current = areaDraft.value
+  if (!current) return
+  const name = current.name_ar.trim()
+  if (!name) {
+    error.value = 'اسم المنطقة مطلوب.'
+    return
+  }
+
+  saving.value = true
+  try {
+    const body = { name_ar: name, sort_order: current.sort_order }
+    if (current.id) {
+      await api.patch(`/floor/areas/${current.id}/`, body)
+      flashArea(`تم حفظ «${name}».`)
+    } else {
+      await api.post('/floor/areas/', body)
+      flashArea(`تمت إضافة «${name}».`)
+    }
+    areaDraft.value = null
+    await load()
+    error.value = ''
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'تعذّر حفظ المنطقة.'
+  } finally {
+    saving.value = false
+  }
+}
+
+/**
+ * Retire a room, or open it again.
+ *
+ * The confirmation names its table count, because that is the consequence and it
+ * is invisible otherwise: retiring an area takes every table in it off the floor
+ * screen, and the person doing it is thinking about a room.
+ *
+ * Refused for the last live one — a branch with no area has nowhere to put a
+ * table, and the table form's select would be empty with nothing saying why.
+ */
+async function toggleArea(area: Area) {
+  if (area.is_active) {
+    if (liveAreas.value.length <= 1) {
+      error.value = 'لا يمكن إيقاف آخر منطقة — الطاولات لا بد أن تكون في منطقة.'
+      return
+    }
+    const count = tables.value.filter((x) => x.area === area.id).length
+    const carries = count ? `\n\nستختفي ${count} طاولة من شاشة الصالة.` : ''
+    if (!window.confirm(`إيقاف المنطقة «${area.name_ar}»؟${carries}`)) return
+  }
+
+  try {
+    if (area.is_active) {
+      await api.delete(`/floor/areas/${area.id}/`)
+      flashArea(`تم إيقاف «${area.name_ar}» — يمكن استرجاعها من «المحذوفات».`)
+    } else {
+      await api.patch(`/floor/areas/${area.id}/`, { is_active: true })
+      flashArea(`تم تفعيل «${area.name_ar}».`)
+    }
+    if (activeArea.value === area.id) activeArea.value = null
+    await load()
+    error.value = ''
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'تعذّر تغيير حالة المنطقة.'
+  }
+}
+
 async function deactivate(table: Table) {
   if (stateOf(table) !== 'free') {
     error.value = 'الطاولة مشغولة — لا يمكن إيقافها وعليها جلسة مفتوحة.'
@@ -204,10 +312,77 @@ onUnmounted(() => window.clearInterval(polling))
           {{ busyCount }} مشغولة من {{ shown.length }}
         </p>
       </div>
-      <UiButton v-if="mayEdit" @click="add">إضافة طاولة</UiButton>
+      <div v-if="mayEdit" class="flex items-center gap-2">
+        <UiButton variant="secondary" @click="addArea">إضافة منطقة</UiButton>
+        <UiButton :disabled="!liveAreas.length" @click="add">إضافة طاولة</UiButton>
+      </div>
     </div>
 
     <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
+    <UiAlert v-if="notice" tone="success">{{ notice }}</UiAlert>
+
+    <!--
+      The rooms, above the tables in them.
+      
+      This screen could add, move and retire a TABLE and had no way to create the
+      area a table needs — so a café opening a terrace could not draw one, and the
+      only areas that existed were the two the seed wrote.
+    -->
+    <UiCard v-if="mayEdit">
+      <div class="flex flex-wrap items-center justify-between gap-2">
+        <h2 class="text-sm font-semibold text-ink">المناطق</h2>
+        <span class="text-xs text-ink-faint">
+          المنطقة تُوقَف ولا تُحذَف — طاولاتها مسجّلة على فواتير سابقة.
+        </span>
+      </div>
+
+      <ul class="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <li
+          v-for="area in areas"
+          :key="area.id"
+          class="flex items-center justify-between gap-2 rounded-lg border border-border px-3 py-2"
+          :class="area.is_active ? '' : 'opacity-60'"
+        >
+          <div class="min-w-0">
+            <p class="truncate text-sm font-medium text-ink">{{ area.name_ar }}</p>
+            <p class="text-xs text-ink-muted">
+              {{ tables.filter((x) => x.area === area.id).length }} طاولة
+              <span v-if="!area.is_active"> · موقوفة</span>
+            </p>
+          </div>
+          <div class="flex shrink-0 items-center gap-1">
+            <UiButton size="sm" variant="ghost" @click="editArea(area)">تعديل</UiButton>
+            <UiButton size="sm" variant="ghost" @click="toggleArea(area)">
+              {{ area.is_active ? 'إيقاف' : 'تفعيل' }}
+            </UiButton>
+          </div>
+        </li>
+      </ul>
+
+      <form
+        v-if="areaDraft"
+        class="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-3"
+        @submit.prevent="saveArea"
+      >
+        <UiInput v-model="areaDraft.name_ar" label="اسم المنطقة" required />
+        <UiInput
+          v-model.number="areaDraft.sort_order"
+          label="الترتيب"
+          type="number"
+          hint="هو ترتيب تابات المناطق في شاشة الكاشير."
+        />
+        <div class="flex items-end gap-2">
+          <UiButton type="submit" :loading="saving">
+            {{ areaDraft.id ? 'حفظ' : 'إضافة' }}
+          </UiButton>
+          <UiButton variant="ghost" @click="areaDraft = null">إلغاء</UiButton>
+        </div>
+      </form>
+
+      <p v-if="!liveAreas.length" class="mt-3 text-xs text-warning">
+        لا توجد منطقة مفعّلة — لا يمكن إضافة طاولة قبل إنشاء منطقة.
+      </p>
+    </UiCard>
 
     <div v-if="areas.length > 1" class="flex flex-wrap gap-2">
       <button
@@ -227,6 +402,7 @@ onUnmounted(() => window.clearInterval(polling))
         @click="activeArea = area.id"
       >
         {{ area.name_ar }}
+        <span v-if="!area.is_active" class="text-warning"> (موقوفة)</span>
       </button>
     </div>
 
@@ -287,7 +463,12 @@ onUnmounted(() => window.clearInterval(polling))
         <label class="text-sm">
           <span class="mb-1.5 block font-medium text-ink">المنطقة</span>
           <select v-model="draft.area" class="w-full rounded-lg border border-border-line-strong px-3 py-2">
-            <option v-for="area in areas" :key="area.id" :value="area.id">
+            <!--
+              Live areas only. A table attached to a retired area is a table in a
+              room that is closed — it would render on a floor plan nobody is
+              seating anybody in.
+            -->
+            <option v-for="area in liveAreas" :key="area.id" :value="area.id">
               {{ area.name_ar }}
             </option>
           </select>

@@ -51,6 +51,7 @@ interface Staff {
   email: string
   phone: string
   full_name_ar: string
+  full_name_en?: string
   is_active: boolean
   mfa_enabled: boolean
   has_pin: boolean
@@ -190,6 +191,64 @@ async function reissueBadge(person: Staff) {
     error.value = ''
   } catch (e) {
     fail(e, 'تعذّر إصدار البطاقة.')
+  } finally {
+    busy.value = ''
+  }
+}
+
+/**
+ * Correcting a person's details.
+ *
+ * `PATCH /staff/{id}/` has existed the whole time and nothing called it: a name
+ * misspelled on the first day, a phone number that changed, a job title after a
+ * promotion — none of it could be fixed from the admin, only worked around by
+ * deactivating the person and creating them again, which loses their history.
+ *
+ * Deliberately NOT here: the password, the PIN and the badge. They have their own
+ * actions because each one is issued and shown exactly once, and a form that
+ * saved a name and silently reissued a PIN would lock somebody out at a till.
+ * Roles have their own controls too — assigning one is a different decision from
+ * spelling a name.
+ */
+const editDraft = ref<{
+  id: string
+  full_name_ar: string
+  full_name_en: string
+  phone: string
+  job_title: string
+} | null>(null)
+
+function startEdit(person: Staff) {
+  editDraft.value = {
+    id: person.id,
+    full_name_ar: person.full_name_ar,
+    full_name_en: person.full_name_en ?? '',
+    phone: person.phone ?? '',
+    job_title: person.job_title ?? '',
+  }
+}
+
+async function saveEdit() {
+  const current = editDraft.value
+  if (!current) return
+  const name = current.full_name_ar.trim()
+  if (!name) {
+    error.value = 'الاسم مطلوب.'
+    return
+  }
+
+  busy.value = current.id
+  try {
+    await api.patch(`/staff/${current.id}/`, {
+      full_name_ar: name,
+      full_name_en: current.full_name_en.trim(),
+      phone: current.phone.trim(),
+    })
+    editDraft.value = null
+    error.value = ''
+    await load()
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'تعذّر حفظ بيانات الموظف.'
   } finally {
     busy.value = ''
   }
@@ -360,6 +419,20 @@ onMounted(load)
             </div>
 
             <div class="flex flex-wrap gap-2">
+              <!--
+                Correcting details. `PATCH /staff/{id}/` existed the whole time
+                and nothing called it, so a misspelled name could only be worked
+                around by deactivating the person and creating them again — which
+                loses their history.
+              -->
+              <UiButton
+                v-if="mayManage"
+                size="sm"
+                variant="secondary"
+                @click="startEdit(person)"
+              >
+                تعديل البيانات
+              </UiButton>
               <UiButton
                 v-if="mayResetPin"
                 size="sm"
@@ -394,6 +467,25 @@ onMounted(load)
                 {{ person.is_active ? 'إيقاف' : 'تفعيل' }}
               </UiButton>
             </div>
+
+            <form
+              v-if="editDraft?.id === person.id"
+              class="mt-3 grid gap-3 border-t border-border pt-3 sm:grid-cols-2 lg:grid-cols-4"
+              @submit.prevent="saveEdit"
+            >
+              <UiInput v-model="editDraft.full_name_ar" label="الاسم" required />
+              <UiInput v-model="editDraft.full_name_en" label="الاسم بالإنجليزية" ltr />
+              <UiInput v-model="editDraft.phone" label="الهاتف" ltr />
+              <div class="flex items-end gap-2">
+                <UiButton type="submit" :loading="busy === person.id">حفظ</UiButton>
+                <UiButton variant="ghost" @click="editDraft = null">إلغاء</UiButton>
+              </div>
+              <p class="text-xs text-ink-faint sm:col-span-2 lg:col-span-4">
+                البريد والرمز والبطاقة والأدوار ليست هنا — لكل منها زرّه، لأن كل واحدة تُصدَر
+                وتُعرض مرة واحدة، ونموذج يحفظ اسماً ويعيد إصدار رمز بالصمت يقفل الباب على أحد
+                أمام الكاشير.
+              </p>
+            </form>
           </div>
 
           <!--

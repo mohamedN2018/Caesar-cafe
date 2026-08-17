@@ -3064,13 +3064,26 @@ it returned. Plus validation refusals, and a cashier refused on all seven write
 paths. Suppliers additionally: edit, read-back, retire, restore. Every screen was
 rendered in a real browser and photographed.
 
-### Still open
+### The rest, closed
 
-Read-only screens over maintainable data that remain: kids tariffs (gated on
-`kids.manage_tariffs`, which is a *manage* permission on a screen that cannot),
-floor areas and kids areas (no management screen; tables are managed, the rooms
-they sit in are not), and editing a staff member's own details — `PATCH
-/staff/{id}/` exists and nothing calls it.
+  * **Kids tariffs.** Gated on `kids.manage_tariffs` and read-only — a manage
+    permission on a screen that managed nothing. Create, edit and retire now, with
+    the fields following the MODE; retiring the DEFAULT is refused, because
+    check-in resolves a tariff for every session and with none an area charges
+    nothing.
+  * **Floor areas.** The screen could add, move and retire a TABLE and had no way
+    to create the area a table needs, so a café opening a terrace could not draw
+    one. The area list also filtered retired ones out — right for a picker, wrong
+    for the screen that manages them, since an area switched off by accident was
+    invisible here.
+  * **Staff details.** `PATCH /staff/{id}/` existed and nothing called it: a name
+    misspelled on the first day could only be worked around by deactivating the
+    person and creating them again, which loses their history. The password, PIN,
+    badge and roles deliberately stay as their own actions — each is issued once,
+    and a form that saved a name while silently reissuing a PIN would lock
+    somebody out at a till. Verified that an edit leaves the PIN intact.
+
+Every one of them verified against the running database, and a cashier refused.
 
 backend 1192 → 1194; frontend 195.
 
