@@ -3011,6 +3011,71 @@ backend 1190 → 1192; frontend 180 → 195.
 
 ---
 
+## The admin becomes an admin ✅ IN PROGRESS (2026-08-17)
+
+### The audit, and what it found
+
+Every write endpoint in the generated schema against every write the SPA makes,
+then every admin route against the writes its own view file contains. **35 screens;
+16 of them read-only** — and while some of those are correctly read-only (reports,
+the audit log, an order's history), several were screens over data somebody has to
+maintain, with no way to maintain it.
+
+Worse were the entities with no screen at all: `/payments/methods/` and
+`/inventory/items/` both had full CRUD on the server and nothing in the admin.
+
+### What was closed
+
+  * **Payment methods.** These rows ARE the till's pay buttons; a branch with none
+    cannot settle a bill. Rows and not an enum precisely so adding InstaPay needs
+    no deployment — and there was nowhere to add one.
+  * **Categories.** A 71-line read-only list with no `catch`, so a failed load
+    rendered "there are no categories".
+  * **Products.** Could change a PHOTO and nothing else. Now create, edit, retire,
+    add and retire sizes, and change a price through the endpoint that records it.
+  * **Inventory items.** No screen at all. Building one needed a units endpoint:
+    `base_unit` is required, five units were seeded, nothing exposed them, so the
+    form was literally unbuildable.
+  * **Suppliers.** Create only — a phone number that changed could not be fixed.
+
+### Three bugs the work uncovered
+
+  1. **`DELETE /payments/methods/{id}/` had always returned 500.**
+     `perform_destroy` branched on `is_active` and then set `deactivated_at` — a
+     different test from the one it needs. Three models carry `is_active` without
+     inheriting `SoftDeletableModel`. Nothing caught it because nothing called it:
+     no screen existed. A broken endpoint stays broken quietly when it is
+     unreachable.
+  2. **A retired tender was unrecoverable.** The endpoint hard-filtered
+     `is_active=True`, so it vanished from every screen, and it was absent from the
+     recycle registry too. Switching «فيزا» off meant editing the database.
+  3. **A duplicate row was a 500.** Typing an existing product code returned
+     "حدث خطأ غير متوقع" — the software claiming it broke, about the one mistake
+     that is entirely the user's. It cannot be caught earlier: DRF's uniqueness
+     validators only cover fields the serializer HAS, and these constraints include
+     `branch` or `product`, injected from the principal and never accepted from a
+     body. Now a 409 naming the field.
+
+### Verified
+
+37 checks against the running database, per entity: create, read back, edit, read
+the edit back, retire, confirm it left the live list, restore from the bin, confirm
+it returned. Plus validation refusals, and a cashier refused on all seven write
+paths. Suppliers additionally: edit, read-back, retire, restore. Every screen was
+rendered in a real browser and photographed.
+
+### Still open
+
+Read-only screens over maintainable data that remain: kids tariffs (gated on
+`kids.manage_tariffs`, which is a *manage* permission on a screen that cannot),
+floor areas and kids areas (no management screen; tables are managed, the rooms
+they sit in are not), and editing a staff member's own details — `PATCH
+/staff/{id}/` exists and nothing calls it.
+
+backend 1192 → 1194; frontend 195.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

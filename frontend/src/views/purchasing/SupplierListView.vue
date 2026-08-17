@@ -76,7 +76,35 @@ const loading = ref(true)
 const error = ref('')
 const saving = ref(false)
 
-const draft = ref({ name: '', phone: '', tax_number: '', payment_terms_days: 0 })
+type SupplierDraft = {
+  id?: string
+  name: string
+  phone: string
+  email: string
+  address: string
+  tax_number: string
+  payment_terms_days: number
+  notes: string
+}
+
+const EMPTY_SUPPLIER: SupplierDraft = {
+  name: '',
+  phone: '',
+  email: '',
+  address: '',
+  tax_number: '',
+  payment_terms_days: 0,
+  notes: '',
+}
+
+const notice = ref('')
+
+function flash(message: string) {
+  notice.value = message
+  setTimeout(() => (notice.value = ''), 4000)
+}
+
+const draft = ref<SupplierDraft>({ ...EMPTY_SUPPLIER })
 const payment = ref({ amount: '', reference: '' })
 
 const owed = computed(() =>
@@ -111,17 +139,93 @@ async function openStatement(supplier: Supplier) {
   }
 }
 
+/**
+ * Add a supplier, or save an edit to one.
+ *
+ * This screen could only ADD. A phone number that changed, a payment term
+ * renegotiated, a name spelled wrong on the first day — none of it could be
+ * corrected, and the endpoint had accepted PATCH the whole time.
+ */
 async function addSupplier() {
-  if (!draft.value.name.trim()) return
+  const name = draft.value.name.trim()
+  if (!name) {
+    error.value = 'اسم المورد مطلوب.'
+    return
+  }
   saving.value = true
   try {
-    await api.post('/suppliers/', { ...draft.value, name: draft.value.name.trim() })
-    draft.value = { name: '', phone: '', tax_number: '', payment_terms_days: 0 }
+    const body = {
+      name,
+      phone: draft.value.phone.trim(),
+      email: draft.value.email.trim(),
+      address: draft.value.address.trim(),
+      tax_number: draft.value.tax_number.trim(),
+      payment_terms_days: draft.value.payment_terms_days,
+      notes: draft.value.notes.trim(),
+    }
+    if (draft.value.id) {
+      await api.patch(`/suppliers/${draft.value.id}/`, body)
+      flash(`تم حفظ «${name}».`)
+    } else {
+      await api.post('/suppliers/', body)
+      flash(`تمت إضافة «${name}».`)
+    }
+    resetDraft()
     await load()
+    error.value = ''
   } catch (e) {
-    error.value = e instanceof ApiError ? e.message : 'تعذّر إضافة المورد.'
+    error.value = e instanceof ApiError ? e.message : 'تعذّر حفظ المورد.'
   } finally {
     saving.value = false
+  }
+}
+
+function editSupplier(supplier: Supplier) {
+  draft.value = {
+    id: supplier.id,
+    name: supplier.name,
+    phone: supplier.phone ?? '',
+    email: supplier.email ?? '',
+    address: supplier.address ?? '',
+    tax_number: supplier.tax_number ?? '',
+    payment_terms_days: supplier.payment_terms_days ?? 0,
+    notes: supplier.notes ?? '',
+  }
+}
+
+function resetDraft() {
+  draft.value = { ...EMPTY_SUPPLIER }
+}
+
+/**
+ * Retire a supplier, or bring one back.
+ *
+ * Refused while money is owed. Retiring a supplier with an outstanding balance
+ * takes a debt off the screens that track it — the statement, the balances
+ * report — without paying or writing it off, and a debt nobody can see is a debt
+ * that gets paid twice or not at all.
+ */
+async function toggleSupplier(supplier: Supplier) {
+  if (supplier.is_active) {
+    if (Number(supplier.current_balance) > 0) {
+      error.value = `لا يمكن إيقاف «${supplier.name}» وعليه رصيد ${supplier.current_balance} — سجّل الدفعة أولاً.`
+      return
+    }
+    if (!window.confirm(`إيقاف المورد «${supplier.name}»؟`)) return
+  }
+
+  try {
+    if (supplier.is_active) {
+      await api.delete(`/suppliers/${supplier.id}/`)
+      flash(`تم إيقاف «${supplier.name}» — يمكن استرجاعه من «المحذوفات».`)
+    } else {
+      await api.patch(`/suppliers/${supplier.id}/`, { is_active: true })
+      flash(`تم تفعيل «${supplier.name}».`)
+    }
+    await load()
+    error.value = ''
+  } catch (e) {
+    error.value = e instanceof ApiError ? e.message : 'تعذّر تغيير حالة المورد.'
   }
 }
 
@@ -157,6 +261,7 @@ onMounted(load)
     </div>
 
     <UiAlert v-if="error" tone="error">{{ error }}</UiAlert>
+    <UiAlert v-if="notice" tone="success">{{ notice }}</UiAlert>
 
     <UiSkeleton v-if="loading" :rows="5" />
 
@@ -181,9 +286,8 @@ onMounted(load)
 
       <div v-else class="grid gap-4 lg:grid-cols-2">
         <div class="space-y-2">
+          <template v-for="supplier in suppliers" :key="supplier.id">
           <button
-            v-for="supplier in suppliers"
-            :key="supplier.id"
             class="w-full rounded-lg border px-4 py-3 text-start transition"
             :class="
               statement?.supplier_id === supplier.id
@@ -207,8 +311,25 @@ onMounted(load)
               <span v-if="supplier.payment_terms_days">
                 · سداد خلال {{ supplier.payment_terms_days }} يوم
               </span>
+              <span v-if="!supplier.is_active" class="text-warning"> · موقوف</span>
             </p>
           </button>
+
+          <!--
+            Outside the row's own button, not inside it.
+
+            The row IS a button — it opens the statement — and a nested button is
+            invalid HTML that browsers resolve by closing the outer one early. The
+            actions would have rendered outside the row they belong to, and the
+            row's click would have swallowed them.
+          -->
+          <div v-if="mayEdit" class="-mt-1 mb-1 flex items-center gap-1 px-1">
+            <UiButton size="sm" variant="ghost" @click="editSupplier(supplier)">تعديل</UiButton>
+            <UiButton size="sm" variant="ghost" @click="toggleSupplier(supplier)">
+              {{ supplier.is_active ? 'إيقاف' : 'تفعيل' }}
+            </UiButton>
+          </div>
+          </template>
         </div>
 
         <UiCard v-if="statement">
@@ -296,22 +417,34 @@ onMounted(load)
       </div>
 
       <UiCard v-if="mayEdit">
-        <h2 class="text-sm font-semibold text-ink">إضافة مورد</h2>
+        <h2 class="text-sm font-semibold text-ink">
+          {{ draft.id ? 'تعديل مورد' : 'إضافة مورد' }}
+        </h2>
         <form class="mt-3 grid gap-3 sm:grid-cols-4" @submit.prevent="addSupplier">
           <UiInput v-model="draft.name" label="الاسم" required />
           <UiInput v-model="draft.phone" label="الهاتف" ltr />
+          <UiInput v-model="draft.email" label="البريد" type="email" ltr />
           <UiInput v-model="draft.tax_number" label="الرقم الضريبي" ltr />
           <UiInput
             v-model.number="draft.payment_terms_days"
             label="مهلة السداد (يوم)"
             type="number"
+            hint="يُحسب عليها تاريخ استحقاق كل فاتورة."
           />
-          <div class="sm:col-span-4">
+          <UiInput v-model="draft.address" label="العنوان" class="sm:col-span-2" />
+          <UiInput v-model="draft.notes" label="ملاحظات" />
+          <div class="flex items-center gap-2 sm:col-span-4">
             <UiButton type="submit" :loading="saving" :disabled="!draft.name.trim()">
-              إضافة
+              {{ draft.id ? 'حفظ' : 'إضافة' }}
             </UiButton>
+            <UiButton v-if="draft.id" variant="ghost" @click="resetDraft">إلغاء</UiButton>
           </div>
         </form>
+
+        <p class="mt-3 text-xs text-ink-faint">
+          الرصيد ليس حقلاً هنا — هو حصيلة الفواتير والدفعات. رصيد يُكتب يدوياً يعني ديناً بلا
+          حركة تفسّره. والمورد يُوقَف ولا يُحذَف، ولا يُوقَف وعليه رصيد.
+        </p>
       </UiCard>
     </template>
   </div>
