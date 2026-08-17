@@ -259,7 +259,18 @@ async function main() {
       grid: g && {w: Math.round(g.width), h: Math.round(g.height), bottom: Math.round(g.bottom)},
       cell: first && {w: Math.round(first.width), h: Math.round(first.height)},
       viewport: {w: window.innerWidth, h: window.innerHeight},
-      numberPx: cards[0] ? getComputedStyle(cards[0].querySelector('.table-number')).fontSize : null,
+      // Guarded: .table-number is the POS floor's markup and this tool is pointed
+      // at any screen. Unguarded, getComputedStyle(null) threw and the whole
+      // measurement was lost — reported as a page error, which is the one thing a
+      // tool for finding page errors must not invent.
+      //
+      // No backticks in this comment, deliberately: it lives INSIDE a template
+      // literal, and a backtick here ends the string and turns the rest of the
+      // browser snippet into Node source. Which is what happened.
+      numberPx: (() => {
+        const label = cards[0] && cards[0].querySelector('.table-number')
+        return label ? getComputedStyle(label).fontSize : null
+      })(),
       bodyText: document.body.innerText.slice(0, 160).replace(/\\n/g, ' | '),
     })
   })()`)
