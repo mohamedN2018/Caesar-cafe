@@ -170,10 +170,10 @@ services:
         # without saying what they were doing. `set -e` exits silently: the last
         # line you see is the last thing that WORKED, not the thing that broke,
         # and the distance between those two is a whole debugging session.
-        echo "[boot] 1/5 migrate"
+        echo "[boot] 1/4 migrate"
         python manage.py migrate --noinput
 
-        echo "[boot] 2/5 sync_roles"
+        echo "[boot] 2/4 sync_roles"
         python manage.py sync_roles
 
         # ── the demo, in the BACKGROUND ────────────────────────────────────
@@ -195,23 +195,38 @@ services:
         #
         # `demo_admin` stays in the foreground because it takes about a second and
         # a login that is not there yet is a demo nobody can enter.
-        echo "[boot] 3/5 demo admin (DEMO_ADMIN=$${DEMO_ADMIN:-0})"
+        echo "[boot] 3/4 demo admin (DEMO_ADMIN=$${DEMO_ADMIN:-0})"
         if [ "$${DEMO_ADMIN:-0}" = "1" ]; then
           python manage.py demo_admin ||             echo "demo_admin failed — the site is up, but the admin login was not created"
         fi
 
-        echo "[boot] 4/5 demo seed, backgrounded (DEMO_SEED=$${DEMO_SEED:-0})"
-        if [ "$${DEMO_SEED:-0}" = "1" ]; then
-          (
-            python manage.py seed_demo --days "$${DEMO_DAYS:-14}"               && echo "seed_demo finished — the demo data is ready"               || echo "seed_demo declined or failed; the site is unaffected"
-          ) &
-        fi
-
+        # ── the demo seed is NOT here any more ────────────────────────────
+        #
+        # It used to run backgrounded inside this container, which was better than
+        # blocking the boot and still not enough. A child of this script shares
+        # everything the server has:
+        #
+        #   * the same memory limit — a fortnight of trading is thousands of
+        #     orders through the real order and payment services, in the same
+        #     1G as gunicorn;
+        #   * the same CPU, competing with the health probe that decides whether
+        #     the deploy succeeded;
+        #   * the same lifecycle — if the container is restarted or OOM-killed
+        #     part way, the seed begins again from nothing, forever, and nothing
+        #     supervises it or reports that it died.
+        #
+        # So it is its own one-shot service now (`seed`, in the `demo` profile).
+        # This boot is migrations, roles, an admin login and static files: work
+        # the server cannot serve without, and nothing else. It finishes in
+        # seconds and the port opens.
+        #
+        #     docker compose --profile demo run --rm seed
+        #
         if [ "$${DJANGO_ENV:-prod}" = "dev" ]; then
           exec python manage.py runserver 0.0.0.0:8000
         fi
 
-        echo "[boot] 5/5 collectstatic"
+        echo "[boot] 4/4 collectstatic"
         python manage.py collectstatic --noinput
 
         echo "[boot] starting gunicorn on 0.0.0.0:8000 — the port opens now"
@@ -246,12 +261,15 @@ services:
     # `web-local` at the bottom of this file).
     # Overridden for two reasons, and the second one is the interesting one.
     #
-    # 1. `--start-period=20s` in the image is right for a restart and far too short
-    #    for a FIRST boot: migrations, `collectstatic` and (with DEMO_SEED=1) two
-    #    weeks of generated trading all run before gunicorn binds — just over two
-    #    minutes here. Docker reports unhealthy meanwhile, and an orchestrator that
-    #    gates a deploy on health calls that a failed deploy. The image cannot know
-    #    whether seeding is on; this file can.
+    # 1. `--start-period=20s` in the image is right for a restart and too short for
+    #    a FIRST boot: migrations and `collectstatic` run before gunicorn binds.
+    #    Docker reports unhealthy meanwhile, and an orchestrator that gates a
+    #    deploy on health calls that a failed deploy.
+    #
+    #    This used to include two weeks of generated trading, which is what made
+    #    the window genuinely long — and is why the seed is its own service now
+    #    (see `seed`). The boot is migrations, roles, an admin and static files:
+    #    seconds, not minutes.
     #
     # 2. The image's check asks for plain http, so in prod mode it receives the
     #    `SECURE_SSL_REDIRECT` 301 — and `curl -f` does not fail on a 3xx, so it
@@ -259,12 +277,24 @@ services:
     #    listening on the port. It never reached the view, so it never checked the
     #    database it exists to check. With the forwarded-proto header it gets the
     #    real 200 and the real database probe.
+    # **Generous on purpose, and still decisive.**
+    #
+    # This was `timeout: 10s, retries: 3` — three ten-second failures and the
+    # deploy is declared dead. On a small VPS, one request can take longer than
+    # that while the box is still finishing other work, and the result is a
+    # deploy that fails for being SLOW rather than for being wrong. That is the
+    # worst kind of failure to debug, because the thing it reports is healthy by
+    # the time you look.
+    #
+    # `start_period` covers the boot, during which failures do not count at all.
+    # After it, six consecutive twenty-second failures is not a slow box — it is a
+    # server that cannot answer, and this still says so.
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS -H 'X-Forwarded-Proto: https' http://localhost:8000/api/v1/system/health/ || exit 1"]
       interval: 30s
-      timeout: 10s
-      start_period: 240s
-      retries: 3
+      timeout: 20s
+      start_period: 300s
+      retries: 6
     networks: [internal, edge]
     deploy:
       resources:
@@ -281,6 +311,39 @@ services:
           ignore: [.venv/, __pycache__/, .pytest_cache/, htmlcov/]
         - action: rebuild
           path: ./backend/pyproject.toml
+
+  # ── the demo dataset, on demand ────────────────────────────────────────────
+  #
+  # A one-shot job, not part of the boot. Run it once after the first deploy:
+  #
+  #     docker compose --profile demo run --rm seed
+  #
+  # Behind a profile so `up` never starts it: a fortnight of trading generated on
+  # every restart is minutes of work nobody asked for, and it used to run inside
+  # the api container where it competed with the server for the same 1G and the
+  # same CPU that the health probe needs.
+  #
+  # `restart: "no"` because a seed that failed should stay failed and be read, not
+  # loop. It refuses to run twice without `--reset`, so a second invocation is
+  # safe and says so.
+  seed:
+    <<: *django
+    profiles: [demo]
+    restart: "no"
+    command:
+      - sh
+      - -c
+      - |
+        echo "[seed] waiting for migrations to have been applied"
+        python manage.py migrate --check || {
+          echo "[seed] the database is not migrated yet — start the api first"
+          exit 1
+        }
+        echo "[seed] generating $${DEMO_DAYS:-14} days of trading"
+        python manage.py seed_demo --days "$${DEMO_DAYS:-14}"
+    volumes:
+      - media:/app/media
+    networks: [internal]
 
   worker:
     <<: *django
