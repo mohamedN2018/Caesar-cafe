@@ -91,6 +91,12 @@ class OrderListView(APIView):
             orders = orders.filter(shift_id=shift_id)
         if table_id := request.query_params.get("table"):
             orders = orders.filter(table_session__table_id=table_id)
+        # By SESSION, not by table. The till uses this to find the bill already
+        # open on a table so a second round is added to it rather than beside it
+        # — and a table filter would find the previous party's bill too, which is
+        # the one mistake this lookup exists to prevent.
+        if session_id := request.query_params.get("session"):
+            orders = orders.filter(table_session_id=session_id)
         if date_from := request.query_params.get("date_from"):
             orders = orders.filter(opened_at__gte=date_from)
         if date_to := request.query_params.get("date_to"):

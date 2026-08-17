@@ -24,7 +24,16 @@ import UiIcon from '@/components/ui/UiIcon.vue'
 import { usePosStore } from '@/stores/pos'
 import { useAuthStore } from '@/stores/auth'
 
-const emit = defineEmits<{ pay: [] }>()
+const props = withDefaults(
+  defineProps<{
+    /** Whether this bill belongs to a table rather than to the counter. */
+    onATable?: boolean
+    tableNumber?: string
+  }>(),
+  { onATable: false, tableNumber: '' },
+)
+
+const emit = defineEmits<{ pay: []; done: [] }>()
 
 const pos = usePosStore()
 const auth = useAuthStore()
@@ -45,6 +54,20 @@ const mayDiscount = computed(() => auth.can('orders.discount'))
  * cases mean the same thing to the cashier: settling is not available here.
  */
 const mayPay = computed(() => auth.can('payments.take') && pos.methods.length > 0)
+
+/**
+ * Settling is not a table's control.
+ *
+ * A seated party orders in rounds and pays once, when they leave — so on a
+ * table the useful action is "put this round on the bill", and «دفع» belongs at
+ * the end, on the table itself. Offering it here invited settling a bill that is
+ * still being added to: a printed receipt, and then two more coffees with
+ * nowhere to go but a second bill.
+ *
+ * Hidden rather than disabled: the cashier is not waiting for it to turn on. It
+ * is somewhere else, and the table's own sheet is where it lives.
+ */
+const showPay = computed(() => mayPay.value && !props.onATable)
 
 function trim(quantity: string): string {
   return String(Number(quantity))
@@ -124,7 +147,16 @@ async function discount() {
 <template>
   <div class="panel">
     <header class="panel-head">
-      <span class="number">{{ pos.order?.local_number || 'طلب جديد' }}</span>
+      <!--
+        Whose bill this is, on the bill itself.
+        
+        The board says «طاولة 7» above the menu, which is where somebody looks
+        when they arrive and not when they are reading the total aloud. A table
+        has ONE bill now, and this is the line that says which table it belongs
+        to at the moment it matters.
+      -->
+      <span v-if="onATable && tableNumber" class="for-table">طاولة {{ tableNumber }}</span>
+      <span class="number">{{ pos.order?.local_number || (onATable ? 'فاتورة الطاولة' : 'طلب جديد') }}</span>
       <!--
         A lookup, not a ternary chain. The chain had three arms and a fallback of
         "تيك أواي", so the fourth channel would have been labelled takeaway on
@@ -226,13 +258,27 @@ async function discount() {
         للمطبخ
       </button>
       <button
-        v-if="mayPay"
+        v-if="showPay"
         type="button"
         class="pay"
         :disabled="!pos.hasItems || pos.isSettled || pos.busy"
         @click="emit('pay')"
       >
         دفع
+      </button>
+
+      <!--
+        The table's version of "done". It files the round and goes back to the
+        room; the bill stays open, because that is what a table IS.
+      -->
+      <button
+        v-if="onATable"
+        type="button"
+        class="pay"
+        :disabled="!pos.hasItems || pos.busy"
+        @click="emit('done')"
+      >
+        إضافة للفاتورة
       </button>
     </div>
   </div>
@@ -244,6 +290,17 @@ async function discount() {
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
+}
+
+/* The table this bill belongs to — quiet, and always the first thing in the row. */
+.for-table {
+  padding: 0.15rem 0.55rem;
+  border-radius: 999px;
+  background: var(--brand-50);
+  color: var(--brand-700);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .panel-head {

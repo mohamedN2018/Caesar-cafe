@@ -221,3 +221,61 @@ class TestTheTillIsToldWhichChannels:
         assert rows["DINE_IN"] is True
         assert rows["EXTERNAL"] is False
         assert rows["TAKE_AWAY"] is False
+
+
+class TestFindingTheBillOpenOnATable:
+    """
+    A table has ONE bill, and this filter is what lets the till find it.
+
+    Without it, every arrival at the order screen opened a fresh order — so a
+    party ordering three rounds finished with three separate bills on one table.
+    Six, on table 2 of the running demo. Each had its own number and its own
+    receipt; the floor board summed them into one figure, so nothing admitted it
+    until somebody tried to settle and was handed three.
+    """
+
+    def test_it_finds_the_open_bill_for_a_session(self, authed, make_user, branch, organization):
+        from apps.floor.models import Area, Table, TableSession
+
+        area = Area.objects.create(organization=organization, branch=branch, name_ar="الصالة")
+        table = Table.objects.create(area=area, number="7", seats=4)
+        session = TableSession.objects.create(table=table, guest_count=2)
+
+        first = services.open_order(
+            branch=branch, order_type=OrderType.DINE_IN, table_session=session
+        )
+        client = authed(make_user(role="CASHIER"), branch=branch)
+
+        rows = client.get(f"/api/v1/orders/?open=true&session={session.id}").json()["data"]
+
+        assert [r["id"] for r in rows] == [str(first.id)]
+
+    def test_it_does_not_reach_the_previous_party(self, authed, make_user, branch, organization):
+        """
+        By SESSION, never by table.
+
+        A table filter would find the bill of the people who left. Adding a round
+        to THAT is the one mistake this lookup exists to prevent, and it is
+        unrecoverable at closing — the items are on a receipt nobody at the table
+        ordered.
+        """
+        from django.utils import timezone
+
+        from apps.floor.models import Area, Table, TableSession
+
+        area = Area.objects.create(organization=organization, branch=branch, name_ar="الصالة")
+        table = Table.objects.create(area=area, number="7", seats=4)
+
+        gone = TableSession.objects.create(table=table, guest_count=2)
+        services.open_order(branch=branch, order_type=OrderType.DINE_IN, table_session=gone)
+        gone.closed_at = timezone.now()
+        gone.save(update_fields=["closed_at"])
+
+        seated = TableSession.objects.create(table=table, guest_count=3)
+        client = authed(make_user(role="CASHIER"), branch=branch)
+
+        by_session = client.get(f"/api/v1/orders/?open=true&session={seated.id}").json()["data"]
+        by_table = client.get(f"/api/v1/orders/?open=true&table={table.id}").json()["data"]
+
+        assert by_session == [], "the new party's session has no bill yet"
+        assert len(by_table) == 1, "the table filter DOES reach the old one — hence the session one"

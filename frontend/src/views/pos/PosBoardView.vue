@@ -19,7 +19,7 @@
  *     wet one. A mis-tap on a till is a wrong item on a bill.
  */
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink, useRoute } from 'vue-router'
+import { RouterLink, useRoute, useRouter } from 'vue-router'
 
 import { api } from '@/api/client'
 import UiAlert from '@/components/ui/UiAlert.vue'
@@ -97,6 +97,7 @@ const orderType = ref<string>('DINE_IN')
  * opening the same URL, then lands on the same table instead of a blank order.
  */
 const route = useRoute()
+const router = useRouter()
 
 const tableId = computed(() => (route.query.table as string) || '')
 const tableNumber = computed(() => (route.query.number as string) || '')
@@ -133,6 +134,46 @@ async function sessionFor(): Promise<string | null> {
   })
   sessionId.value = opened.id
   return opened.id
+}
+
+/**
+ * A table has ONE bill, and this is what makes that true.
+ *
+ * Every visit to this screen opened a fresh order, so a party ordering three
+ * rounds finished the evening with three separate bills on one table — six, on
+ * table 2 of the demo. Each had its own number, its own total and its own
+ * receipt; the floor board added them up and showed one figure, so nothing on
+ * screen admitted it until somebody tried to settle and was handed three.
+ *
+ * So: if this session already has an order open, continue it. A new one is
+ * opened only when there is genuinely nothing to add to.
+ */
+async function resumeTableBill() {
+  if (!sessionId.value) return
+
+  const open = await api.optional<{ id: string }[]>('/orders/', {
+    open: 'true',
+    session: sessionId.value,
+  })
+  const existing = open?.[0]
+  if (existing) await pos.loadOrder(existing.id)
+}
+
+/** True while this screen is a table's bill rather than a counter sale. */
+const onATable = computed(() => Boolean(tableId.value))
+
+/**
+ * Filed to the table, and back to the room.
+ *
+ * The end of a round in table service. The bill stays OPEN — that is the whole
+ * point of a table — so this sends anything unfired to the kitchen and returns
+ * to the floor, where the table now shows the new total. Nothing is settled and
+ * nothing is closed.
+ */
+async function backToFloor() {
+  if (pos.unfired.length) await pos.fire()
+  pos.clear()
+  await router.push('/pos')
 }
 
 /**
@@ -203,7 +244,12 @@ async function tap(product: Product) {
 }
 
 onMounted(async () => {
-  await Promise.all([pos.loadCatalog(), pos.loadShift(), loadOrderTypes()])
+  await Promise.all([pos.loadCatalog(), pos.loadShift(), loadOrderTypes(), resumeTableBill()])
+
+  // Arriving with `?pay=1` — from the table's own «دفع الحساب» — opens the
+  // payment sheet straight away. Settling is the whole reason for that trip,
+  // and making them find the button again on arrival is a step for nothing.
+  if (route.query.pay === '1' && pos.hasItems) paying.value = true
 })
 </script>
 
@@ -242,7 +288,22 @@ onMounted(async () => {
           <span v-if="typeLocked" class="locked">النوع يتحدد قبل أول صنف</span>
         </div>
 
-        <button type="button" class="fresh" :disabled="pos.busy" @click="startNew">
+        <!--
+          Not on a table.
+
+          «طلب جديد» abandons the bill on screen and opens another. On a counter
+          sale that is the right control — one customer done, next one up. On a
+          TABLE it is how a party ends up with two bills, which is the thing this
+          screen was just fixed to stop; the round they are ordering belongs on
+          the bill already open in front of them.
+        -->
+        <button
+          v-if="!onATable"
+          type="button"
+          class="fresh"
+          :disabled="pos.busy"
+          @click="startNew"
+        >
           طلب جديد
         </button>
       </div>
@@ -375,7 +436,12 @@ onMounted(async () => {
     <!-- The bill -->
     <aside class="bill">
       <UiAlert v-if="pos.error" tone="error" class="m-3">{{ pos.error }}</UiAlert>
-      <OrderPanel @pay="paying = true" />
+      <OrderPanel
+        :on-a-table="onATable"
+        :table-number="tableNumber"
+        @pay="paying = true"
+        @done="backToFloor"
+      />
     </aside>
 
     <ItemSheet

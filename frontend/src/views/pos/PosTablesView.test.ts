@@ -458,3 +458,68 @@ describe('the plan is drawn, not listed', () => {
     expect(title).toContain('منذ')
   })
 })
+
+describe('settling a table', () => {
+  /**
+   * Paying belongs to the TABLE, not to a round.
+   *
+   * The till board no longer offers «دفع» on a table at all — a seated party
+   * orders across an evening and pays once at the end, and a pay button beside a
+   * round invited printing a receipt for a bill still being added to. So the
+   * action moved here, where the party leaving actually is.
+   */
+
+  it('offers دفع الحساب with the amount on it', async () => {
+    get.mockResolvedValue([
+      table({ session_id: 's1', seated_count: 2, order_count: 2, total_due: '210.00' }),
+    ])
+
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+
+    const sheet = wrapper.find('.picked')
+    expect(sheet.text()).toContain('دفع الحساب')
+    expect(sheet.text()).toContain('210.00')
+  })
+
+  it('goes to the bill with the payment sheet already open', async () => {
+    // Settling is the whole reason for the trip; making them find the button
+    // again on arrival is a step that exists for nothing.
+    get.mockResolvedValue([
+      table({ session_id: 's1', order_count: 2, total_due: '210.00' }),
+    ])
+
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+    const settle = wrapper.findAll('button').find((b) => b.text().includes('دفع الحساب'))
+    await settle!.trigger('click')
+
+    expect(push).toHaveBeenCalledWith({
+      name: 'pos-order',
+      query: { table: 't1', session: 's1', number: '3', pay: '1' },
+    })
+  })
+
+  it('does not offer it on a table that has ordered nothing', async () => {
+    // A pay button over a zero is a control that can only produce an error.
+    get.mockResolvedValue([
+      table({ session_id: 's1', seated_count: 2, order_count: 0, total_due: '0.00' }),
+    ])
+
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+
+    expect(wrapper.find('.picked').text()).not.toContain('دفع الحساب')
+  })
+
+  it('calls adding to it a bill, not a table', async () => {
+    // «إضافة إلى الفاتورة». A table has one bill now, and the word for the thing
+    // being added to is the bill.
+    get.mockResolvedValue([table({ session_id: 's1', order_count: 1, total_due: '50.00' })])
+
+    const wrapper = await mountTables()
+    await wrapper.find('.table-card').trigger('click')
+
+    expect(wrapper.find('.picked').text()).toContain('إضافة إلى الفاتورة')
+  })
+})

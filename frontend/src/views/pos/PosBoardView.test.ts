@@ -78,10 +78,28 @@ const PRODUCT = {
  */
 let routeQuery: Record<string, string> = {}
 
+const push = vi.fn()
+
 vi.mock('vue-router', async (original) => ({
   ...(await original<Record<string, unknown>>()),
   useRoute: () => ({ query: routeQuery }),
+  useRouter: () => ({ push }),
 }))
+
+/**
+ * Ring the first item on the bill.
+ *
+ * The table flow no longer has a «طلب جديد» button — on a table that control
+ * opened a SECOND bill, which is the thing this screen was fixed to stop. So a
+ * table order starts the way it does in the room: by tapping a product.
+ */
+async function tapFirstProduct(wrapper: {
+  findAll: (s: string) => { trigger: (e: string) => Promise<void> }[]
+}) {
+  const tile = wrapper.findAll('.tile')[0]
+  await tile.trigger('click')
+  await new Promise((resolve) => setTimeout(resolve, 0))
+}
 
 async function mountBoard() {
   const { mount } = await import('@vue/test-utils')
@@ -282,9 +300,7 @@ describe('the table the floor sent with the order', () => {
     )
 
     const wrapper = await mountBoard()
-    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
-    await fresh!.trigger('click')
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await tapFirstProduct(wrapper)
 
     expect(post).toHaveBeenCalledWith('/floor/sessions/', { table: 't1', guest_count: 1 })
   })
@@ -303,9 +319,7 @@ describe('the table the floor sent with the order', () => {
     )
 
     const wrapper = await mountBoard()
-    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
-    await fresh!.trigger('click')
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await tapFirstProduct(wrapper)
 
     expect(post).toHaveBeenCalledWith('/floor/sessions/', { table: 't1', guest_count: 4 })
   })
@@ -321,9 +335,7 @@ describe('the table the floor sent with the order', () => {
     )
 
     const wrapper = await mountBoard()
-    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
-    await fresh!.trigger('click')
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await tapFirstProduct(wrapper)
 
     expect(post).toHaveBeenCalledWith('/floor/sessions/', { table: 't1', guest_count: 1 })
   })
@@ -335,9 +347,7 @@ describe('the table the floor sent with the order', () => {
     post.mockResolvedValue({ id: 'order-1', items: [], status: 'OPEN' })
 
     const wrapper = await mountBoard()
-    const fresh = wrapper.findAll('button').find((b) => b.text().includes('طلب جديد'))
-    await fresh!.trigger('click')
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    await tapFirstProduct(wrapper)
 
     const sessionCalls = post.mock.calls.filter((c) => c[0] === '/floor/sessions/')
     expect(sessionCalls).toHaveLength(0)
@@ -352,5 +362,76 @@ describe('the table the floor sent with the order', () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
 
     expect(post.mock.calls.filter((c) => c[0] === '/floor/sessions/')).toHaveLength(0)
+  })
+})
+
+describe('a table has ONE bill', () => {
+  /**
+   * The failure this closes, seen in the running demo: table 2 with SIX open
+   * orders on one session.
+   *
+   * Every arrival at this screen opened a fresh order, so a party ordering three
+   * rounds finished the evening with three separate bills — each with its own
+   * number, its own total and its own receipt. The floor board summed them into
+   * one figure, so nothing on screen admitted it until somebody tried to settle
+   * and was handed three.
+   */
+
+  it('continues the order already open on the table', async () => {
+    routeQuery = { table: 't1', number: '2', session: 'sess-1' }
+    get.mockImplementation((url: string, params?: Record<string, unknown>) => {
+      if (url.includes('/catalog/categories/')) return Promise.resolve([CATEGORY])
+      if (url.includes('/catalog/products/')) return Promise.resolve([PRODUCT])
+      if (url.includes('/shifts/current/'))
+        return Promise.resolve({ shift: { id: 's1', opening_cash: '500.00', status: 'OPEN' } })
+      // The lookup: the bill already open on THIS session.
+      if (url === '/orders/' && params?.session === 'sess-1')
+        return Promise.resolve([{ id: 'existing-bill' }])
+      if (url === '/orders/existing-bill/')
+        return Promise.resolve({ id: 'existing-bill', items: [], status: 'OPEN' })
+      return Promise.resolve([])
+    })
+
+    await mountBoard()
+
+    expect(get).toHaveBeenCalledWith('/orders/', { open: 'true', session: 'sess-1' })
+    expect(get).toHaveBeenCalledWith('/orders/existing-bill/')
+    // The decisive one: no SECOND order was opened beside the first.
+    expect(post.mock.calls.filter((c) => c[0] === '/orders/')).toHaveLength(0)
+  })
+
+  it('asks by SESSION, never by table', async () => {
+    /**
+     * A table filter would find the PREVIOUS party's bill too. Adding a round to
+     * a bill that belongs to people who left is the one mistake this lookup
+     * exists to prevent, and it is unrecoverable at closing.
+     */
+    routeQuery = { table: 't1', number: '2', session: 'sess-1' }
+
+    await mountBoard()
+
+    const lookup = get.mock.calls.find((c) => c[0] === '/orders/')
+    expect(lookup?.[1]).toEqual({ open: 'true', session: 'sess-1' })
+    expect(lookup?.[1]).not.toHaveProperty('table')
+  })
+
+  it('does not go looking when there is no table', async () => {
+    // A counter sale has no bill to resume, and asking would be a request per
+    // customer for an answer that is always empty.
+    routeQuery = {}
+
+    await mountBoard()
+
+    expect(get.mock.calls.filter((c) => c[0] === '/orders/')).toHaveLength(0)
+  })
+
+  it('hides «طلب جديد» on a table', async () => {
+    // On a counter sale it is the right control — one customer done, next up.
+    // On a table it is how a party ends up with two bills.
+    routeQuery = { table: 't1', number: '2', session: 'sess-1' }
+
+    const wrapper = await mountBoard()
+
+    expect(wrapper.text()).not.toContain('طلب جديد')
   })
 })

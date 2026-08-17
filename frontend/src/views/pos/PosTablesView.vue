@@ -331,6 +331,26 @@ function open(table: FloorTable, guests?: number) {
   })
 }
 
+/**
+ * Take the money for this table.
+ *
+ * The same screen as adding to it, arriving with the payment sheet already open
+ * — settling is the entire reason for the trip, and making somebody find the
+ * button again after they asked for it is a step that exists for nothing.
+ */
+function settle(table: FloorTable) {
+  picked.value = null
+  router.push({
+    name: 'pos-order',
+    query: {
+      table: table.table_id,
+      session: table.session_id ?? undefined,
+      number: table.number,
+      pay: '1',
+    },
+  })
+}
+
 /** Selling without a table: takeaway, delivery, the counter. */
 function walkIn() {
   router.push({ name: 'pos-order' })
@@ -570,8 +590,32 @@ function walkIn() {
 
           <div class="picked-actions">
             <UiButton size="lg" block @click="open(picked)">
-              {{ picked.order_count ? 'إضافة إلى هذه الطاولة' : 'تسجيل طلب' }}
+              {{ picked.order_count ? 'إضافة إلى الفاتورة' : 'تسجيل طلب' }}
             </UiButton>
+
+            <!--
+              Settling lives HERE, on the table, not on the round.
+
+              A seated party orders across an evening and pays once at the end,
+              so the till board — which is where a round is rung — no longer
+              offers «دفع» on a table at all. It would have meant printing a
+              receipt for a bill still being added to, and the next two coffees
+              would have had nowhere to go but a second bill.
+
+              Only when there is something to settle: a table seated with nothing
+              ordered has no bill, and a pay button over a zero is a control that
+              can only produce an error.
+            -->
+            <UiButton
+              v-if="picked.order_count && Number(picked.total_due) > 0"
+              variant="secondary"
+              size="lg"
+              block
+              @click="settle(picked)"
+            >
+              دفع الحساب · {{ money(picked.total_due) }}
+            </UiButton>
+
             <UiButton variant="ghost" size="lg" block @click="picked = null">إلغاء</UiButton>
           </div>
         </template>

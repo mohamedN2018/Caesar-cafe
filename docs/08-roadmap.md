@@ -2939,6 +2939,78 @@ backend 1177 → 1190; frontend 176 → 180.
 
 ---
 
+## A table has one bill ✅ COMPLETE (2026-08-17)
+
+### Six bills on table 2
+
+Every arrival at the order screen opened a **fresh** order. So a party ordering
+three rounds finished the evening with three separate bills on one table — each
+with its own number, its own total and its own receipt.
+
+The running demo had six on table 2. And nothing on screen admitted it: the floor
+board sums the open orders on a session into one figure, so the table showed
+`889.20` as though it were a bill. It was six. The first moment anybody would find
+out is the moment they try to settle and are handed six receipts, at the till, with
+the party standing there.
+
+### The fix is to look before opening
+
+If the session already has an order open, continue it. A new one is opened only
+when there is genuinely nothing to add to.
+
+The lookup is **by session, never by table**. A table filter finds the previous
+party's bill too, and adding a round to that is the one mistake here that cannot
+be undone at closing — the items are on a receipt nobody at the table ordered. A
+test asserts the table filter *does* reach the old session, which is the reason the
+session one exists.
+
+`«طلب جديد»` is gone on a table. On a counter sale it is the right control — one
+customer done, next one up. On a table it is precisely how the second bill gets
+made.
+
+### «دفع» is not a table's control
+
+A seated party orders in rounds and pays **once**, when they leave. A pay button
+beside a round invited settling a bill still being added to: a receipt printed, and
+then two more coffees with nowhere to go but a second bill.
+
+So on a table the action is **«إضافة للفاتورة»** — it files the round, sends
+anything unfired to the kitchen, and goes back to the room. The bill stays open,
+because that is what a table IS.
+
+Settling moved to the table itself: **«دفع الحساب · 256.50 ج.م»** on the table's
+own sheet, where the party leaving actually is, carrying the amount so nobody has
+to open a screen to find out what it is. Only when there is something to settle —
+a table seated with nothing ordered has no bill, and a pay button over a zero is a
+control that can only produce an error.
+
+Hidden rather than disabled, in both directions. A cashier is not waiting for
+either button to turn on; each one is simply somewhere else.
+
+### The bill says whose it is
+
+The board named the table above the menu, which is where somebody looks when they
+arrive and not when they are reading the total out loud. A table has one bill now,
+so the bill carries the table: «طاولة 4» on the panel, beside the number.
+
+### Verified
+
+Live, twice: the lookup finds nothing on a new session so a bill is opened; the
+second round finds that same bill and rings onto it — `MB-00-0001`, two lines,
+119.70, still OPEN — and the floor reports the table with **one** order, not two.
+One payment settles it. Then the same flow from the interface: table 4's sheet
+offering «إضافة إلى الفاتورة» and «دفع الحساب · 256.50 ج.م», and the bill screen
+resuming `MB-01-00060` with its three existing lines, tagged «طاولة 4», with no
+«دفع» and no «طلب جديد» anywhere on it.
+
+The five extra bills on table 2 were mine, from the session-ambiguity debugging
+earlier — each one an instance of the bug, which is how it was found. Voided; every
+occupied table now carries exactly one.
+
+backend 1190 → 1192; frontend 180 → 195.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the
