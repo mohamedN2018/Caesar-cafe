@@ -228,8 +228,12 @@ def _invalidate() -> None:
     matters far more than avoiding a few cache misses. A per-scope invalidation
     that misses one entry means a terminal keeps charging the old VAT rate.
     """
-    try:
-        cache.delete_pattern(f"{CACHE_PREFIX}:*")  # type: ignore[attr-defined]
-    except AttributeError:
-        # LocMemCache (tests) has no delete_pattern.
-        cache.clear()
+    # `delete_pattern` is a django-redis EXTENSION and this project runs
+    # Django's built-in RedisCache, which lacks it — so the old
+    # `cache.delete_pattern(...)` here raised AttributeError every single time
+    # and fell into a `cache.clear()` labelled "tests only". In production that
+    # was FLUSHDB on every settings write: the permission cache, the settings
+    # cache and every coordination key beside them, gone together.
+    from apps.core.cacheutils import delete_pattern
+
+    delete_pattern(f"{CACHE_PREFIX}:")

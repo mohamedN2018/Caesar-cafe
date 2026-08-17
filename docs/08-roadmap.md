@@ -3089,6 +3089,91 @@ backend 1192 → 1194; frontend 195.
 
 ---
 
+## Demo data, switched from a screen — and the cache flush behind it ✅ COMPLETE (2026-08-17)
+
+### What was asked for
+
+A presentation needs the site in BOTH of its honest states: a café with a
+fortnight of trading, and the same café configured and licensed with nothing sold
+yet. Switching used to mean a shell on the server.
+
+Two buttons now, on `/demo-data`, both driving the seed's own tested reset
+machinery in the **worker** — a fortnight is thousands of orders through the real
+order and payment services, and a request that takes minutes is a gunicorn worker
+held hostage.
+
+**A rebuild, not a visibility toggle.** A "hide the data" switch would leave every
+report, floor board and kitchen screen to individually agree about what is hidden,
+and the first one that forgot would contradict the screen beside it. Deleting and
+regenerating is the toggle, implemented honestly.
+
+`--no-live` is the only thing the feature added to the seed, and it had to cover
+more than it first appeared: `_trade` has a "today, up to now" pass that runs
+**regardless of `days`**, so `--days 0` still produced forty-odd sales stamped
+this morning and an open shift holding them. The empty state means none of it —
+including no shift, because a café that has not traded yet is one where the
+cashier's first act is opening the drawer.
+
+### Then it kept breaking, and each break was real
+
+**A retired tariff sank the whole rebuild.** `_children_inside` read
+`area.tariffs.all()` and handed a RETIRED one to `check_in`, which refused with
+«التعريفة غير متاحة لهذه الصالة». The admin can retire a tariff now — a supported
+act — and `get_or_create` re-adopts it on the next seed. Filtered to active, and
+the whole rebuild stopped depending on nobody having used the admin.
+
+**Two seeds ran at once.** The view's `cache.add` gate stops two clicks; it cannot
+stop two QUEUED tasks from running together. One deleted the catalogue while the
+other sold from it — `VARIANT_NOT_FOUND` mid-trade, then `ProtectedError` on
+`Payment.order`, and a database in neither shape. Celery's concurrency is 2, so
+the exclusion has to be the task's own: a second gate at the point of damage.
+
+### The bug under the bug: every settings write was a FLUSHDB
+
+The task lock kept vanishing mid-run. The lock was correct; the ground under it
+was not.
+
+Three call sites believed they had `cache.delete_pattern(prefix)`. **That method is
+a django-redis extension, and this project runs Django's built-in `RedisCache`,
+which does not have it.** So every call raised `AttributeError` and fell into:
+
+    except AttributeError:
+        cache.clear()      # LocMemCache (tests) has no delete_pattern
+
+The comment believed the fallback was a test-only affordance. In production it ran
+**every time** — settings write, role change, permission edit — and `clear()`
+against Redis is `FLUSHDB`. The permission cache, the settings cache and every
+coordination key beside them, gone together.
+
+It surfaced only because the rebuild's own seed writes a setting three seconds in,
+which flushed the lock the rebuild was holding, which let a second click through.
+Nothing else in the product had noticed: the caches it destroyed all repopulate on
+the next read, so the only symptom was being slower than intended.
+
+`apps/core/cacheutils.delete_pattern` replaces it — `SCAN` and never `KEYS`, since
+this is the same Redis that brokers Celery and carries the channel layer — with
+`clear()` demoted to a named last resort for an unknown backend. Four tests pin
+that invalidation deletes what it names and spares what it does not, plus the
+other half that must not regress: a revoked permission still takes effect.
+
+### Verified
+
+Live, through the real API on the running stack:
+
+  * `full` → 2608 orders, 43 products, 8 tables occupied.
+  * `empty` → 0 orders, 0 sessions, and still a café that can SELL: 16 tables, 43
+    products, 3 tenders, a licence, 11 staff, 0 tickets, no shift open.
+  * Eight POSTs fired at 8-second intervals through a running rebuild: **409 every
+    time, lock held every time.** Before the cache fix the same test returned 202
+    and the lock was gone by the second poll.
+  * Rendered in real Chrome mid-rebuild and at rest — the running state disables
+    both buttons and says the screen updates itself; the resting state names which
+    shape landed.
+
+backend 1202 → 1212; frontend 195.
+
+---
+
 ## §67 — Definition of Done
 
 A feature is **not** done when the UI renders, or the endpoint returns 200, or it works on the

@@ -1323,6 +1323,34 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/inventory/units/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Units of measure
+         * @description The units of measure this organisation uses.
+         *
+         *     Read-only on purpose — see `UnitSerializer`. It exists because the item form
+         *     has a required `base_unit` select and nothing could populate it: five units
+         *     were seeded and no endpoint returned them, so `/inventory/items/` had full
+         *     CRUD that no screen could actually use.
+         *
+         *     Gated on `inventory.view`, the same permission as reading an item: whoever can
+         *     see the stock can see what it is measured in.
+         */
+        get: operations["inventory_units_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/inventory/waste/": {
         parameters: {
             query?: never;
@@ -2335,6 +2363,52 @@ export interface paths {
         put?: never;
         /** Re-digest a backup file */
         post: operations["ops_backups_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ops/demo-data/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Demo data status
+         * @description The demo dataset, switched from a screen.
+         *
+         *     Exists so a presentation can show the site in BOTH of its honest states —
+         *     a trading fortnight, and a configured cafe with an empty ledger — without
+         *     anyone at a shell. It is a rebuild, not a visibility toggle, on purpose: a
+         *     "hide the data" switch would leave every report, floor board and kitchen
+         *     screen to individually agree about what is hidden, and the first one that
+         *     forgot would be a screen contradicting the screen beside it.
+         *
+         *     `system.settings` gates it: this reissues the licence and kills every
+         *     enrolled device, which is an organisation-level act, not a branch
+         *     preference.
+         */
+        get: operations["ops_demo_data_retrieve"];
+        put?: never;
+        /**
+         * Rebuild the demo data, full or empty
+         * @description The demo dataset, switched from a screen.
+         *
+         *     Exists so a presentation can show the site in BOTH of its honest states —
+         *     a trading fortnight, and a configured cafe with an empty ledger — without
+         *     anyone at a shell. It is a rebuild, not a visibility toggle, on purpose: a
+         *     "hide the data" switch would leave every report, floor board and kitchen
+         *     screen to individually agree about what is hidden, and the first one that
+         *     forgot would be a screen contradicting the screen beside it.
+         *
+         *     `system.settings` gates it: this reissues the licence and kills every
+         *     enrolled device, which is an organisation-level act, not a branch
+         *     preference.
+         */
+        post: operations["ops_demo_data_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -3498,6 +3572,30 @@ export interface paths {
          *     fifteen slightly different definitions of a date range.
          */
         get: operations["reports_sales_by_category_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reports/sales/by-channel/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Sales by channel
+         * @description Shared plumbing for every dated report.
+         *
+         *     Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+         *     the date parsing here is what stops fifteen endpoints from drifting into
+         *     fifteen slightly different definitions of a date range.
+         */
+        get: operations["reports_sales_by_channel_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -4852,6 +4950,23 @@ export interface components {
             role: string;
             /** @description For the POS keypad. Empty for office-only accounts. */
             pin: string;
+        };
+        DemoDataStatus: {
+            orders: number;
+            products: number;
+            open_sessions: number;
+            job: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * @description * `full` - full
+         *     * `empty` - empty
+         * @enum {string}
+         */
+        DemoDataSwitchModeEnum: "full" | "empty";
+        DemoDataSwitchRequest: {
+            mode: components["schemas"]["DemoDataSwitchModeEnum"];
         };
         /**
          * @description A single human-readable result message.
@@ -7597,6 +7712,28 @@ export interface components {
         TransferRequest: {
             /** Format: uuid */
             target_table: string;
+        };
+        /**
+         * @description A unit of measure — KG, G, L, ML, PC.
+         *
+         *     Read-only, and that is the decision rather than an omission. Units are
+         *     reference data with conversions hanging off them (`UnitConversion`: 1 KG =
+         *     1000 G), so inventing "بوكس" from a form would produce a unit that converts to
+         *     nothing — every recipe and every stock movement in it would be uncostable.
+         *     Adding a real unit means adding its conversions too, which is a migration, not
+         *     a text box.
+         *
+         *     Exposed because an inventory item cannot be created without picking one, and
+         *     there was no way to list them: the item endpoint had full CRUD and the form it
+         *     needed was unbuildable.
+         */
+        Unit: {
+            /** Format: uuid */
+            readonly id: string;
+            /** @description KG, G, L, ML, PCS */
+            readonly code: string;
+            readonly name_ar: string;
+            readonly decimal_places: number;
         };
         Valuation: {
             /** Format: decimal */
@@ -10720,6 +10857,33 @@ export interface operations {
             };
         };
     };
+    inventory_units_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["Unit"][];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     inventory_waste_create: {
         parameters: {
             query?: never;
@@ -12735,6 +12899,66 @@ export interface operations {
             };
         };
     };
+    ops_demo_data_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["DemoDataStatus"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
+    ops_demo_data_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DemoDataSwitchRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["DemoDataSwitchRequest"];
+                "multipart/form-data": components["schemas"]["DemoDataSwitchRequest"];
+            };
+        };
+        responses: {
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        /** @enum {boolean} */
+                        success: true;
+                        data: components["schemas"]["DemoDataStatus"];
+                        meta?: {
+                            /** @description Correlates this response with server logs. */
+                            request_id?: string;
+                        };
+                    };
+                };
+            };
+        };
+    };
     orders_list: {
         parameters: {
             query?: never;
@@ -13095,6 +13319,7 @@ export interface operations {
     payments_methods_list: {
         parameters: {
             query?: {
+                is_active?: boolean;
                 /** @description أي حقل يجب استخدامه عند ترتيب النتائج. */
                 ordering?: string;
                 /** @description مصطلح البحث. */
@@ -14910,6 +15135,31 @@ export interface operations {
         };
     };
     reports_sales_by_category_retrieve: {
+        parameters: {
+            query?: {
+                /** @description Business date, YYYY-MM-DD. */
+                date_from?: string;
+                /** @description Business date, YYYY-MM-DD (inclusive). */
+                date_to?: string;
+                /** @description Return a CSV download instead of JSON. */
+                export?: "csv";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    reports_sales_by_channel_retrieve: {
         parameters: {
             query?: {
                 /** @description Business date, YYYY-MM-DD. */

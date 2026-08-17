@@ -89,17 +89,17 @@ def role_limit(user_id: UUID, branch_id: UUID | None, key: str, default):
 
 def invalidate_user(user_id: UUID) -> None:
     """Drop every cached permission set for one user, across all branches."""
-    try:
-        cache.delete_pattern(f"{CACHE_PREFIX}:{user_id}:*")  # type: ignore[attr-defined]
-    except AttributeError:
-        cache.clear()  # LocMemCache (tests) has no pattern delete
+    # See `apps.core.cacheutils`: the old `cache.delete_pattern` fallback was a
+    # production FLUSHDB wearing a "tests only" comment.
+    from apps.core.cacheutils import delete_pattern
+
+    delete_pattern(f"{CACHE_PREFIX}:{user_id}:")
 
 
 def invalidate_all() -> None:
-    try:
-        cache.delete_pattern(f"{CACHE_PREFIX}:*")  # type: ignore[attr-defined]
-    except AttributeError:
-        cache.clear()
+    from apps.core.cacheutils import delete_pattern
+
+    delete_pattern(f"{CACHE_PREFIX}:")
 
 
 def ensure_system_roles(organization) -> dict[str, Role]:

@@ -14,7 +14,7 @@ deliberately **no restore endpoint and no download endpoint**:
 from __future__ import annotations
 
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework import serializers, status
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -94,3 +94,93 @@ class BackupVerifyView(APIView):
                 ),
             }
         )
+
+
+class DemoDataStatusSerializer(serializers.Serializer):
+    orders = serializers.IntegerField()
+    products = serializers.IntegerField()
+    open_sessions = serializers.IntegerField()
+    job = serializers.DictField(allow_null=True)
+
+
+class DemoDataSwitchSerializer(serializers.Serializer):
+    mode = serializers.ChoiceField(choices=["full", "empty"])
+
+
+class DemoDataView(APIView):
+    """
+    The demo dataset, switched from a screen.
+
+    Exists so a presentation can show the site in BOTH of its honest states —
+    a trading fortnight, and a configured cafe with an empty ledger — without
+    anyone at a shell. It is a rebuild, not a visibility toggle, on purpose: a
+    "hide the data" switch would leave every report, floor board and kitchen
+    screen to individually agree about what is hidden, and the first one that
+    forgot would be a screen contradicting the screen beside it.
+
+    `system.settings` gates it: this reissues the licence and kills every
+    enrolled device, which is an organisation-level act, not a branch
+    preference.
+    """
+
+    permission_classes = [IsAuthenticatedPrincipal, HasPermission]
+    required_permission = "system.settings"
+
+    @extend_schema(summary="Demo data status", responses={200: DemoDataStatusSerializer})
+    def get(self, request: Request) -> Response:
+        from django.core.cache import cache
+
+        from apps.catalog.models import Product
+        from apps.floor.models import TableSession
+        from apps.ops.tasks import DEMO_JOB_KEY
+        from apps.orders.models import Order
+
+        principal = auth_context(request)
+        return Response(
+            {
+                "orders": Order.objects.filter(organization_id=principal.organization_id).count(),
+                "products": Product.objects.filter(
+                    organization_id=principal.organization_id, is_active=True
+                ).count(),
+                "open_sessions": TableSession.objects.filter(
+                    table__area__organization_id=principal.organization_id,
+                    closed_at__isnull=True,
+                ).count(),
+                "job": cache.get(DEMO_JOB_KEY),
+            }
+        )
+
+    @extend_schema(
+        summary="Rebuild the demo data, full or empty",
+        request=DemoDataSwitchSerializer,
+        responses={202: DemoDataStatusSerializer},
+    )
+    def post(self, request: Request) -> Response:
+        from django.core.cache import cache
+
+        from apps.core.exceptions import ConflictError
+        from apps.ops.tasks import DEMO_JOB_KEY, DEMO_JOB_TTL, switch_demo_data
+
+        serializer = DemoDataSwitchSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        mode = serializer.validated_data["mode"]
+
+        # One rebuild at a time. `cache.add` is atomic — two admins clicking
+        # together get one job and one honest 409, not two seeds interleaving
+        # deletes through each other's inserts.
+        if not cache.add(
+            DEMO_JOB_KEY,
+            {"state": "queued", "mode": mode, "detail": "", "at": None},
+            DEMO_JOB_TTL,
+        ):
+            current = cache.get(DEMO_JOB_KEY) or {}
+            if current.get("state") in ("queued", "running"):
+                raise ConflictError("هناك عملية قائمة بالفعل — انتظر انتهاءها.")
+            cache.set(
+                DEMO_JOB_KEY,
+                {"state": "queued", "mode": mode, "detail": "", "at": None},
+                DEMO_JOB_TTL,
+            )
+
+        switch_demo_data.delay(mode)
+        return Response({"queued": mode}, status=status.HTTP_202_ACCEPTED)

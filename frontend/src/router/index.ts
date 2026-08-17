@@ -263,6 +263,14 @@ const router = createRouter({
            * which every cashier holds, and it must not also mean deciding which
            * tenders exist.
            */
+          path: 'demo-data',
+          name: 'demo-data',
+          component: () => import('@/views/settings/DemoDataView.vue'),
+          // `system.settings`: a rebuild reissues the licence and kills every
+          // enrolled device — an organisation-level act, not a branch preference.
+          meta: { permission: 'system.settings' },
+        },
+        {
           path: 'payment-methods',
           name: 'payment-methods',
           component: () => import('@/views/settings/PaymentMethodListView.vue'),

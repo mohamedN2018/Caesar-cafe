@@ -4105,6 +4105,47 @@ paths:
                 - success
                 - data
           description: ''
+  /api/v1/inventory/units/:
+    get:
+      operationId: inventory_units_list
+      description: |-
+        The units of measure this organisation uses.
+
+        Read-only on purpose — see `UnitSerializer`. It exists because the item form
+        has a required `base_unit` select and nothing could populate it: five units
+        were seeded and no endpoint returned them, so `/inventory/items/` had full
+        CRUD that no screen could actually use.
+
+        Gated on `inventory.view`, the same permission as reading an item: whoever can
+        see the stock can see what it is measured in.
+      summary: Units of measure
+      tags:
+      - inventory
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Unit'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/inventory/waste/:
     post:
       operationId: inventory_waste_create
@@ -6765,6 +6806,101 @@ paths:
       responses:
         '200':
           description: No response body
+  /api/v1/ops/demo-data/:
+    get:
+      operationId: ops_demo_data_retrieve
+      description: |-
+        The demo dataset, switched from a screen.
+
+        Exists so a presentation can show the site in BOTH of its honest states —
+        a trading fortnight, and a configured cafe with an empty ledger — without
+        anyone at a shell. It is a rebuild, not a visibility toggle, on purpose: a
+        "hide the data" switch would leave every report, floor board and kitchen
+        screen to individually agree about what is hidden, and the first one that
+        forgot would be a screen contradicting the screen beside it.
+
+        `system.settings` gates it: this reissues the licence and kills every
+        enrolled device, which is an organisation-level act, not a branch
+        preference.
+      summary: Demo data status
+      tags:
+      - ops
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/DemoDataStatus'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
+    post:
+      operationId: ops_demo_data_create
+      description: |-
+        The demo dataset, switched from a screen.
+
+        Exists so a presentation can show the site in BOTH of its honest states —
+        a trading fortnight, and a configured cafe with an empty ledger — without
+        anyone at a shell. It is a rebuild, not a visibility toggle, on purpose: a
+        "hide the data" switch would leave every report, floor board and kitchen
+        screen to individually agree about what is hidden, and the first one that
+        forgot would be a screen contradicting the screen beside it.
+
+        `system.settings` gates it: this reissues the licence and kills every
+        enrolled device, which is an organisation-level act, not a branch
+        preference.
+      summary: Rebuild the demo data, full or empty
+      tags:
+      - ops
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DemoDataSwitchRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DemoDataSwitchRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DemoDataSwitchRequest'
+        required: true
+      responses:
+        '202':
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    enum:
+                    - true
+                  data:
+                    $ref: '#/components/schemas/DemoDataStatus'
+                  meta:
+                    type: object
+                    properties:
+                      request_id:
+                        type: string
+                        description: Correlates this response with server logs.
+                required:
+                - success
+                - data
+          description: ''
   /api/v1/orders/:
     get:
       operationId: orders_list
@@ -7249,6 +7385,10 @@ paths:
       operationId: payments_methods_list
       description: Admin-managed rows, not an enum — adding InstaPay needs no deployment.
       parameters:
+      - in: query
+        name: is_active
+        schema:
+          type: boolean
       - name: ordering
         required: false
         in: query
@@ -9755,6 +9895,39 @@ paths:
         the date parsing here is what stops fifteen endpoints from drifting into
         fifteen slightly different definitions of a date range.
       summary: Sales by category
+      parameters:
+      - in: query
+        name: date_from
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD.
+      - in: query
+        name: date_to
+        schema:
+          type: string
+        description: Business date, YYYY-MM-DD (inclusive).
+      - in: query
+        name: export
+        schema:
+          type: string
+          enum:
+          - csv
+        description: Return a CSV download instead of JSON.
+      tags:
+      - reports
+      responses:
+        '200':
+          description: No response body
+  /api/v1/reports/sales/by-channel/:
+    get:
+      operationId: reports_sales_by_channel_retrieve
+      description: |-
+        Shared plumbing for every dated report.
+
+        Subclasses set `report_key`, `required_permission`, and `compute`. Keeping
+        the date parsing here is what stops fifteen endpoints from drifting into
+        fifteen slightly different definitions of a date range.
+      summary: Sales by channel
       parameters:
       - in: query
         name: date_from
@@ -13146,6 +13319,39 @@ components:
       - password
       - pin
       - role
+    DemoDataStatus:
+      type: object
+      properties:
+        orders:
+          type: integer
+        products:
+          type: integer
+        open_sessions:
+          type: integer
+        job:
+          type: object
+          additionalProperties: {}
+          nullable: true
+      required:
+      - job
+      - open_sessions
+      - orders
+      - products
+    DemoDataSwitchModeEnum:
+      enum:
+      - full
+      - empty
+      type: string
+      description: |-
+        * `full` - full
+        * `empty` - empty
+    DemoDataSwitchRequest:
+      type: object
+      properties:
+        mode:
+          $ref: '#/components/schemas/DemoDataSwitchModeEnum'
+      required:
+      - mode
     Detail:
       type: object
       description: |-
@@ -19405,6 +19611,41 @@ components:
           format: uuid
       required:
       - target_table
+    Unit:
+      type: object
+      description: |-
+        A unit of measure — KG, G, L, ML, PC.
+
+        Read-only, and that is the decision rather than an omission. Units are
+        reference data with conversions hanging off them (`UnitConversion`: 1 KG =
+        1000 G), so inventing "بوكس" from a form would produce a unit that converts to
+        nothing — every recipe and every stock movement in it would be uncostable.
+        Adding a real unit means adding its conversions too, which is a migration, not
+        a text box.
+
+        Exposed because an inventory item cannot be created without picking one, and
+        there was no way to list them: the item endpoint had full CRUD and the form it
+        needed was unbuildable.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          description: KG, G, L, ML, PCS
+        name_ar:
+          type: string
+          readOnly: true
+        decimal_places:
+          type: integer
+          readOnly: true
+      required:
+      - code
+      - decimal_places
+      - id
+      - name_ar
     Valuation:
       type: object
       properties:

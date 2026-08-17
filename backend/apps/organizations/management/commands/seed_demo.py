@@ -357,6 +357,18 @@ class Command(BaseCommand):
             help="Run even though orders already exist. Mixes demo data into real trading.",
         )
         parser.add_argument(
+            # A CONFIGURED cafe with an empty ledger: menu, staff, floor, stock
+            # and licence all present, and nothing sold, seated or cooking.
+            #
+            # Exists for the demo-data screen's "empty" state. `--days 0` alone
+            # is not empty — `_seat_the_room` and `_live_kitchen` run regardless
+            # of days and leave the room mid-service, which is the right default
+            # for a demo and the wrong one for "show me the site with no data".
+            "--no-live",
+            action="store_true",
+            help="Skip the mid-service room: no seated tables, tickets or children.",
+        )
+        parser.add_argument(
             "--reset",
             action="store_true",
             help="DELETE the demo organization first, then seed it fresh. Demo databases only.",
@@ -419,10 +431,17 @@ class Command(BaseCommand):
         days = 0
         for branch, menu, methods in built:
             weight = self._weight(branch.code)
-            days = self._trade(branch, menu, methods, staff, options["days"], weight=weight)
-            self._seat_the_room(branch, staff)
-            self._live_kitchen(branch, menu, staff)
-            self._children_inside(branch, staff)
+            # `_trade` is inside the guard too, not only the seated room: it has
+            # a "today, up to now" pass that runs REGARDLESS of `days`, so
+            # `--days 0` still produced forty-odd sales stamped this morning —
+            # and an open shift holding them. The empty state means none of it:
+            # no sales, and no shift either, because a cafe that has not traded
+            # yet is a cafe where the cashier's first act is opening the drawer.
+            if not options["no_live"]:
+                days = self._trade(branch, menu, methods, staff, options["days"], weight=weight)
+                self._seat_the_room(branch, staff)
+                self._live_kitchen(branch, menu, staff)
+                self._children_inside(branch, staff)
 
         self._summary(branches, days)
 
@@ -1479,7 +1498,14 @@ class Command(BaseCommand):
         ):
             return
 
-        tariffs = list(area.tariffs.all())
+        # Active only. The admin can retire a tariff now (a supported act, not
+        # an accident), and a retired one survives `get_or_create` re-adoption —
+        # handing it to `check_in` crashes the whole rebuild with
+        # «التعريفة غير متاحة لهذه الصالة». Found exactly that way: a tariff the
+        # admin-CRUD verification had retired sank the demo rebuild days later.
+        tariffs = list(area.tariffs.filter(is_active=True))
+        if not tariffs:
+            return
         children = list(
             Child.objects.filter(guardian__branch=branch).select_related("guardian")[:4]
         )

@@ -441,3 +441,100 @@ def test_the_nightly_backup_runs_before_the_business_day_boundary() -> None:
 
 def test_the_backup_directory_is_configurable() -> None:
     assert os.environ.get("BACKUP_DIR", "/backups")
+
+
+class TestDemoDataScreen:
+    """
+    The demo dataset, switched from a screen rather than a shell.
+
+    A rebuild, not a visibility toggle: a "hide the data" switch would leave
+    every report, floor board and kitchen screen to individually agree about
+    what is hidden, and the first one that forgot would contradict the screen
+    beside it.
+    """
+
+    def test_status_reports_the_shape_of_the_data(self, authed, make_user, branch) -> None:
+        client = authed(make_user(role="SUPER_ADMIN"), branch=branch)
+
+        payload = client.get("/api/v1/ops/demo-data/").json()["data"]
+
+        assert set(payload) == {"orders", "products", "open_sessions", "job"}
+        assert payload["job"] is None
+
+    def test_switching_queues_the_worker_and_says_so(
+        self, authed, make_user, branch, monkeypatch
+    ) -> None:
+        """202, not 200 — the work happens in the worker, minutes later."""
+        from unittest.mock import MagicMock
+
+        from apps.ops import tasks
+
+        delay = MagicMock()
+        monkeypatch.setattr(tasks.switch_demo_data, "delay", delay)
+        client = authed(make_user(role="SUPER_ADMIN"), branch=branch)
+
+        response = client.post("/api/v1/ops/demo-data/", {"mode": "empty"}, format="json")
+
+        assert response.status_code == 202
+        delay.assert_called_once_with("empty")
+
+    def test_a_second_click_while_one_runs_is_refused(
+        self, authed, make_user, branch, monkeypatch
+    ) -> None:
+        # Two seeds interleaving deletes through each other's inserts is a
+        # database that is neither shape. `cache.add` makes the gate atomic.
+        from unittest.mock import MagicMock
+
+        from apps.ops import tasks
+
+        monkeypatch.setattr(tasks.switch_demo_data, "delay", MagicMock())
+        client = authed(make_user(role="SUPER_ADMIN"), branch=branch)
+
+        first = client.post("/api/v1/ops/demo-data/", {"mode": "full"}, format="json")
+        assert first.status_code == 202
+        second = client.post("/api/v1/ops/demo-data/", {"mode": "empty"}, format="json")
+
+        assert second.status_code == 409
+
+    def test_a_cashier_cannot_reach_it(self, authed, make_user, branch) -> None:
+        client = authed(make_user(role="CASHIER"), branch=branch)
+
+        assert client.get("/api/v1/ops/demo-data/").status_code == 403
+        assert (
+            client.post("/api/v1/ops/demo-data/", {"mode": "empty"}, format="json").status_code
+            == 403
+        )
+
+    def test_an_unknown_mode_is_refused(self, authed, make_user, branch) -> None:
+        client = authed(make_user(role="SUPER_ADMIN"), branch=branch)
+
+        assert (
+            client.post("/api/v1/ops/demo-data/", {"mode": "hide"}, format="json").status_code
+            == 400
+        )
+
+
+class TestTheEmptyDemoShape:
+    def test_no_live_seeds_a_configured_cafe_with_an_empty_ledger(self) -> None:
+        """
+        The screen's «empty» state, asserted precisely: everything a cafe needs
+        to SELL exists, and nothing has been sold, seated or cooked.
+        """
+        from io import StringIO
+
+        from django.core.management import call_command
+
+        from apps.catalog.models import Product
+        from apps.floor.models import Table, TableSession
+        from apps.kitchen.models import KitchenTicket
+        from apps.licensing.models import License
+        from apps.orders.models import Order
+
+        call_command("seed_demo", days=0, no_live=True, stdout=StringIO(), stderr=StringIO())
+
+        assert Product.objects.filter(is_active=True).exists(), "the menu is there"
+        assert Table.objects.exists(), "the floor is there"
+        assert License.objects.exists(), "the till can enrol"
+        assert Order.objects.count() == 0, "and nothing has been sold"
+        assert not TableSession.objects.filter(closed_at__isnull=True).exists(), "nobody seated"
+        assert KitchenTicket.objects.count() == 0, "nothing cooking"

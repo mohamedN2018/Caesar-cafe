@@ -110,6 +110,7 @@ const groups: NavGroup[] = [
       },
       { label: 'المحذوفات', to: '/deleted', icon: 'trash', permission: 'system.restore' },
       { label: 'الإعدادات', to: '/settings', icon: 'settings', permission: 'branch.view' },
+      { label: 'بيانات العرض', to: '/demo-data', icon: 'sync', permission: 'system.settings' },
     ],
   },
 ]
