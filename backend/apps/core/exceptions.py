@@ -14,6 +14,7 @@ from typing import Any
 
 from django.core.exceptions import PermissionDenied
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.db import IntegrityError
 from django.http import Http404
 from rest_framework import status
 from rest_framework.exceptions import APIException
@@ -124,6 +125,60 @@ _GENERIC_MESSAGES = {
 }
 
 
+#: The unique constraints an operator can actually collide with, and what to say.
+#:
+#: Named per constraint rather than parsed out of the driver's message, because
+#: the message is Postgres's and mentions a column and an index — neither of which
+#: means anything to somebody who retyped a product code.
+_DUPLICATE_MESSAGES: dict[str, tuple[str, str]] = {
+    "uniq_sku_per_branch": ("sku", "هذا الكود مستخدم بالفعل لمنتج آخر."),
+    "uniq_variant_sku_per_product": ("sku", "هذا الكود مستخدم بالفعل لحجم آخر."),
+    "one_default_variant_per_product": (
+        "is_default",
+        "لا يمكن أن يكون أكثر من حجم افتراضياً لنفس المنتج.",
+    ),
+    "uniq_channel_price_per_variant": (
+        "order_type",
+        "لهذا الحجم سعر مسجَّل بالفعل على هذه القناة.",
+    ),
+    "uniq_setting_per_scope": ("key", "هذا الإعداد مسجَّل بالفعل على هذا النطاق."),
+    "users_email_key": ("email", "هذا البريد مستخدم بالفعل."),
+}
+
+
+def _duplicate_or_conflict(exc: IntegrityError) -> AppError:
+    """
+    Turn a database constraint into something a person can act on.
+
+    An `IntegrityError` reaching the handler was a **500**: a manager who typed a
+    product code that already existed got "حدث خطأ غير متوقع. تم تسجيل المشكلة." —
+    a message that says the software broke, about the one class of mistake that is
+    entirely the user's to fix and takes one keystroke.
+
+    It reaches here rather than being caught by a serializer because DRF's
+    uniqueness validators only cover fields the serializer HAS, and every one of
+    these constraints includes `branch` or `product` — columns injected from the
+    authenticated principal in `perform_create`, deliberately never accepted from
+    a request body. So the check cannot run before the insert, and the insert is
+    where it fails.
+
+    409 rather than 400: nothing about the submission is malformed. The row simply
+    exists already, which is a conflict.
+    """
+    text = str(getattr(exc, "__cause__", None) or exc)
+
+    for name, (field, message) in _DUPLICATE_MESSAGES.items():
+        if name in text:
+            return AppError(message, code="DUPLICATE", status_code=409, errors={field: [message]})
+
+    if "duplicate key" in text or "UNIQUE constraint" in text:
+        return AppError("هذه البيانات مسجَّلة بالفعل.", code="DUPLICATE", status_code=409, errors={})
+
+    # A foreign key or NOT NULL violation is not the operator's fault and not
+    # something a message can help with — it stays a 500 and stays logged.
+    raise exc
+
+
 def envelope_exception_handler(exc: Exception, context: dict) -> Response | None:
     from rest_framework.views import exception_handler as drf_exception_handler
 
@@ -137,6 +192,8 @@ def envelope_exception_handler(exc: Exception, context: dict) -> Response | None
             code="VALIDATION_ERROR",
             errors=getattr(exc, "message_dict", {"detail": list(exc.messages)}),
         )
+    elif isinstance(exc, IntegrityError):
+        exc = _duplicate_or_conflict(exc)
 
     response = drf_exception_handler(exc, context)
 

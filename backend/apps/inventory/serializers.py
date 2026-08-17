@@ -6,9 +6,25 @@ from .models import InventoryItem, StockCount, StockLevel, StockMovement, Unit
 
 
 class UnitSerializer(serializers.ModelSerializer):
+    """
+    A unit of measure — KG, G, L, ML, PC.
+
+    Read-only, and that is the decision rather than an omission. Units are
+    reference data with conversions hanging off them (`UnitConversion`: 1 KG =
+    1000 G), so inventing "بوكس" from a form would produce a unit that converts to
+    nothing — every recipe and every stock movement in it would be uncostable.
+    Adding a real unit means adding its conversions too, which is a migration, not
+    a text box.
+
+    Exposed because an inventory item cannot be created without picking one, and
+    there was no way to list them: the item endpoint had full CRUD and the form it
+    needed was unbuildable.
+    """
+
     class Meta:
         model = Unit
         fields = ["id", "code", "name_ar", "decimal_places"]
+        read_only_fields = fields
 
 
 class InventoryItemSerializer(serializers.ModelSerializer):

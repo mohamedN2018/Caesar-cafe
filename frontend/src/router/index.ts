@@ -130,6 +130,21 @@ const router = createRouter({
           meta: { permission: 'reports.inventory' },
         },
         {
+          /**
+           * The items themselves — `/inventory/items/` had full CRUD and no
+           * screen, so an ingredient could not be added or corrected at all.
+           *
+           * `inventory.adjust`, matching what the endpoint demands for a write.
+           * NOT `inventory.view`: that accompanies `inventory.waste` so a cashier
+           * can look up the item they are writing off, and it must not also mean
+           * editing the master data.
+           */
+          path: 'stock/items',
+          name: 'inventory-items',
+          component: () => import('@/views/inventory/InventoryItemListView.vue'),
+          meta: { permission: 'inventory.adjust' },
+        },
+        {
           path: 'suppliers',
           name: 'suppliers',
           component: () => import('@/views/purchasing/SupplierListView.vue'),
@@ -238,6 +253,20 @@ const router = createRouter({
           name: 'printers',
           component: () => import('@/views/settings/PrinterListView.vue'),
           meta: { permission: 'branch.manage_printers' },
+        },
+        {
+          /**
+           * Which tenders the branch accepts — the till's pay buttons.
+           *
+           * `branch.edit_settings`, matching what the endpoint demands for a
+           * write. Not `payments.take`: that is the permission to COLLECT money,
+           * which every cashier holds, and it must not also mean deciding which
+           * tenders exist.
+           */
+          path: 'payment-methods',
+          name: 'payment-methods',
+          component: () => import('@/views/settings/PaymentMethodListView.vue'),
+          meta: { permission: 'branch.edit_settings' },
         },
       ],
     },

@@ -6,11 +6,11 @@ from decimal import Decimal
 
 from django.db import models
 
-from apps.core.models import BaseModel, TenantScopedModel
+from apps.core.models import BaseModel, SoftDeletableModel, TenantScopedModel
 from apps.core.precision import MONEY
 
 
-class PaymentMethod(TenantScopedModel):
+class PaymentMethod(TenantScopedModel, SoftDeletableModel):
     """
     Admin-managed rows, not an enum (commitment C10).
 
@@ -24,7 +24,17 @@ class PaymentMethod(TenantScopedModel):
     counts_as_cash = models.BooleanField(
         default=False, help_text="Included in the shift's expected cash."
     )
-    is_active = models.BooleanField(default=True)
+    # `is_active` and `deactivated_at` both come from `SoftDeletableModel` now.
+    #
+    # This declared `is_active` on its own, which read as soft-deletable and was
+    # not: `perform_destroy` stamps `deactivated_at`, so every
+    # `DELETE /payments/methods/{id}/` returned 500 — from the day it was routed.
+    # Nothing noticed because nothing called it; there was no screen for payment
+    # methods at all.
+    #
+    # The mixin also puts a retired tender in the recycle bin, which is the point:
+    # these rows are on historical payments, and switching «فيزا» off by accident
+    # used to mean editing the database to get cards working again.
     sort_order = models.PositiveIntegerField(default=0)
 
     class Meta:

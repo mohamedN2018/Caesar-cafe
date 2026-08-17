@@ -13,7 +13,7 @@ from apps.core.exceptions import NotFoundError
 from apps.core.viewsets import BranchScopedViewSet
 
 from . import services
-from .models import InventoryItem, StockCount, StockLevel, StockMovement
+from .models import InventoryItem, StockCount, StockLevel, StockMovement, Unit
 from .serializers import (
     AdjustmentSerializer,
     DriftSerializer,
@@ -21,6 +21,7 @@ from .serializers import (
     StockCountSerializer,
     StockLevelSerializer,
     StockMovementSerializer,
+    UnitSerializer,
     WasteSerializer,
 )
 
@@ -45,6 +46,31 @@ class InventoryItemViewSet(BranchScopedViewSet):
     filterset_fields = ["item_type", "is_active", "default_supplier"]
     search_fields = ["code", "name_ar", "name_en"]
     ordering_fields = ["name_ar", "code", "created_at"]
+
+
+class UnitListView(APIView):
+    """
+    The units of measure this organisation uses.
+
+    Read-only on purpose — see `UnitSerializer`. It exists because the item form
+    has a required `base_unit` select and nothing could populate it: five units
+    were seeded and no endpoint returned them, so `/inventory/items/` had full
+    CRUD that no screen could actually use.
+
+    Gated on `inventory.view`, the same permission as reading an item: whoever can
+    see the stock can see what it is measured in.
+    """
+
+    permission_classes = [IsAuthenticatedPrincipal, HasPermission]
+    required_permission = "inventory.view"
+
+    @extend_schema(summary="Units of measure", responses={200: UnitSerializer(many=True)})
+    def get(self, request: Request) -> Response:
+        principal = auth_context(request)
+        units = Unit.objects.filter(organization_id=principal.require_organization()).order_by(
+            "code"
+        )
+        return Response(UnitSerializer(units, many=True).data)
 
 
 class StockLevelView(APIView):

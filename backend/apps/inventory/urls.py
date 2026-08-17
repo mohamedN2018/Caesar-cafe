@@ -8,6 +8,7 @@ from .views import (
     StockCountViewSet,
     StockLevelView,
     StockMovementView,
+    UnitListView,
     WasteView,
 )
 
@@ -21,6 +22,7 @@ router.register("items", InventoryItemViewSet, basename="item")
 router.register("counts", StockCountViewSet, basename="count")
 
 urlpatterns = [
+    path("units/", UnitListView.as_view(), name="units"),
     path("levels/", StockLevelView.as_view(), name="levels"),
     path("movements/", StockMovementView.as_view(), name="movements"),
     path("adjustments/", AdjustmentView.as_view(), name="adjustments"),

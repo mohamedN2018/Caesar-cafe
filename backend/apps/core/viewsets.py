@@ -54,12 +54,27 @@ class BranchScopedViewSet(viewsets.ModelViewSet):
         A product that has ever been sold must not be removable: deleting it
         would orphan historical line items and silently rewrite last quarter's
         reports (docs/02).
-        """
-        if hasattr(instance, "is_active"):
-            from django.utils import timezone
 
-            instance.is_active = False
-            instance.deactivated_at = timezone.now()
-            instance.save(update_fields=["is_active", "deactivated_at", "updated_at"])
-        else:
+        **`deactivated_at` is stamped only where it exists.** This branched on
+        `is_active` and then set both fields, which is a different test from the
+        one it needs: three models carry `is_active` without inheriting
+        `SoftDeletableModel` — `PaymentMethod`, `Recipe` and `User` — and for the
+        two of those with a DELETE route, every attempt returned 500.
+
+        `DELETE /payments/methods/{id}/` had therefore never worked, from the day
+        it was routed. Nothing caught it because nothing called it: there was no
+        screen for payment methods at all, which is how a broken endpoint stays
+        broken quietly.
+        """
+        if not hasattr(instance, "is_active"):
             instance.delete()
+            return
+
+        from django.utils import timezone
+
+        instance.is_active = False
+        fields = ["is_active", "updated_at"]
+        if hasattr(instance, "deactivated_at"):
+            instance.deactivated_at = timezone.now()
+            fields.insert(1, "deactivated_at")
+        instance.save(update_fields=fields)

@@ -109,3 +109,54 @@ class TestRevokedDeviceBackstop:
 
         assert raised.value.code == "DEVICE_REVOKED"
         assert raised.value.status_code == 403, "not a 500 — the Desktop branches on this"
+
+
+class TestDuplicateRows:
+    """
+    A constraint violation is the operator's mistake, not a crash.
+
+    Typing a product code that already exists returned **500** — "حدث خطأ غير
+    متوقع. تم تسجيل المشكلة." — a message that says the software broke, about the
+    one class of mistake that is entirely the user's to fix and takes one
+    keystroke to correct.
+
+    It cannot be caught earlier. DRF's uniqueness validators only cover fields the
+    serializer HAS, and every one of these constraints includes `branch` or
+    `product` — columns injected from the authenticated principal and deliberately
+    never accepted from a request body. The check cannot run before the insert.
+    """
+
+    def test_a_duplicate_sku_is_a_409_not_a_500(self, authed, make_user, branch, organization):
+        from apps.catalog.models import Category
+
+        category = Category.objects.create(
+            organization=organization, branch=branch, name_ar="مشروبات"
+        )
+        client = authed(make_user(role="SUPER_ADMIN"), branch=branch)
+        body = {"name_ar": "لاتيه", "sku": "DUP-1", "category": str(category.id)}
+
+        assert client.post("/api/v1/catalog/products/", body, format="json").status_code == 201
+
+        clash = client.post("/api/v1/catalog/products/", body, format="json")
+
+        assert clash.status_code == 409
+        payload = clash.json()
+        assert payload["code"] == "DUPLICATE"
+        # The message names the FIELD, so the form can point at the box to fix.
+        assert "sku" in payload["errors"]
+        assert "مستخدم بالفعل" in payload["message"]
+
+    def test_a_real_integrity_failure_is_still_a_500(self, monkeypatch):
+        """
+        Only duplicates are translated.
+
+        A foreign-key or NOT NULL violation is not something a message can help
+        with, and dressing it as a 409 would tell an operator to change something
+        they did not type. It stays a 500 and stays logged.
+        """
+        from django.db import IntegrityError
+
+        from apps.core.exceptions import _duplicate_or_conflict
+
+        with pytest.raises(IntegrityError):
+            _duplicate_or_conflict(IntegrityError('null value in column "branch_id"'))

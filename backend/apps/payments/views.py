@@ -91,12 +91,35 @@ class PaymentMethodViewSet(BranchScopedViewSet):
         "default": "branch.edit_settings",
     }
     pagination_class = None
+    filterset_fields = ["is_active"]
+    ordering_fields = ["sort_order", "name_ar"]
 
     def get_queryset(self):
+        """
+        Active only by default, and everything when asked for explicitly.
+
+        The hard filter was right for the till and wrong for the admin: a screen
+        that manages these could switch a tender off and then never see it again
+        — deactivated, invisible, and not in the recycle registry either, so the
+        only way back was a shell. Switching off «فيزا» by accident meant the
+        branch could not take cards until somebody edited the database.
+
+        Defaulting to active preserves what every existing caller gets — the till
+        reads this list to draw its pay buttons and must never be offered a tender
+        the branch has retired. Asking `?is_active=false` (or `all`) is how the
+        management screen sees the rest, and the write permission already gates
+        who may act on them.
+        """
         queryset = super().get_queryset()
-        if self.request.method == "GET":
+        if self.request.method != "GET":
+            return queryset
+
+        asked = self.request.query_params.get("is_active")
+        if asked is None:
             return queryset.filter(is_active=True)
-        return queryset
+        if asked.lower() in ("all", "any", ""):
+            return queryset
+        return queryset.filter(is_active=asked.lower() not in ("false", "0", "no"))
 
 
 class PaymentView(APIView):

@@ -75,6 +75,13 @@ RECYCLABLE: tuple[Recyclable, ...] = (
         organization_path="area__organization_id",
     ),
     Recyclable("inventory", "InventoryItem", "أصناف المخزون"),
+    # Missing until a payment-methods screen existed to switch one off.
+    #
+    # The endpoint hard-filtered `is_active=True` on read, so a deactivated tender
+    # was invisible to every screen AND absent from here — retiring «فيزا» by
+    # accident meant the branch could not take cards until somebody edited the
+    # database. Both halves of that are fixed; this is the half that gets it back.
+    Recyclable("payments", "PaymentMethod", "طرق الدفع"),
     Recyclable("kitchen", "Station", "محطات المطبخ"),
     Recyclable("printing", "Printer", "الطابعات"),
     Recyclable("suppliers", "Supplier", "الموردون", title_field="name"),
