@@ -163,3 +163,112 @@ def validate_signing_key(raw: str) -> bytes:
         )
 
     return key
+
+
+def resolve_signing_key(configured: str, key_dir: str) -> str:
+    """
+    A signing key the server can always boot with.
+
+    The deploy this exists for: Dokploy's Environment panel held a stale,
+    malformed `LICENSE_SIGNING_KEY`, and the panel keeps its own copy of the env —
+    no push can correct it. The server refused to start, which was this module's
+    own advice, and the refusal turned a leftover string in a web form into a site
+    that cannot deploy at all.
+
+    Refusing was the means, not the end. The end is that activation never fails on
+    a key problem — and a server that PROVISIONS a valid key achieves that better
+    than one that refuses to run. So, in order:
+
+      1. **A valid configured value wins.** Rotation and explicit control keep
+         working exactly as before; `generate_signing_key` still prints one.
+      2. An invalid value is IGNORED WITH A CRITICAL LOG, not obeyed and not
+         fatal. The one property lost is "I set a key and it was silently not
+         used" — which the log states in one line, naming the file that is used
+         instead. Against it: the key is one café's server-side secret with no
+         second system holding the public half (the Desktop that would embed it
+         is cancelled), so a mistyped value has no partner to disagree with.
+      3. The persisted key in `key_dir` is reused. This is what makes restarts
+         and redeploys stable: same key, outstanding offline tokens stay valid.
+      4. Nothing persisted yet: generate 32 real bytes, write them `0600` with
+         `O_EXCL`, and use them.
+
+    `O_EXCL` because four containers (api, worker, beat, seed) boot from the same
+    settings at the same time against the same volume. Exactly one wins creation;
+    the others read the winner's key. A loser that reads mid-write gets an invalid
+    value and retries briefly — the file is 44 bytes, so a partial read is a
+    window of microseconds, but a boot that can race should not also be a boot
+    that can crash on the race.
+
+    Raises only when there is genuinely no way to a stable key: an unwritable
+    directory with nothing valid configured, or a persisted file that is corrupt.
+    Both name the remedy.
+    """
+    import logging
+    import os
+    import time
+    from pathlib import Path
+
+    logger = logging.getLogger(__name__)
+    path = Path(key_dir) / "license_signing.key"
+
+    if configured:
+        try:
+            validate_signing_key(configured)
+            return configured
+        except ValueError as exc:
+            logger.critical(
+                "LICENSE_SIGNING_KEY from the environment is invalid and is being "
+                "IGNORED — the persisted key at %s is used instead. Fix or remove "
+                "the variable to silence this. (%s)",
+                path,
+                exc,
+            )
+
+    def _read_valid() -> str | None:
+        # A concurrent winner may still be mid-write; 44 bytes, so the window is
+        # tiny — but a boot that can race must not be a boot that crashes on it.
+        for _ in range(20):
+            if not path.exists():
+                return None
+            raw = path.read_text(encoding="ascii", errors="replace").strip()
+            try:
+                validate_signing_key(raw)
+                return raw
+            except ValueError:
+                time.sleep(0.1)
+        raise ValueError(
+            f"The persisted signing key at {path} is corrupt. Delete the file to "
+            "let the server provision a fresh one (outstanding offline tokens die "
+            "with the old key), or set a valid LICENSE_SIGNING_KEY explicitly."
+        )
+
+    existing = _read_valid()
+    if existing:
+        return existing
+
+    fresh = base64.b64encode(secrets.token_bytes(SIGNING_KEY_BYTES)).decode("ascii")
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    except FileExistsError:
+        # Lost the race. The winner's key is the key — using our own would leave
+        # two services signing with different keys until the next restart.
+        won = _read_valid()
+        if won:
+            return won
+        raise ValueError(f"Another process created {path} but it never became valid.") from None
+    except OSError as exc:
+        raise ValueError(
+            f"LICENSE_SIGNING_KEY is not usable and {path} cannot be written "
+            f"({exc}). Either mount a writable key volume or set a valid "
+            "LICENSE_SIGNING_KEY — `python manage.py generate_signing_key` prints one."
+        ) from exc
+
+    with os.fdopen(fd, "w", encoding="ascii") as handle:
+        handle.write(fresh)
+    logger.warning(
+        "No valid LICENSE_SIGNING_KEY was configured; provisioned one at %s. "
+        "It persists across restarts. Set the variable explicitly only to rotate.",
+        path,
+    )
+    return fresh

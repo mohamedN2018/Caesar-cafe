@@ -39,7 +39,7 @@ COPY . .
 
 # Run unprivileged: a container compromise should not be a root shell.
 RUN useradd --create-home --uid 1000 appuser \
-    && mkdir -p /app/staticfiles /app/media \
+    && mkdir -p /app/staticfiles /app/media /app/keys \
     && chown -R appuser:appuser /app
 USER appuser
 

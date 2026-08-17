@@ -243,6 +243,10 @@ services:
       - static:/app/staticfiles
       - media:/app/media
       - backups:/backups
+      # The self-provisioned licence signing key — see settings/prod.py. One
+      # volume shared by every Django service, so api, worker and beat sign and
+      # verify with the SAME key, and it survives redeploys.
+      - keys:/app/keys
     # **No published host port, deliberately.**
     #
     # Two Dokploy deploys died on this line's neighbour:
@@ -343,6 +347,7 @@ services:
         python manage.py seed_demo --days "$${DEMO_DAYS:-14}"
     volumes:
       - media:/app/media
+      - keys:/app/keys
     networks: [internal]
 
   worker:
@@ -351,6 +356,7 @@ services:
     volumes:
       - media:/app/media
       - backups:/backups
+      - keys:/app/keys
     networks: [internal]
     # The image's own HEALTHCHECK curls :8000, because it was written for the api.
     # A worker serves no HTTP, so that check can never pass and Docker reports this
@@ -373,6 +379,8 @@ services:
   beat:
     <<: *django
     command: celery -A config beat -l info
+    volumes:
+      - keys:/app/keys
     networks: [internal]
     # Disabled rather than faked, for the same reason as above but the opposite
     # conclusion. beat answers no `inspect` — it publishes, it does not consume —
@@ -521,6 +529,9 @@ volumes:
   static:
   media:
   backups:
+  # NEVER mounted into `web`. The signing key is private; `media` is served by
+  # Caddy, which is exactly why the key does not live there.
+  keys:
   frontend_modules:
 
 networks:

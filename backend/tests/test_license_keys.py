@@ -122,3 +122,95 @@ class TestHashing:
     def test_refuses_to_hash_without_a_pepper(self) -> None:
         with override_settings(LICENSE_PEPPER=""), pytest.raises(RuntimeError, match="PEPPER"):
             services.hash_key("QSR-7X29-K8P4-3F1A-9WYZ")
+
+
+class TestResolvingTheSigningKey:
+    """
+    The server provisions its own signing key when the environment cannot.
+
+    The deploy this covers: Dokploy's env panel held a stale, malformed
+    `LICENSE_SIGNING_KEY`. The panel keeps its own copy of the env — no push can
+    correct it — and the old refuse-on-invalid check turned that leftover string
+    into a site that could not deploy at all. Refusing was the means; the end is
+    that activation never fails on a key problem, and a provisioned, persisted
+    key achieves the end directly.
+    """
+
+    VALID = "TXvXVjKcTBpr5PjEjPFqDpDLxWvBmFmXKDNjrmhbMQI="
+
+    def test_a_valid_configured_key_wins(self, tmp_path) -> None:
+        # Rotation and explicit control keep working; nothing is written.
+        out = keys.resolve_signing_key(self.VALID, str(tmp_path))
+
+        assert out == self.VALID
+        assert not (tmp_path / "license_signing.key").exists()
+
+    def test_nothing_configured_provisions_and_persists(self, tmp_path) -> None:
+        first = keys.resolve_signing_key("", str(tmp_path))
+
+        keys.validate_signing_key(first)  # 32 bytes, standard base64
+        assert (tmp_path / "license_signing.key").read_text() == first
+
+    def test_a_second_boot_reuses_the_same_key(self, tmp_path) -> None:
+        # Stability is the point: outstanding offline tokens survive a restart.
+        first = keys.resolve_signing_key("", str(tmp_path))
+        second = keys.resolve_signing_key("", str(tmp_path))
+
+        assert first == second
+
+    def test_the_dokploy_case_an_invalid_value_boots_anyway(self, tmp_path, caplog) -> None:
+        """The exact failure from the deploy log, now survivable."""
+        import logging
+
+        with caplog.at_level(logging.CRITICAL):
+            out = keys.resolve_signing_key("not-valid-base64!!", str(tmp_path))
+
+        keys.validate_signing_key(out)
+        # Ignored LOUDLY — the one lost property is "I set a key and it was not
+        # used", and the log states it in one line.
+        assert any("IGNORED" in r.message for r in caplog.records)
+
+    def test_an_invalid_value_and_a_persisted_key_use_the_persisted_one(self, tmp_path) -> None:
+        persisted = keys.resolve_signing_key("", str(tmp_path))
+        out = keys.resolve_signing_key("garbage!!", str(tmp_path))
+
+        assert out == persisted
+
+    def test_a_corrupt_persisted_file_refuses_with_the_remedy(self, tmp_path) -> None:
+        # The only stable-key path left is a human deciding which key is real.
+        (tmp_path / "license_signing.key").write_text("corrupt")
+
+        with pytest.raises(ValueError, match="corrupt"):
+            keys.resolve_signing_key("", str(tmp_path))
+
+    def test_an_unwritable_directory_refuses_with_the_remedy(self, tmp_path) -> None:
+        # A key that cannot persist would differ per process and die on restart —
+        # worse than not starting, because it fails later and quietly.
+        blocked = tmp_path / "file-not-dir"
+        blocked.write_text("occupies the path")
+
+        with pytest.raises(ValueError, match="cannot be written"):
+            keys.resolve_signing_key("", str(blocked / "keys"))
+
+    def test_losing_the_creation_race_adopts_the_winner_s_key(self, tmp_path, monkeypatch) -> None:
+        """
+        Four containers boot from the same settings against the same volume.
+        Exactly one may create; the rest must ADOPT, or api and worker would sign
+        with different keys until the next restart.
+        """
+        import os as os_module
+
+        winner = "aX0ZrS+TFYu3ZNTVzS4PsGXq7AkvjbVnGeY8H0qmWiM="
+        real_open = os_module.open
+
+        def lose_the_race(path, flags, mode=0o777):
+            # Between our existence check and our O_EXCL, the winner lands.
+            if str(path).endswith("license_signing.key") and flags & os_module.O_EXCL:
+                (tmp_path / "license_signing.key").write_text(winner)
+            return real_open(path, flags, mode)
+
+        monkeypatch.setattr("os.open", lose_the_race)
+
+        out = keys.resolve_signing_key("", str(tmp_path))
+
+        assert out == winner

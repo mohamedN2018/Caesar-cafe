@@ -33,28 +33,40 @@ if _missing:
         + ", ".join(sorted(_missing))
     )
 
-# ── the signing key has to be USABLE, not merely present ─────────────────────
+# ── the signing key has to be USABLE — so the server makes sure one is ───────
 #
 # Every other secret above is a random string and any random string does. This
 # one is an Ed25519 private key — 32 bytes, standard base64 — and a value that is
 # random and wrong is indistinguishable by eye from one that is random and right.
 #
-# It was wrong, and how that presented is the reason this runs at startup: the
-# server booted, served for as long as nobody activated a till, and then returned
-# 500 from the device-activation screen. Presence was checked; validity was not.
+# The history, because each step was a real outage:
 #
-# The check itself lives beside the code that uses the key, so it cannot drift
-# from it, and so it is testable without reloading a settings module.
-if LICENSE_SIGNING_KEY:
-    # `keys` imports no models, so this is safe before the app registry loads.
-    # Importing `services` here instead crash-looped the container on
-    # `AppRegistryNotReady` — the check has to run before apps are ready.
-    from apps.licensing.keys import validate_signing_key as _validate_signing_key
+#   1. Validity was not checked at all. A bad key booted, served, and returned
+#      500 from the one screen whose job is onboarding a terminal.
+#   2. So the boot REFUSED on an invalid key. Then a deploy platform's env panel
+#      held a stale, malformed value — the panel keeps its own copy of the env,
+#      so no push could correct it — and the whole site could not deploy. The
+#      refusal turned a leftover string in a web form into downtime.
+#
+# Refusing was the means; the end is that activation never fails on a key
+# problem. `resolve_signing_key` achieves the end directly: a VALID configured
+# value wins (rotation still works), an invalid one is ignored with a CRITICAL
+# log, and otherwise the server provisions a key once and persists it in the
+# shared `keys` volume — same key across api, worker, beat and restarts.
+#
+# `keys` imports no models, so this is safe before the app registry loads.
+# Importing `services` here instead crash-looped the container on
+# `AppRegistryNotReady` — this has to run before apps are ready.
+from apps.licensing.keys import resolve_signing_key as _resolve_signing_key
 
-    try:
-        _validate_signing_key(LICENSE_SIGNING_KEY)
-    except ValueError as _exc:
-        raise ImproperlyConfigured(f"Refusing to start: {_exc}") from _exc
+try:
+    LICENSE_SIGNING_KEY = _resolve_signing_key(
+        LICENSE_SIGNING_KEY, env("LICENSE_KEY_DIR", "/app/keys")
+    )
+except ValueError as _exc:
+    # Only when there is genuinely no path to a stable key: an unwritable key
+    # directory with nothing valid configured, or a corrupt persisted file.
+    raise ImproperlyConfigured(f"Refusing to start: {_exc}") from _exc
 
 # ── TLS / headers ────────────────────────────────────────────────────────────
 # TLS terminates at the reverse proxy; trust its forwarded scheme header.
